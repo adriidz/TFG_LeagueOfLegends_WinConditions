@@ -5,8 +5,8 @@ import time
 from dotenv import load_dotenv
 
 # Importamos tus funciones del otro script
-# Asegúrate de que data_miner.py esté en la misma carpeta
-from data_miner import process_match, get_match_ids, headers, REGION, MATCH_REGION
+# Asegúrate de que dataminer.py esté en la misma carpeta
+from dataminer import process_match, get_match_ids, headers, REGION, MATCH_REGION
 
 load_dotenv('TFG.env')
 
