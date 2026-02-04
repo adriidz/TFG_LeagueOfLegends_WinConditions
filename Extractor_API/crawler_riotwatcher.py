@@ -12,7 +12,7 @@ load_dotenv('TFG.env')
 # --- CONFIGURACIÓN ---
 MATCHES_PER_PLAYER = 10 
 TOTAL_MATCHES_TARGET = 10000 
-CSV_FILENAME = "dataset_raw_riotwatcher.csv"
+CSV_FILENAME = "Data/dataset_raw_riotwatcher.csv"
 
 # Inicializamos Watcher
 watcher = LolWatcher(API_KEY)
@@ -93,13 +93,13 @@ def run_crawler(get_name=False):
                 continue
             
             print(f"  Procesando {m_id}...", end="")
-            row = process_match(m_id) # Usa data_miner actualizado
+            rows = process_match(m_id) # Usa data_miner actualizado
             
-            if row:
-                new_data_buffer.append(row)
+            if rows:
+                new_data_buffer.extend(rows)
                 processed_ids.add(m_id)
                 matches_collected += 1
-                print(f" OK. Total: {matches_collected}")
+                print(f" OK. (2 filas) Total: {matches_collected}")
             else:
                 session_ignored_ids.add(m_id)
                 print(f" Ignorada.")
@@ -120,4 +120,4 @@ def run_crawler(get_name=False):
             print("  -> Guardado parcial en CSV.")
 
 if __name__ == "__main__":
-    run_crawler(get_name=False)
+    run_crawler(get_name=True)
