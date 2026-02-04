@@ -29,44 +29,65 @@ def get_match_ids(puuid, count=5, ranked_only=False):
         print(f"Error obteniendo IDs: {err}")
         return []
 
-def calculate_early_stats(ally_id, role, frame_15, participant_map, enemy_team_id):
+def get_timeline_stats_by_minute(timeline, minutes_to_track=[5, 10, 15, 20]):
     """
-    Calcula la diferencia de oro/xp/cs al minuto 15.
-    LÓGICA ORIGINAL CONSERVADA EXACTAMENTE.
+    Procesa la timeline para obtener snapshots de XP, Gold, CS y Takedowns 
+    en los minutos indicados.
     """
-    # 1. Datos del Aliado
-    if str(ally_id) not in frame_15['participantFrames']: 
-        return 0, 0, 0
+    frames = timeline['info']['frames']
+    snapshots = {}
+    
+    # Contadores de Kills/Assists (Takedowns) acumulativos
+    takedowns_counter = {pid: 0 for pid in range(1, 11)} 
+    
+    for i, frame in enumerate(frames):
+        # A. Procesar Eventos para contar Takedowns
+        for event in frame['events']:
+            if event['type'] == 'CHAMPION_KILL':
+                killer_id = event.get('killerId', 0)
+                if killer_id > 0: takedowns_counter[killer_id] += 1
+                
+                if 'assistingParticipantIds' in event:
+                    for assist_id in event['assistingParticipantIds']:
+                        takedowns_counter[assist_id] += 1
         
-    my_data = frame_15['participantFrames'][str(ally_id)]
-    
-    # 2. Buscar al Enemigo del mismo Rol
-    enemy_stats = {'gold': 0, 'xp': 0, 'cs': 0}
-    found = False
-    
-    for pid, p_info in participant_map.items():
-        if p_info['teamId'] == enemy_team_id and p_info['role'] == role:
-            if str(pid) in frame_15['participantFrames']:
-                en_data = frame_15['participantFrames'][str(pid)]
-                enemy_stats['gold'] = en_data['totalGold']
-                enemy_stats['xp'] = en_data['xp']
-                # Tu fórmula original: minions + jungle
-                enemy_stats['cs'] = en_data['minionsKilled'] + en_data['jungleMinionsKilled']
-                found = True
-            break
-            
-    if not found: return 0, 0, 0 
+        # B. Guardar Snapshot si coincide con el minuto
+        if i in minutes_to_track:
+            snapshots[i] = {}
+            for pid_str, p_data in frame['participantFrames'].items():
+                pid = int(pid_str)
+                snapshots[i][pid] = {
+                    'gold': p_data['totalGold'],
+                    'xp': p_data['xp'],
+                    'cs': p_data['minionsKilled'] + p_data['jungleMinionsKilled'],
+                    'jungle_cs': p_data['jungleMinionsKilled'], 
+                    'lane_cs': p_data['minionsKilled'],         
+                    'takedowns': takedowns_counter[pid]         
+                }
 
-    # 3. Calcular Diferencia (Aliado - Enemigo)
-    g_diff = my_data['totalGold'] - enemy_stats['gold']
-    x_diff = my_data['xp'] - enemy_stats['xp']
-    c_diff = (my_data['minionsKilled'] + my_data['jungleMinionsKilled']) - enemy_stats['cs']
+    # Rellenar minutos faltantes con el último estado conocido
+    last_frame_idx = len(frames) - 1
+    last_known_data = {}
     
-    return g_diff, x_diff, c_diff
+    for pid_str, p_data in frames[last_frame_idx]['participantFrames'].items():
+        pid = int(pid_str)
+        last_known_data[pid] = {
+            'gold': p_data['totalGold'],
+            'xp': p_data['xp'],
+            'cs': p_data['minionsKilled'] + p_data['jungleMinionsKilled'],
+            'jungle_cs': p_data['jungleMinionsKilled'],
+            'lane_cs': p_data['minionsKilled'],
+            'takedowns': takedowns_counter[pid]
+        }
+        
+    for m in minutes_to_track:
+        if m not in snapshots:
+            snapshots[m] = last_known_data
+
+    return snapshots
 
 def process_match(match_id):
     try:
-        # Descarga Detalles y Timeline con RiotWatcher
         details = watcher.match.by_id(REGION, match_id)
         timeline = watcher.match.timeline_by_match(REGION, match_id)
     except ApiError as err:
@@ -78,26 +99,21 @@ def process_match(match_id):
 
     # --- 1. DATOS GENERALES ---
     info = details['info']
-    duration = info['gameDuration'] / 60 # En minutos
+    duration = info['gameDuration'] / 60 
     
-    # Filtros originales
     if duration < 15 or info.get('gameMode') != 'CLASSIC': 
         return None 
 
-    # Equipo ganador
-    teams = info['teams']
-    winning_team = 100 if teams[0]['win'] else 200
-    losing_team = 200 if winning_team == 100 else 100
+    winning_team = 100 if info['teams'][0]['win'] else 200
     
-    # --- 2. MAPEO DE JUGADORES ---
-    pmap = {} 
+    # Calcular Kills Totales por Equipo (Para Kill Participation)
+    team_kills = {100: 0, 200: 0}
     for p in info['participants']:
-        pmap[p['participantId']] = {
-            'teamId': p['teamId'],
-            'role': p['teamPosition'], 
-            'championId': p['championId'],
-            'stats': p 
-        }
+        team_kills[p['teamId']] += p['kills']
+
+    # --- 2. SNAPSHOTS TEMPORALES ---
+    time_minutes = [5, 10, 15, 20]
+    snapshots = get_timeline_stats_by_minute(timeline, time_minutes)
 
     # --- 3. EXTRACCIÓN DE DATOS ---
     row = {
@@ -106,83 +122,116 @@ def process_match(match_id):
         'gameDuration': duration
     }
 
-    # Frame del minuto 15
-    frames = timeline['info']['frames']
-    idx = 15 if len(frames) > 15 else len(frames) - 1
-    frame_15 = frames[idx]
-
     roles_order = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY']
     
+    # Mapear participantes
+    pmap = {}
+    for p in info['participants']:
+        pmap[p['participantId']] = p
+
+    # Iterar por roles (Perspectiva Equipo Ganador)
     for role in roles_order:
         ally_p = None
         enemy_p = None
         
-        # Buscar protagonistas
-        for pid, data in pmap.items():
-            if data['role'] == role:
-                if data['teamId'] == winning_team: ally_p = data
-                else: enemy_p = data
+        for pid, p in pmap.items():
+            if p['teamPosition'] == role:
+                if p['teamId'] == winning_team: ally_p = p
+                else: enemy_p = p
         
         if not ally_p or not enemy_p: continue 
 
         prefix = role 
-        # A. INPUTS (IDs)
+        pid_ally = ally_p['participantId']
+        pid_enemy = enemy_p['participantId']
+
+        # A. IDENTIFICADORES
         row[f"{prefix}_Ally_ID"] = ally_p['championId']
         row[f"{prefix}_Enemy_ID"] = enemy_p['championId']
         
-        # B. TARGETS INDIVIDUALES (Early - Minuto 15)
-        # Usamos tu función auxiliar original
-        g_diff, x_diff, c_diff = calculate_early_stats(
-            ally_p['stats']['participantId'], role, frame_15, pmap, losing_team
-        )
-        row[f"{prefix}_GoldDiff15"] = g_diff
-        row[f"{prefix}_XpDiff15"] = x_diff
-        row[f"{prefix}_CsDiff15"] = c_diff 
+        # B. SNAPSHOTS (Diffs @ 5, 10, 15, 20)
+        for m in time_minutes:
+            s_ally = snapshots[m][pid_ally]
+            s_enemy = snapshots[m][pid_enemy]
+            
+            row[f"{prefix}_GoldDiff_{m}"] = s_ally['gold'] - s_enemy['gold']
+            row[f"{prefix}_XpDiff_{m}"] = s_ally['xp'] - s_enemy['xp']
+            row[f"{prefix}_CsDiff_{m}"] = s_ally['cs'] - s_enemy['cs']
+        
+        row[f"{prefix}_EarlyTakedowns"] = snapshots[15][pid_ally]['takedowns']
 
-        # C. TARGETS INDIVIDUALES (Globales - Normalizados)
-        p_stats = ally_p['stats']
-        
-        # Mantenemos EXACTAMENTE tus campos originales
-        row[f"{prefix}_DmgChamp"] = p_stats['totalDamageDealtToChampions'] / duration
-        row[f"{prefix}_DmgTurret"] = p_stats['damageDealtToTurrets'] / duration
-        row[f"{prefix}_DmgObj"] = p_stats['damageDealtToObjectives'] / duration
-        
-        row[f"{prefix}_DmgMitigated"] = p_stats['damageSelfMitigated'] / duration
-        row[f"{prefix}_DmgTaken"] = p_stats['totalDamageTaken'] / duration
-        
-        row[f"{prefix}_Vision"] = p_stats['visionScore'] / duration
-        row[f"{prefix}_WardsPlaced"] = p_stats['wardsPlaced'] / duration
-        
-        row[f"{prefix}_Heal"] = p_stats['totalHeal'] / duration
-        row[f"{prefix}_HealsAlly"] = p_stats['totalHealsOnTeammates'] / duration
-        row[f"{prefix}_ShieldsAlly"] = p_stats['totalDamageShieldedOnTeammates'] / duration
+        # C. ESTADÍSTICAS ROL (Early)
+        if role == 'JUNGLE':
+            row[f"{prefix}_JgCsBefore10"] = snapshots[10][pid_ally]['jungle_cs']
+            row[f"{prefix}_EnemyJgInvades"] = ally_p.get('challenges', {}).get('enemyJungleMonsterKills', 0)
+        else:
+            row[f"{prefix}_LaneCsBefore10"] = snapshots[10][pid_ally]['lane_cs']
 
-        row[f"{prefix}_TimeCC"] = p_stats['timeCCingOthers'] / duration
-        row[f"{prefix}_TotalCC"] = p_stats['totalTimeCCDealt'] / duration
+        # D. ESTADÍSTICAS GLOBALES
+        stats = ally_p
+        challenges = ally_p.get('challenges', {})
         
-        row[f"{prefix}_KDA_Kills"] = p_stats['kills']
-        row[f"{prefix}_KDA_Deaths"] = p_stats['deaths']
-        row[f"{prefix}_KDA_Assists"] = p_stats['assists']
+        # Daño
+        row[f"{prefix}_DmgTotal"] = stats['totalDamageDealtToChampions'] / duration
+        row[f"{prefix}_DmgPhys"] = stats['physicalDamageDealtToChampions'] / duration
+        row[f"{prefix}_DmgMagic"] = stats['magicDamageDealtToChampions'] / duration
+        row[f"{prefix}_DmgTrue"] = stats['trueDamageDealtToChampions'] / duration
+        row[f"{prefix}_DmgTurret"] = stats['damageDealtToTurrets'] / duration
+        row[f"{prefix}_DmgObj"] = stats['damageDealtToObjectives'] / duration
+        
+        # Economía
+        total_cs = stats['totalMinionsKilled'] + stats['neutralMinionsKilled']
+        row[f"{prefix}_TotalCS"] = total_cs
+        row[f"{prefix}_GoldEarned"] = stats['goldEarned']
+        row[f"{prefix}_GoldSpent"] = stats['goldSpent']
+        
+        # Snowball Tracking [NUEVO]
+        # bountyGold: Oro obtenido al cobrar recompensas de enemigos
+        row[f"{prefix}_BountyGold"] = challenges.get('bountyGold', 0)
+        row[f"{prefix}_FirstBloodKill"] = 1 if stats.get('firstBloodKill', False) else 0
+        row[f"{prefix}_FirstBloodAssist"] = 1 if stats.get('firstBloodAssist', False) else 0
 
-    # --- 4. TARGETS GLOBALES DE EQUIPO ---
-    # Buscamos el objeto del equipo ganador
+        # Objective Participation [NUEVO]
+        # Takedowns incluye Kills + Asistencias en el objetivo
+        row[f"{prefix}_DragonTakedowns"] = challenges.get('dragonTakedowns', 0)
+        row[f"{prefix}_BaronTakedowns"] = challenges.get('baronTakedowns', 0)
+        row[f"{prefix}_RiftHeraldTakedowns"] = challenges.get('riftHeraldTakedowns', 0)
+        # VoidMonsterKill suele referirse a larvas (Void Grubs) o Heraldo dependiendo del patch
+        row[f"{prefix}_VoidMonsterTakedowns"] = challenges.get('voidMonsterKill', 0)
+
+        # Desafíos Varios
+        row[f"{prefix}_TurretPlates"] = challenges.get('turretPlatesTaken', 0)
+        row[f"{prefix}_MaxCsAdvantage"] = challenges.get('maxCsAdvantageOnLaneOpponent', 0)
+        row[f"{prefix}_SoloKills"] = challenges.get('soloKills', 0)
+        
+        # Visión
+        row[f"{prefix}_VisionScore"] = stats['visionScore'] / duration
+        row[f"{prefix}_WardsPlaced"] = stats['wardsPlaced']
+        row[f"{prefix}_WardsKilled"] = stats['wardsKilled']
+        row[f"{prefix}_ControlWardsPlaced"] = challenges.get('controlWardsPlaced', 0)
+        row[f"{prefix}_DetectorWardsPlaced"] = stats.get('detectorWardsPlaced', 0)
+
+        # CC
+        row[f"{prefix}_TimeCC"] = stats['timeCCingOthers']
+        row[f"{prefix}_TotalCC"] = stats['totalTimeCCDealt']
+        
+        # KP
+        my_kills_assists = stats['kills'] + stats['assists']
+        total_team_kills = team_kills[winning_team]
+        kp = (my_kills_assists / total_team_kills) if total_team_kills > 0 else 0
+        row[f"{prefix}_KillParticipation"] = round(kp, 2)
+
+    # --- 4. TARGETS EQUIPO ---
     t_stats = next(t for t in info['teams'] if t['teamId'] == winning_team)
     objs = t_stats['objectives']
 
-    row['Team_Dragons'] = objs['champion']['kills'] # Nota: API v5 usa 'champion' para dragones a veces, o 'dragon'
-    # En tu código original ponía objs['dragon']. RiotWatcher devuelve el JSON standard.
-    # Verificamos: MatchV5 standard usa 'dragon'. Si tu código funcionaba, mantenemos 'dragon'.
-    # Si falla, es porque RiotWatcher devuelve 'dragon' o 'champion' segun version. 
-    # Usaré .get('dragon', ...) por seguridad.
-    
     row['Team_Dragons'] = objs.get('dragon', {}).get('kills', 0)
     row['Team_Barons'] = objs.get('baron', {}).get('kills', 0)
     row['Team_Towers'] = objs.get('tower', {}).get('kills', 0)
     row['Team_Inhibitors'] = objs.get('inhibitor', {}).get('kills', 0)
     row['Team_RiftHeralds'] = objs.get('riftHerald', {}).get('kills', 0)
-    row['Team_VoidGrubs'] = objs.get('horde', {}).get('kills', 0) # Horde = VoidGrubs
-
-    # Elder Dragons (desde challenges del jugador, igual que tenías)
+    row['Team_VoidGrubs'] = objs.get('horde', {}).get('kills', 0) 
+    
     winner_sample = next((p for p in info['participants'] if p['teamId'] == winning_team), None)
     if winner_sample:
         row['Team_ElderDragons'] = winner_sample.get('challenges', {}).get('teamElderDragonKills', 0)

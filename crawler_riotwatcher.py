@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from riotwatcher import LolWatcher, RiotWatcher, ApiError
 
 # Importamos funciones de data_miner
-from dataminer import process_match, API_KEY, REGION, MATCH_REGION
+from dataminer_riotwatcher import process_match, API_KEY, REGION, MATCH_REGION
 
 load_dotenv('TFG.env')
 
