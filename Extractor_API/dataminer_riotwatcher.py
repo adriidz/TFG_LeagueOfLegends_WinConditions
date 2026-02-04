@@ -193,15 +193,15 @@ def process_match(match_id):
             total_cs = stats['totalMinionsKilled'] + stats['neutralMinionsKilled']
             row[f"{prefix}_TotalCS"] = total_cs
             row[f"{prefix}_GoldEarned"] = stats['goldEarned']
-            row[f"{prefix}_GoldSpent"] = stats['goldSpent']
+                        # row[f"{prefix}_GoldSpent"] = stats['goldSpent']
             
-            # Snowball Tracking [NUEVO]
+            # Snowball Tracking 
             # bountyGold: Oro obtenido al cobrar recompensas de enemigos
-            row[f"{prefix}_BountyGold"] = challenges.get('bountyGold', 0)
-            row[f"{prefix}_FirstBloodKill"] = 1 if stats.get('firstBloodKill', False) else 0
-            row[f"{prefix}_FirstBloodAssist"] = 1 if stats.get('firstBloodAssist', False) else 0
+                        # row[f"{prefix}_BountyGold"] = challenges.get('bountyGold', 0)
+                        # row[f"{prefix}_FirstBloodKill"] = 1 if stats.get('firstBloodKill', False) else 0
+                        # row[f"{prefix}_FirstBloodAssist"] = 1 if stats.get('firstBloodAssist', False) else 0
 
-            # Objective Participation [NUEVO]
+            # Objective Participation 
             # Takedowns incluye Kills + Asistencias en el objetivo
             row[f"{prefix}_DragonTakedowns"] = challenges.get('dragonTakedowns', 0)
             row[f"{prefix}_BaronTakedowns"] = challenges.get('baronTakedowns', 0)
@@ -216,14 +216,23 @@ def process_match(match_id):
             
             # Visión
             row[f"{prefix}_VisionScore"] = stats['visionScore'] / duration
-            row[f"{prefix}_WardsPlaced"] = stats['wardsPlaced']
-            row[f"{prefix}_WardsKilled"] = stats['wardsKilled']
-            row[f"{prefix}_ControlWardsPlaced"] = challenges.get('controlWardsPlaced', 0)
-            row[f"{prefix}_DetectorWardsPlaced"] = stats.get('detectorWardsPlaced', 0)
+            row[f"{prefix}_WardsPlaced"] = stats['wardsPlaced'] / duration
+            row[f"{prefix}_WardsKilled"] = stats['wardsKilled'] / duration
+            row[f"{prefix}_ControlWardsPlaced"] = challenges.get('controlWardsPlaced', 0) / duration
+                        #  row[f"{prefix}_DetectorWardsPlaced"] = stats.get('detectorWardsPlaced', 0) / duration
 
             # CC
-            row[f"{prefix}_TimeCC"] = stats['timeCCingOthers']
-            row[f"{prefix}_TotalCC"] = stats['totalTimeCCDealt']
+            row[f"{prefix}_TimeCC"] = stats['timeCCingOthers'] / duration
+            row[f"{prefix}_TotalCC"] = stats['totalTimeCCDealt'] / duration
+
+            # Curaciones y escudos
+            row[f"{prefix}_TotalHeal"] = stats['totalHeal'] / duration
+            row[f"{prefix}_HealOnTeammates"] = stats['totalHealsOnTeammates'] / duration
+            row[f"{prefix}_DamageShielded"] = stats['totalDamageShieldedOnTeammates'] / duration
+
+            # Mitigación y daño recibido
+            row[f"{prefix}_DamageTaken"] = stats['totalDamageTaken'] / duration
+            row[f"{prefix}_DamageMitigated"] = stats['damageSelfMitigated'] / duration
             
             # KP
             my_kills_assists = stats['kills'] + stats['assists']
