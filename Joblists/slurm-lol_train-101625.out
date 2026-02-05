@@ -1,0 +1,26 @@
+cuda_available= True
+cuda_device_count= 1
+
+--- PREPARANDO DATOS ---
+Device: cuda
+Usando num_workers=4 para DataLoader (SLURM_CPUS_PER_TASK=4)
+Train: 23060 filas | Test: 5765 filas
+--- INICIANDO ENTRENAMIENTO ---
+Epoch 01/200 | Train Loss(w): 2.0268 | Test Loss(w): 1.7233 | Test MSE: 1.2732 || [OK] Best model guardado: Models/lol_model_best.pth (loss=1.7233)
+Epoch 02/200 | Train Loss(w): 1.4430 | Test Loss(w): 1.4513 | Test MSE: 1.0019 || [OK] Best model guardado: Models/lol_model_best.pth (loss=1.4513)
+Epoch 03/200 | Train Loss(w): 1.3627 | Test Loss(w): 1.4428 | Test MSE: 0.9950 || [OK] Best model guardado: Models/lol_model_best.pth (loss=1.4428)
+Epoch 04/200 | Train Loss(w): 1.3422 | Test Loss(w): 1.4509 | Test MSE: 0.9983 || [EarlyStopping] no mejora: 1/10
+Epoch 05/200 | Train Loss(w): 1.3209 | Test Loss(w): 1.4544 | Test MSE: 1.0000 || [EarlyStopping] no mejora: 2/10
+Epoch 06/200 | Train Loss(w): 1.2948 | Test Loss(w): 1.4720 | Test MSE: 1.0089 || [EarlyStopping] no mejora: 3/10
+Epoch 07/200 | Train Loss(w): 1.2741 | Test Loss(w): 1.4756 | Test MSE: 1.0098 || [EarlyStopping] no mejora: 4/10
+Epoch 08/200 | Train Loss(w): 1.2529 | Test Loss(w): 1.4781 | Test MSE: 1.0109 || [EarlyStopping] no mejora: 5/10
+Epoch 09/200 | Train Loss(w): 1.2302 | Test Loss(w): 1.4890 | Test MSE: 1.0158 || [EarlyStopping] no mejora: 6/10
+Epoch 00009: reducing learning rate of group 0 to 5.0000e-04.
+Epoch 10/200 | Train Loss(w): 1.2009 | Test Loss(w): 1.4944 | Test MSE: 1.0182 || [EarlyStopping] no mejora: 7/10
+Epoch 11/200 | Train Loss(w): 1.1877 | Test Loss(w): 1.4953 | Test MSE: 1.0196 || [EarlyStopping] no mejora: 8/10
+Epoch 12/200 | Train Loss(w): 1.1750 | Test Loss(w): 1.4978 | Test MSE: 1.0207 || [EarlyStopping] no mejora: 9/10
+Epoch 13/200 | Train Loss(w): 1.1657 | Test Loss(w): 1.4995 | Test MSE: 1.0215 || [EarlyStopping] no mejora: 10/10
+
+[EarlyStopping] Deteniendo entrenamiento después de 13 epochs sin mejora.
+
+[OK] Best checkpoint ya guardado en Models/lol_model_best.pth

@@ -7,14 +7,15 @@ import json
 import numpy as np
 import os
 from model import LoLWinConditionModel 
+from loss import LoLWeightedLoss
 
 # --- CONFIGURACIÓN ---
-BATCH_SIZE = 32
+BATCH_SIZE = 256
 LEARNING_RATE = 0.001
 EPOCHS = 200
 EMBEDDING_DIM = 32
 
-EARLY_STOPPING_PATIENCE = 20   # epochs sin mejorar antes de parar
+EARLY_STOPPING_PATIENCE = 10   # epochs sin mejorar antes de parar
 EARLY_STOPPING_MIN_DELTA = 1e-4
 SAVE_BEST_PATH = "Models/lol_model_best.pth"
 
@@ -180,6 +181,7 @@ def train():
     print("Device:", device)
 
     num_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", "0"))
+    print(f"Usando num_workers={num_workers} para DataLoader (SLURM_CPUS_PER_TASK={os.environ.get('SLURM_CPUS_PER_TASK', 'N/A')})")
     pin_memory = (device.type == "cuda")
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
@@ -196,16 +198,21 @@ def train():
     max_id = 1000 # O calcula el max(Input_Player_ID) real
     model = LoLWinConditionModel(num_champions=max_id, num_metrics=len(USEFUL_METRICS), embedding_dim=EMBEDDING_DIM).to(device)
     
-    print("\n--- EVALUACIÓN INICIAL (sin entrenar) ---")
-    m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
-        model, test_loader, device, num_metrics=len(USEFUL_METRICS)
-    )
-    print(f"Global MSE modelo (init): {m_global:.4f}")
-    print(f"Global MSE baseline(0):   {b_global:.4f}")
-    print()
+    # print("\n--- EVALUACIÓN INICIAL (sin entrenar) ---")
+    # m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
+    #     model, test_loader, device, num_metrics=len(USEFUL_METRICS)
+    # )
+    # print(f"Global MSE modelo (init): {m_global:.4f}")
+    # print(f"Global MSE baseline(0):   {b_global:.4f}")
+    # print()
 
-    criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
+    # criterion = nn.SmoothL1Loss(beta=1.0)
+    criterion_train = LoLWeightedLoss(USEFUL_METRICS).to(device)
+    criterion_mse = nn.MSELoss(reduction='mean')
+
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
     
     print("--- INICIANDO ENTRENAMIENTO ---")
     
@@ -226,7 +233,7 @@ def train():
             
             optimizer.zero_grad()
             preds = model(p, a, e, r)
-            loss = criterion(preds, y)
+            loss = criterion_train(preds, y)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -235,24 +242,33 @@ def train():
         
         # B) VALIDATION LOOP (¡Sin Data Leakage!)
         model.eval()
-        test_loss = 0
+
+        sum_weighted_sqerr = 0.0
+        sum_sqerr = 0.0
+        n_elems = 0
+
         with torch.no_grad():
+            w = criterion_train.weight_tensor  # tensor [num_metrics] en el mismo device
             for batch in test_loader:
-                p = batch['player'].to(device) # (batch_size,)
-                a = batch['allies'].to(device) # (batch_size, 4)
-                e = batch['enemies'].to(device) # (batch_size, 5)
-                r = batch['role'].to(device) # (batch_size,)
-                y = batch['target'].to(device) # (batch_size, num_metrics)
-                
-                preds = model(p, a, e, r)
-                loss = criterion(preds, y)
-                test_loss += loss.item()
-        
-        avg_test_loss = test_loss / len(test_loader)
+                p = batch['player'].to(device)
+                a = batch['allies'].to(device)
+                e = batch['enemies'].to(device)
+                r = batch['role'].to(device)
+                y = batch['target'].to(device)  # [B, M]
+
+                preds = model(p, a, e, r)       # [B, M]
+                sq = (preds - y) ** 2           # [B, M]
+
+                sum_weighted_sqerr += (sq * w).sum().item()
+                sum_sqerr += sq.sum().item()
+                n_elems += y.numel()
+
+        avg_test_loss = sum_weighted_sqerr / n_elems   # para early stopping + scheduler
+        avg_test_mse = sum_sqerr / n_elems             # MSE normal para logs
 
         improved = avg_test_loss < (best_test_loss - EARLY_STOPPING_MIN_DELTA)
 
-        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss: {avg_train_loss:.4f} | Test Loss: {avg_test_loss:.4f}"
+        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss(w): {avg_train_loss:.4f} | Test Loss(w): {avg_test_loss:.4f} | Test MSE: {avg_test_mse:.4f}"
 
         if improved:
             best_test_loss = avg_test_loss
@@ -268,17 +284,19 @@ def train():
             if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
                 print(f"\n[EarlyStopping] Deteniendo entrenamiento después de {epoch+1} epochs sin mejora.")
                 break
+        
+        scheduler.step(avg_test_loss)
 
-    print("\n--- EVALUACIÓN FINAL (best checkpoint) ---")
-    if os.path.exists(SAVE_BEST_PATH):
-        model.load_state_dict(torch.load(SAVE_BEST_PATH, map_location=device))
+    # print("\n--- EVALUACIÓN FINAL (best checkpoint) ---")
+    # if os.path.exists(SAVE_BEST_PATH):
+    #     model.load_state_dict(torch.load(SAVE_BEST_PATH, map_location=device))
 
-    m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
-        model, test_loader, device, num_metrics=len(USEFUL_METRICS)
-    )
-    print(f"Global MSE modelo (best): {m_global:.4f}")
-    print(f"Global MSE baseline(0):   {b_global:.4f}")
-    print_metric_report(USEFUL_METRICS, m_per, b_per, top_k=10)
+    # m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
+    #     model, test_loader, device, num_metrics=len(USEFUL_METRICS)
+    # )
+    # print(f"Global MSE modelo (best): {m_global:.4f}")
+    # print(f"Global MSE baseline(0):   {b_global:.4f}")
+    # print_metric_report(USEFUL_METRICS, m_per, b_per, top_k=10)
 
     print(f"\n[OK] Best checkpoint ya guardado en {SAVE_BEST_PATH}")
 
