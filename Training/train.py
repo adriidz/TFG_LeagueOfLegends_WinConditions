@@ -40,6 +40,45 @@ USEFUL_METRICS = [
     'Team_Dragons', 'Team_Barons', 'Team_Towers', 'Team_Inhibitors' # Agregamos objetivos de equipo si están
 ]
 
+# --- WIN CONDITIONS (targets agregados, estables) ---
+WIN_CONDITIONS = {
+    # “Ganar línea / ventaja early en tu rol”
+    "LaneAdvantage": ["GoldDiff_10", "XpDiff_10", "CsDiff_10", "LaneCsBefore10", "SoloKills"],
+
+    # “Convertir early en bola de nieve”
+    "Snowball": ["GoldDiff_15", "XpDiff_15", "CsDiff_15", "EarlyTakedowns"],
+
+    # “Escalado / rendimiento late por recursos”
+    "Scaling": ["GoldDiff_20", "XpDiff_20", "CsDiff_20", "TotalCS", "GoldEarned"],
+
+    # “Impacto en peleas (daño + CC + estar en kills)”
+    "TeamfightImpact": ["DmgTotal", "TimeCC", "KillParticipation", "DamageMitigated"],
+
+    # “Sustain/utility (curas)”
+    "Sustain": ["TotalHeal", "HealOnTeammates"],
+
+    # “Control de visión”
+    "VisionControl": ["VisionScore", "WardsPlaced", "WardsKilled", "ControlWardsPlaced"],
+
+    # “Control de objetivos neutrales (personal + equipo)”
+    "ObjectiveControl": ["DragonTakedowns", "RiftHeraldTakedowns", "BaronTakedowns", "VoidMonsterTakedowns",
+                         "Team_Dragons", "Team_Barons"],
+
+    # “Siege / cerrar partida por estructuras”
+    "Siege": ["DmgTurret", "TurretPlates", "Team_Towers", "Team_Inhibitors", "DmgObj"],
+}
+
+WIN_CONDITION_NAMES = list(WIN_CONDITIONS.keys())
+
+def compute_win_condition_vector(z_by_metric, clip=5.0):
+    out = []
+    for _, metric_list in WIN_CONDITIONS.items():
+        vals = [float(z_by_metric.get(m, 0.0)) for m in metric_list]
+        v = float(np.mean(vals)) if len(vals) else 0.0
+        v = max(-clip, min(clip, v))
+        out.append(v)
+    return out
+
 # --- CLASE DATASET ---
 class LoLDataset(Dataset):
     def __init__(self, csv_file, json_file, useful_metrics):
@@ -78,28 +117,32 @@ class LoLDataset(Dataset):
         
         # Targets (Z-Scores)
         key = f"{player}_{role_str}"
-        targets = []
         champ_stats = self.stats.get(key, None)
-        
+
+        z_by_metric = {}
+
         for metric in self.metrics:
             col_name = f"Target_{metric}"
-            
-            # Si no existe la columna en el CSV o no hay stats en el JSON
+
             if col_name not in row:
-                targets.append(0.0)
+                z_by_metric[metric] = 0.0
                 continue
-            
+
             real_val = row[col_name]
-            
+
             if champ_stats and col_name in champ_stats:
-                mean = champ_stats[col_name]['mean']
-                std = champ_stats[col_name]['std']
+                mean = champ_stats[col_name]["mean"]
+                std = champ_stats[col_name]["std"]
+                if std is None or std == 0:
+                    std = 1.0
                 z = (real_val - mean) / std
-                z = max(-5.0, min(5.0, z)) # Clip
+                z = max(-5.0, min(5.0, z))
             else:
-                z = 0.0 # Fallback final
-            
-            targets.append(z)
+                z = 0.0
+
+            z_by_metric[metric] = float(z)
+
+        targets = compute_win_condition_vector(z_by_metric)
 
         return {
             'player': torch.tensor(player, dtype=torch.long),
@@ -196,7 +239,9 @@ def train():
     
     # 2. Modelo
     max_id = 1000 # O calcula el max(Input_Player_ID) real
-    model = LoLWinConditionModel(num_champions=max_id, num_metrics=len(USEFUL_METRICS), embedding_dim=EMBEDDING_DIM).to(device)
+    model = LoLWinConditionModel(num_champions=max_id,
+                                 num_metrics=len(WIN_CONDITION_NAMES),
+                                 embedding_dim=EMBEDDING_DIM).to(device)
     
     # print("\n--- EVALUACIÓN INICIAL (sin entrenar) ---")
     # m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
@@ -208,8 +253,8 @@ def train():
 
     # criterion = nn.MSELoss()
     # criterion = nn.SmoothL1Loss(beta=1.0)
-    criterion_train = LoLWeightedLoss(USEFUL_METRICS).to(device)
-    criterion_mse = nn.MSELoss(reduction='mean')
+    # criterion_train = LoLWeightedLoss(WIN_CONDITION_NAMES).to(device)
+    criterion = nn.MSELoss()
 
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
@@ -233,7 +278,7 @@ def train():
             
             optimizer.zero_grad()
             preds = model(p, a, e, r)
-            loss = criterion_train(preds, y)
+            loss = criterion(preds, y)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -243,32 +288,28 @@ def train():
         # B) VALIDATION LOOP (¡Sin Data Leakage!)
         model.eval()
 
-        sum_weighted_sqerr = 0.0
         sum_sqerr = 0.0
         n_elems = 0
 
         with torch.no_grad():
-            w = criterion_train.weight_tensor  # tensor [num_metrics] en el mismo device
             for batch in test_loader:
                 p = batch['player'].to(device)
                 a = batch['allies'].to(device)
                 e = batch['enemies'].to(device)
                 r = batch['role'].to(device)
-                y = batch['target'].to(device)  # [B, M]
+                y = batch['target'].to(device)  # [B, 8]
 
-                preds = model(p, a, e, r)       # [B, M]
-                sq = (preds - y) ** 2           # [B, M]
+                preds = model(p, a, e, r)       # [B, 8]
+                sq = (preds - y) ** 2           # [B, 8]
 
-                sum_weighted_sqerr += (sq * w).sum().item()
                 sum_sqerr += sq.sum().item()
                 n_elems += y.numel()
 
-        avg_test_loss = sum_weighted_sqerr / n_elems   # para early stopping + scheduler
-        avg_test_mse = sum_sqerr / n_elems             # MSE normal para logs
+        avg_test_loss = sum_sqerr / n_elems     # úsalo para early stopping + scheduler
 
         improved = avg_test_loss < (best_test_loss - EARLY_STOPPING_MIN_DELTA)
 
-        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss(w): {avg_train_loss:.4f} | Test Loss(w): {avg_test_loss:.4f} | Test MSE: {avg_test_mse:.4f}"
+        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss: {avg_train_loss:.4f} | Test MSE: {avg_test_loss:.4f}"
 
         if improved:
             best_test_loss = avg_test_loss
