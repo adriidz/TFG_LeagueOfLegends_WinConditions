@@ -20,8 +20,8 @@ class LoLWinConditionModel(nn.Module):
         self.role_embedding = nn.Embedding(5, 8) 
 
         # Calculamos el tamaño total que entra a las neuronas
-        # (1 Player + 5 Aliados + 5 Enemigos) * 32 dim + 8 dim del rol
-        input_dim = (11 * embedding_dim) + 8
+        # (1 Player + 4 Aliados + 5 Enemigos) * 32 dim + 8 dim del rol
+        input_dim = (10 * embedding_dim) + 8
 
         # --- 2. EL CEREBRO (Basado en la lógica 'Seq_NN' de tu profesora) ---
         # Bloque 1: De Input a 256 neuronas
@@ -44,32 +44,32 @@ class LoLWinConditionModel(nn.Module):
 
     def forward(self, player_id, ally_ids, enemy_ids, role_id):
         """
-        player_id: [Batch, 1]
-        ally_ids:  [Batch, 5]
+        player_id: [Batch]
+        ally_ids:  [Batch, 4]
         enemy_ids: [Batch, 5]
-        role_id:   [Batch, 1]
+        role_id:   [Batch]
         """
         # A. PROCESAR EMBEDDINGS
         # El jugador principal
-        p_emb = self.champ_embedding(player_id) # Shape: [Batch, 1, 32]
+        p_emb = self.champ_embedding(player_id) # Shape: [Batch, 32]
         
         # Aliados y Enemigos
-        a_emb = self.champ_embedding(ally_ids)  # Shape: [Batch, 5, 32]
+        a_emb = self.champ_embedding(ally_ids)  # Shape: [Batch, 4, 32]
         e_emb = self.champ_embedding(enemy_ids) # Shape: [Batch, 5, 32]
         
         # El Rol
-        r_emb = self.role_embedding(role_id)    # Shape: [Batch, 1, 8]
+        r_emb = self.role_embedding(role_id)    # Shape: [Batch, 8]
 
         # B. APLANAR (Flatten)
         # Convertimos [Batch, 5, 32] a [Batch, 160] para poder juntarlos
-        p_flat = p_emb.view(p_emb.size(0), -1)
-        a_flat = a_emb.view(a_emb.size(0), -1)
-        e_flat = e_emb.view(e_emb.size(0), -1)
-        r_flat = r_emb.view(r_emb.size(0), -1)
+        p_flat = p_emb.view(p_emb.size(0), -1) # [Batch, 32]
+        a_flat = a_emb.view(a_emb.size(0), -1) # [Batch, 128]
+        e_flat = e_emb.view(e_emb.size(0), -1) # [Batch, 160]
+        r_flat = r_emb.view(r_emb.size(0), -1) # [Batch, 8]
 
         # C. CONCATENAR (Juntar todo en una sola fila larga)
         # Esto es lo que entra al cerebro
-        x = torch.cat([p_flat, a_flat, e_flat, r_flat], dim=1)
+        x = torch.cat([p_flat, a_flat, e_flat, r_flat], dim=1) # Shape: [Batch, 32 + 128 + 160 + 8 = 328]
 
         # D. PASADA POR LAS CAPAS DENSAS (MLP)
         x = F.relu(self.bn1(self.fc1(x)))

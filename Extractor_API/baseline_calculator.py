@@ -1,83 +1,107 @@
 import pandas as pd
 import json
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 # --- CONFIGURACIÓN ---
 INPUT_FILE = "Data/dataset_train_2.csv"
-OUTPUT_JSON = "Data/champion_stats_3.json"  # Diccionario para la IA
-OUTPUT_CSV = "Data/champion_stats_3.csv"    # Para ti (Excel)
+OUTPUT_JSON = "Data/champion_stats_3.json"
+TRAIN_CSV = "Data/train_split.csv"
+TEST_CSV = "Data/test_split.csv"
 
-# Lista de métricas que queremos (las "USEFUL_METRICS" del paso anterior)
-# Si no filtras aquí, calculará todo lo que empiece por Target_
-def calculate_baselines():
-    print(f"Cargando {INPUT_FILE}...")
+MIN_GAMES_THRESHOLD = 20  # Backoff: si hay menos de 20 games, usamos media del Rol
+
+def generate_robust_baselines():
+    print(f"1. Cargando {INPUT_FILE}...")
     try:
         df = pd.read_csv(INPUT_FILE)
     except FileNotFoundError:
-        print("Error: No se encuentra el archivo. Ejecuta primero dataset_transformer.py")
+        print("ERROR: No encuentro el archivo. ¿Has ejecutado dataset_transformer.py?")
         return
 
-    # 1. Seleccionar columnas numéricas (Targets)
+    # --- CORRECCIÓN CRÍTICA: SPLIT POR MATCH_ID ---
+    if 'matchId' not in df.columns:
+        print("ERROR CRÍTICO: No encuentro la columna 'matchId'. No puedo hacer el split seguro.")
+        # Si tu transformer borró el matchId, tendrás que modificarlo para que lo mantenga.
+        return
+
+    print("   Identificando partidas únicas...")
+    unique_matches = df['matchId'].unique()
+    print(f"   Total de partidas únicas: {len(unique_matches)}")
+    
+    # Dividimos los IDs de las partidas, no las filas
+    train_ids, test_ids = train_test_split(unique_matches, test_size=0.2, random_state=42)
+    
+    # Filtramos el DataFrame usando esos IDs
+    df_train = df[df['matchId'].isin(train_ids)].copy()
+    df_test = df[df['matchId'].isin(test_ids)].copy()
+    
+    # Guardamos los splits para que train.py los use
+    df_train.to_csv(TRAIN_CSV, index=False)
+    df_test.to_csv(TEST_CSV, index=False)
+    
+    print(f"-> Split realizado: {len(train_ids)} partidas a Train, {len(test_ids)} a Test.")
+    print(f"-> Filas Train: {len(df_train)} | Filas Test: {len(df_test)}")
+
+    # --- CÁLCULO DE BASELINES (SOLO CON TRAIN) ---
     target_cols = [c for c in df.columns if c.startswith('Target_')]
-    print(f"Métricas detectadas: {len(target_cols)}")
-
-    # 2. Agrupar por ID y Rol
-    # Calculamos Media (mean) y Desviación Estándar (std) a la vez
-    grouped = df.groupby(['Input_Player_ID', 'Input_Role'])[target_cols]
     
-    # Aggregation: media y std
-    df_stats = grouped.agg(['mean', 'std'])
+    # A) Stats Globales por Rol (Red de seguridad)
+    print("2. Calculando Backoff (Stats por Rol)...")
+    role_stats = df_train.groupby('Input_Role')[target_cols].agg(['mean', 'std'])
     
-    # Añadimos conteo de partidas (para saber si el dato es fiable)
-    counts = grouped.size()
-
-    # Correción por si acaso hay NaNs (desviación estándar de un solo dato)
-    df_stats = df_stats.fillna(1.0)
+    # B) Stats por Campeón
+    print("3. Calculando Stats por Campeón...")
+    champ_grouped = df_train.groupby(['Input_Player_ID', 'Input_Role'])[target_cols]
+    champ_stats_agg = champ_grouped.agg(['mean', 'std'])
+    champ_counts = champ_grouped.size()
     
-    # 3. Guardar CSV (Aplanamos las columnas para que sea legible en Excel)
-    # Las columnas quedarán tipo: Target_GoldDiff_15_mean, Target_GoldDiff_15_std
-    df_flat = df_stats.copy()
-    df_flat.columns = ['_'.join(col).strip() for col in df_flat.columns.values]
-    df_flat['Games_Played'] = counts
-    df_flat.to_csv(OUTPUT_CSV)
-    print(f"-> CSV guardado: {OUTPUT_CSV}")
-
-    # 4. Guardar JSON (Estructura optimizada para carga rápida en Python)
-    # Clave: "CHAMPID_ROLE" -> Valor: { "Target_Gold": {"mean": 100, "std": 20}, ... }
+    final_dict = {}
     
-    stats_dict = {}
-    
-    # Iteramos sobre los grupos
-    for (champ_id, role), group_indices in grouped.groups.items():
+    for (champ_id, role), _ in champ_grouped.groups.items():
         key = f"{champ_id}_{role}"
-        stats_dict[key] = {}
+        final_dict[key] = {}
         
-        # Para ese grupo, sacamos los valores calculados
-        # df_stats tiene índice MultiIndex (Id, Rol) y Columnas MultiIndex (Métrica, Stat)
-        row = df_stats.loc[(champ_id, role)]
+        n_games = champ_counts.loc[(champ_id, role)]
+        c_row = champ_stats_agg.loc[(champ_id, role)]
         
+        # Obtenemos fallback del rol
+        try:
+            r_row = role_stats.loc[role]
+        except KeyError:
+            r_row = None
+            
+        final_dict[key]["games"] = int(n_games)
+        final_dict[key]["used_fallback"] = False
+
         for metric in target_cols:
-            mean_val = row[(metric, 'mean')]
-            std_val = row[(metric, 'std')]
+            c_mean = c_row[(metric, 'mean')]
+            c_std = c_row[(metric, 'std')]
+            
+            # Lógica de Backoff
+            use_fallback = False
+            if n_games < MIN_GAMES_THRESHOLD:
+                use_fallback = True
+            elif pd.isna(c_std) or c_std == 0:
+                use_fallback = True
+            
+            if use_fallback and r_row is not None:
+                final_mean = r_row[(metric, 'mean')]
+                final_std = r_row[(metric, 'std')]
+                final_dict[key]["used_fallback"] = True
+            else:
+                final_mean = c_mean
+                final_std = c_std if not pd.isna(c_std) and c_std > 0 else 1.0
 
-            if pd.isna(std_val):
-                std_val = 1.0  # Evitar NaNs
-
-            elif std_val == 0:
-                std_val = 1e-6  # Evitar división por cero
-
-            stats_dict[key][metric] = {
-                "mean": float(mean_val),
-                "std": float(std_val)
+            final_dict[key][metric] = {
+                "mean": float(final_mean),
+                "std": float(final_std)
             }
-        
-        stats_dict[key]["games"] = int(counts.loc[(champ_id, role)])
 
-    # Guardamos el JSON
     with open(OUTPUT_JSON, 'w') as f:
-        json.dump(stats_dict, f, indent=4)
+        json.dump(final_dict, f, indent=4)
         
-    print(f"-> JSON guardado: {OUTPUT_JSON}")
-    print("\n[INFO] Ahora tienes la media y la desviación estándar para calcular Z-Scores.")
+    print(f"-> JSON generado con éxito: {OUTPUT_JSON}")
 
 if __name__ == "__main__":
-    calculate_baselines()
+    generate_robust_baselines()
