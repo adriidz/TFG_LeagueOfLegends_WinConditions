@@ -1,0 +1,58 @@
+cuda_available= True
+cuda_device_count= 1
+--- PREPARANDO DATOS ---
+Device: cuda
+Train: 23060 filas | Test: 5765 filas
+
+--- EVALUACIÓN INICIAL (sin entrenar) ---
+Global MSE modelo (init): 2.0176
+Global MSE baseline(0):   2.0318
+--- INICIANDO ENTRENAMIENTO ---
+[OK] Best model guardado: Models/lol_model_best.pth (loss=0.9965)
+Epoch 01/20 | Train Loss: 1.0972 | Test Loss: 0.9965
+[OK] Best model guardado: Models/lol_model_best.pth (loss=0.9951)
+Epoch 02/20 | Train Loss: 0.9577 | Test Loss: 0.9951
+[OK] Best model guardado: Models/lol_model_best.pth (loss=0.9929)
+Epoch 03/20 | Train Loss: 0.9437 | Test Loss: 0.9929
+[EarlyStopping] no mejora: 1/5
+Epoch 04/20 | Train Loss: 0.9305 | Test Loss: 0.9986
+[EarlyStopping] no mejora: 2/5
+Epoch 05/20 | Train Loss: 0.9156 | Test Loss: 1.0042
+[EarlyStopping] no mejora: 3/5
+Epoch 06/20 | Train Loss: 0.8997 | Test Loss: 1.0068
+[EarlyStopping] no mejora: 4/5
+Epoch 07/20 | Train Loss: 0.8843 | Test Loss: 1.0105
+[EarlyStopping] no mejora: 5/5
+
+[EarlyStopping] Deteniendo entrenamiento después de 8 epochs sin mejora.
+
+--- EVALUACIÓN FINAL (best checkpoint) ---
+Global MSE modelo (best): 0.9949
+Global MSE baseline(0):   2.0318
+
+--- BASELINE vs MODELO (TEST) ---
+Mejoras (baseline_mse - model_mse), top 10:
+  JgCsBefore10             | model=0.2969 | base0=20.1123 | gain=+19.8154
+  EnemyJgInvades           | model=0.2917 | base0=20.1004 | gain=+19.8087
+  LaneCsBefore10           | model=0.8538 | base0=5.8266 | gain=+4.9728
+  TimeCC                   | model=1.1114 | base0=1.1303 | gain=+0.0189
+  DmgMagic                 | model=1.1160 | base0=1.1341 | gain=+0.0181
+  DmgTotal                 | model=1.0970 | base0=1.1097 | gain=+0.0127
+  DmgPhys                  | model=1.0836 | base0=1.0940 | gain=+0.0104
+  HealOnTeammates          | model=0.3771 | base0=0.3843 | gain=+0.0073
+  CsDiff_5                 | model=1.0293 | base0=1.0359 | gain=+0.0067
+  KillParticipation        | model=1.0634 | base0=1.0671 | gain=+0.0036
+
+Peores (el modelo empeora), top 10:
+  Team_Inhibitors          | model=1.0663 | base0=1.0618 | gain=-0.0045
+  TotalCS                  | model=1.0500 | base0=1.0446 | gain=-0.0054
+  Team_Towers              | model=1.0439 | base0=1.0374 | gain=-0.0064
+  DmgTrue                  | model=1.0451 | base0=1.0383 | gain=-0.0067
+  Team_Dragons             | model=0.9938 | base0=0.9868 | gain=-0.0070
+  BaronTakedowns           | model=1.0214 | base0=1.0141 | gain=-0.0074
+  DragonTakedowns          | model=1.0278 | base0=1.0192 | gain=-0.0087
+  Team_Barons              | model=1.0302 | base0=1.0178 | gain=-0.0125
+  GoldEarned               | model=1.0800 | base0=1.0585 | gain=-0.0215
+  DamageMitigated          | model=1.1089 | base0=1.0837 | gain=-0.0252
+
+[OK] Modelo guardado en Models/lol_model_best.pth

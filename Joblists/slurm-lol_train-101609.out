@@ -1,0 +1,28 @@
+cuda_available= True
+cuda_device_count= 1
+--- PREPARANDO DATOS ---
+Device: cuda
+Train: 23060 filas | Test: 5765 filas
+--- INICIANDO ENTRENAMIENTO ---
+Epoch 01/20 | Train Loss: 1.0738 | Test Loss: 0.9974
+Epoch 02/20 | Train Loss: 0.9566 | Test Loss: 0.9927
+Epoch 03/20 | Train Loss: 0.9421 | Test Loss: 0.9999
+Epoch 04/20 | Train Loss: 0.9256 | Test Loss: 1.0027
+Epoch 05/20 | Train Loss: 0.9092 | Test Loss: 1.0023
+Epoch 06/20 | Train Loss: 0.8918 | Test Loss: 1.0142
+Epoch 07/20 | Train Loss: 0.8777 | Test Loss: 1.0106
+Epoch 08/20 | Train Loss: 0.8668 | Test Loss: 1.0165
+Epoch 09/20 | Train Loss: 0.8562 | Test Loss: 1.0140
+Epoch 10/20 | Train Loss: 0.8497 | Test Loss: 1.0178
+Epoch 11/20 | Train Loss: 0.8396 | Test Loss: 1.0155
+Epoch 12/20 | Train Loss: 0.8359 | Test Loss: 1.0167
+Epoch 13/20 | Train Loss: 0.8276 | Test Loss: 1.0270
+Epoch 14/20 | Train Loss: 0.8223 | Test Loss: 1.0228
+Epoch 15/20 | Train Loss: 0.8170 | Test Loss: 1.0277
+Epoch 16/20 | Train Loss: 0.8112 | Test Loss: 1.0223
+Epoch 17/20 | Train Loss: 0.8050 | Test Loss: 1.0261
+Epoch 18/20 | Train Loss: 0.8002 | Test Loss: 1.0319
+Epoch 19/20 | Train Loss: 0.7957 | Test Loss: 1.0281
+Epoch 20/20 | Train Loss: 0.7912 | Test Loss: 1.0309
+
+[OK] Modelo guardado en Models/lol_model_robust.pth

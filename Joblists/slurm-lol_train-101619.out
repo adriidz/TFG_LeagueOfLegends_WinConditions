@@ -1,0 +1,66 @@
+cuda_available= True
+cuda_device_count= 1
+--- PREPARANDO DATOS ---
+Device: cuda
+Train: 23060 filas | Test: 5765 filas
+
+--- EVALUACIÓN INICIAL (sin entrenar) ---
+Global MSE modelo (init): 2.0557
+Global MSE baseline(0):   2.0318
+
+--- INICIANDO ENTRENAMIENTO ---
+Epoch 01/200 | Train Loss: 1.0681 | Test Loss: 0.9962 || [OK] Best model guardado: Models/lol_model_best.pth (loss=0.9962)
+Epoch 02/200 | Train Loss: 0.9552 | Test Loss: 0.9917 || [OK] Best model guardado: Models/lol_model_best.pth (loss=0.9917)
+Epoch 03/200 | Train Loss: 0.9412 | Test Loss: 0.9968 || [EarlyStopping] no mejora: 1/20
+Epoch 04/200 | Train Loss: 0.9250 | Test Loss: 0.9961 || [EarlyStopping] no mejora: 2/20
+Epoch 05/200 | Train Loss: 0.9084 | Test Loss: 1.0077 || [EarlyStopping] no mejora: 3/20
+Epoch 06/200 | Train Loss: 0.8905 | Test Loss: 1.0053 || [EarlyStopping] no mejora: 4/20
+Epoch 07/200 | Train Loss: 0.8775 | Test Loss: 1.0054 || [EarlyStopping] no mejora: 5/20
+Epoch 08/200 | Train Loss: 0.8657 | Test Loss: 1.0095 || [EarlyStopping] no mejora: 6/20
+Epoch 09/200 | Train Loss: 0.8554 | Test Loss: 1.0097 || [EarlyStopping] no mejora: 7/20
+Epoch 10/200 | Train Loss: 0.8481 | Test Loss: 1.0118 || [EarlyStopping] no mejora: 8/20
+Epoch 11/200 | Train Loss: 0.8417 | Test Loss: 1.0119 || [EarlyStopping] no mejora: 9/20
+Epoch 12/200 | Train Loss: 0.8334 | Test Loss: 1.0122 || [EarlyStopping] no mejora: 10/20
+Epoch 13/200 | Train Loss: 0.8283 | Test Loss: 1.0184 || [EarlyStopping] no mejora: 11/20
+Epoch 14/200 | Train Loss: 0.8219 | Test Loss: 1.0196 || [EarlyStopping] no mejora: 12/20
+Epoch 15/200 | Train Loss: 0.8151 | Test Loss: 1.0211 || [EarlyStopping] no mejora: 13/20
+Epoch 16/200 | Train Loss: 0.8109 | Test Loss: 1.0204 || [EarlyStopping] no mejora: 14/20
+Epoch 17/200 | Train Loss: 0.8049 | Test Loss: 1.0247 || [EarlyStopping] no mejora: 15/20
+Epoch 18/200 | Train Loss: 0.7996 | Test Loss: 1.0273 || [EarlyStopping] no mejora: 16/20
+Epoch 19/200 | Train Loss: 0.7975 | Test Loss: 1.0284 || [EarlyStopping] no mejora: 17/20
+Epoch 20/200 | Train Loss: 0.7931 | Test Loss: 1.0311 || [EarlyStopping] no mejora: 18/20
+Epoch 21/200 | Train Loss: 0.7872 | Test Loss: 1.0286 || [EarlyStopping] no mejora: 19/20
+Epoch 22/200 | Train Loss: 0.7831 | Test Loss: 1.0384 || [EarlyStopping] no mejora: 20/20
+
+[EarlyStopping] Deteniendo entrenamiento después de 22 epochs sin mejora.
+
+--- EVALUACIÓN FINAL (best checkpoint) ---
+Global MSE modelo (best): 0.9937
+Global MSE baseline(0):   2.0318
+
+--- BASELINE vs MODELO (TEST) ---
+Mejoras (baseline_mse - model_mse), top 10:
+  EnemyJgInvades           | model=0.2833 | base0=20.1004 | gain=+19.8171
+  JgCsBefore10             | model=0.3025 | base0=20.1123 | gain=+19.8098
+  LaneCsBefore10           | model=0.8618 | base0=5.8266 | gain=+4.9648
+  TimeCC                   | model=1.1111 | base0=1.1303 | gain=+0.0192
+  DmgPhys                  | model=1.0801 | base0=1.0940 | gain=+0.0139
+  DmgTotal                 | model=1.1009 | base0=1.1097 | gain=+0.0088
+  Team_Dragons             | model=0.9797 | base0=0.9868 | gain=+0.0072
+  HealOnTeammates          | model=0.3777 | base0=0.3843 | gain=+0.0066
+  TotalHeal                | model=1.0931 | base0=1.0989 | gain=+0.0059
+  GoldDiff_20              | model=1.0488 | base0=1.0539 | gain=+0.0051
+
+Peores (el modelo empeora), top 10:
+  CsDiff_10                | model=1.0327 | base0=1.0310 | gain=-0.0017
+  DamageMitigated          | model=1.0857 | base0=1.0837 | gain=-0.0021
+  TotalCS                  | model=1.0473 | base0=1.0446 | gain=-0.0027
+  DmgMagic                 | model=1.1370 | base0=1.1341 | gain=-0.0029
+  Team_Towers              | model=1.0404 | base0=1.0374 | gain=-0.0030
+  WardsKilled              | model=1.0067 | base0=1.0035 | gain=-0.0031
+  ControlWardsPlaced       | model=1.0314 | base0=1.0266 | gain=-0.0048
+  CsDiff_5                 | model=1.0418 | base0=1.0359 | gain=-0.0059
+  Team_Barons              | model=1.0244 | base0=1.0178 | gain=-0.0066
+  GoldEarned               | model=1.0675 | base0=1.0585 | gain=-0.0089
+
+[OK] Best checkpoint ya guardado en Models/lol_model_best.pth

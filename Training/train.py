@@ -5,18 +5,23 @@ from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 import json
 import numpy as np
+import os
 from model import LoLWinConditionModel 
 
 # --- CONFIGURACIÓN ---
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
-EPOCHS = 20
+EPOCHS = 200
 EMBEDDING_DIM = 32
+
+EARLY_STOPPING_PATIENCE = 20   # epochs sin mejorar antes de parar
+EARLY_STOPPING_MIN_DELTA = 1e-4
+SAVE_BEST_PATH = "Models/lol_model_best.pth"
 
 # Archivos generados por robust_baseline_calculator.py
 TRAIN_FILE = "Data/train_split.csv"
 TEST_FILE = "Data/test_split.csv"
-JSON_FILE = "Data/champion_stats_robust.json"
+JSON_FILE = "Data/champion_stats_3.json"
 
 # TU LISTA DE MÉTRICAS (Asegúrate de que es la misma que usaste antes)
 USEFUL_METRICS = [
@@ -103,39 +108,121 @@ class LoLDataset(Dataset):
             'target': torch.tensor(targets, dtype=torch.float32)
         }
 
+def evaluate_model_and_baseline(model, data_loader, device, num_metrics):
+    """
+    Devuelve:
+      - model_mse_global: float
+      - baseline_mse_global: float  (baseline = predecir 0)
+      - model_mse_per_metric: np.ndarray shape [num_metrics]
+      - baseline_mse_per_metric: np.ndarray shape [num_metrics]
+    """
+    model.eval()
+
+    sum_sqerr_model = torch.zeros(num_metrics, device=device)
+    sum_sqerr_base = torch.zeros(num_metrics, device=device)
+    n_samples = 0
+
+    with torch.no_grad():
+        for batch in data_loader:
+            p = batch['player'].to(device)
+            a = batch['allies'].to(device)
+            e = batch['enemies'].to(device)
+            r = batch['role'].to(device)
+            y = batch['target'].to(device)  # [B, M]
+
+            preds = model(p, a, e, r)       # [B, M]
+
+            # Modelo
+            sqerr_model = (preds - y) ** 2  # [B, M]
+            sum_sqerr_model += sqerr_model.sum(dim=0)
+
+            # Baseline: predecir 0
+            sqerr_base = (0.0 - y) ** 2
+            sum_sqerr_base += sqerr_base.sum(dim=0)
+
+            n_samples += y.size(0)
+
+    model_mse_per_metric = (sum_sqerr_model / n_samples).detach().cpu().numpy()
+    base_mse_per_metric = (sum_sqerr_base / n_samples).detach().cpu().numpy()
+
+    model_mse_global = float(model_mse_per_metric.mean())
+    base_mse_global = float(base_mse_per_metric.mean())
+    
+    return model_mse_global, base_mse_global, model_mse_per_metric, base_mse_per_metric
+
+def print_metric_report(metric_names, model_mse_per_metric, base_mse_per_metric, top_k=10):
+    rows = []
+    for name, m_mse, b_mse in zip(metric_names, model_mse_per_metric, base_mse_per_metric):
+        rows.append((name, float(m_mse), float(b_mse), float(b_mse - m_mse)))
+
+    # Ordenar por “mejora sobre baseline” (más positivo = mejor)
+    rows.sort(key=lambda x: x[3], reverse=True)
+
+    print("\n--- BASELINE vs MODELO (TEST) ---")
+    print(f"Mejoras (baseline_mse - model_mse), top {top_k}:")
+    for name, m_mse, b_mse, gain in rows[:top_k]:
+        print(f"  {name:24s} | model={m_mse:.4f} | base0={b_mse:.4f} | gain={gain:+.4f}")
+
+    print(f"\nPeores (el modelo empeora), top {top_k}:")
+    for name, m_mse, b_mse, gain in rows[-top_k:]:
+        print(f"  {name:24s} | model={m_mse:.4f} | base0={b_mse:.4f} | gain={gain:+.4f}")
+
 # --- BUCLE DE ENTRENAMIENTO ---
 def train():
+    print()
     print("--- PREPARANDO DATOS ---")
     
     # 1. Datasets
     train_dataset = LoLDataset(TRAIN_FILE, JSON_FILE, USEFUL_METRICS)
     test_dataset = LoLDataset(TEST_FILE, JSON_FILE, USEFUL_METRICS)
     
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Device:", device)
+
+    num_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", "0"))
+    pin_memory = (device.type == "cuda")
+
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                            num_workers=num_workers, pin_memory=pin_memory,
+                            persistent_workers=(num_workers > 0))
+    
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False,
+                            num_workers=num_workers, pin_memory=pin_memory,
+                            persistent_workers=(num_workers > 0))
     
     print(f"Train: {len(train_dataset)} filas | Test: {len(test_dataset)} filas")
     
     # 2. Modelo
     max_id = 1000 # O calcula el max(Input_Player_ID) real
-    model = LoLWinConditionModel(num_champions=max_id, num_metrics=len(USEFUL_METRICS), embedding_dim=EMBEDDING_DIM)
+    model = LoLWinConditionModel(num_champions=max_id, num_metrics=len(USEFUL_METRICS), embedding_dim=EMBEDDING_DIM).to(device)
     
+    print("\n--- EVALUACIÓN INICIAL (sin entrenar) ---")
+    m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
+        model, test_loader, device, num_metrics=len(USEFUL_METRICS)
+    )
+    print(f"Global MSE modelo (init): {m_global:.4f}")
+    print(f"Global MSE baseline(0):   {b_global:.4f}")
+    print()
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     print("--- INICIANDO ENTRENAMIENTO ---")
     
+    best_test_loss = float("inf")
+    epochs_no_improve = 0
+
     for epoch in range(EPOCHS):
         # A) TRAIN LOOP
         model.train()
         train_loss = 0
         for batch in train_loader:
             # Desempaquetar
-            p = batch['player']
-            a = batch['allies'] # (batch_size, 4)
-            e = batch['enemies'] # (batch_size, 5)
-            r = batch['role']
-            y = batch['target']
+            p = batch['player'].to(device) # (batch_size,)
+            a = batch['allies'].to(device) # (batch_size, 4)
+            e = batch['enemies'].to(device) # (batch_size, 5)
+            r = batch['role'].to(device) # (batch_size,)
+            y = batch['target'].to(device) # (batch_size, num_metrics)
             
             optimizer.zero_grad()
             preds = model(p, a, e, r)
@@ -151,23 +238,49 @@ def train():
         test_loss = 0
         with torch.no_grad():
             for batch in test_loader:
-                p = batch['player']
-                a = batch['allies']
-                e = batch['enemies']
-                r = batch['role']
-                y = batch['target']
+                p = batch['player'].to(device) # (batch_size,)
+                a = batch['allies'].to(device) # (batch_size, 4)
+                e = batch['enemies'].to(device) # (batch_size, 5)
+                r = batch['role'].to(device) # (batch_size,)
+                y = batch['target'].to(device) # (batch_size, num_metrics)
                 
                 preds = model(p, a, e, r)
                 loss = criterion(preds, y)
                 test_loss += loss.item()
         
         avg_test_loss = test_loss / len(test_loader)
-        
-        print(f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss: {avg_train_loss:.4f} | Test Loss: {avg_test_loss:.4f}")
 
-    # Guardar
-    torch.save(model.state_dict(), "lol_model_robust.pth")
-    print("\n[OK] Modelo guardado en lol_model_robust.pth")
+        improved = avg_test_loss < (best_test_loss - EARLY_STOPPING_MIN_DELTA)
+
+        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss: {avg_train_loss:.4f} | Test Loss: {avg_test_loss:.4f}"
+
+        if improved:
+            best_test_loss = avg_test_loss
+            epochs_no_improve = 0
+            
+            # Guardar “best” en CPU sin mover el modelo entero
+            state_cpu = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+            torch.save(state_cpu, SAVE_BEST_PATH)
+            print(f"{epoch_message} || [OK] Best model guardado: {SAVE_BEST_PATH} (loss={best_test_loss:.4f})")
+        else:
+            epochs_no_improve += 1
+            print(f"{epoch_message} || [EarlyStopping] no mejora: {epochs_no_improve}/{EARLY_STOPPING_PATIENCE}")
+            if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
+                print(f"\n[EarlyStopping] Deteniendo entrenamiento después de {epoch+1} epochs sin mejora.")
+                break
+
+    print("\n--- EVALUACIÓN FINAL (best checkpoint) ---")
+    if os.path.exists(SAVE_BEST_PATH):
+        model.load_state_dict(torch.load(SAVE_BEST_PATH, map_location=device))
+
+    m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
+        model, test_loader, device, num_metrics=len(USEFUL_METRICS)
+    )
+    print(f"Global MSE modelo (best): {m_global:.4f}")
+    print(f"Global MSE baseline(0):   {b_global:.4f}")
+    print_metric_report(USEFUL_METRICS, m_per, b_per, top_k=10)
+
+    print(f"\n[OK] Best checkpoint ya guardado en {SAVE_BEST_PATH}")
 
 if __name__ == "__main__":
     train()
