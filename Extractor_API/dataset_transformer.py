@@ -3,7 +3,7 @@ import numpy as np
 
 # --- CONFIGURACIÓN ---
 INPUT_FILE = "Data/dataset_raw_1.csv"  # Tu archivo actual
-OUTPUT_FILE = "Data/dataset_train_2.csv" # El archivo para la IA
+OUTPUT_FILE = "Data/dataset_full_2.csv" # El archivo para la IA
 
 def transform_to_player_centric(input_csv, output_csv):
     print(f"Cargando {input_csv}...")
@@ -15,9 +15,9 @@ def transform_to_player_centric(input_csv, output_csv):
 
     # 1. FILTRAR SOLO VICTORIAS (Behavioral Cloning)
     # Si quisieras validar con derrotas, comenta esta línea.
-    df_wins = df[df['win'] == 1].copy()
-    print(f"Partidas originales: {len(df)}")
-    print(f"Partidas ganadoras (para entrenar): {len(df_wins)}")
+    # df_wins = df[df['win'] == 1].copy()
+    print(f"Total de partidas a procesar (Wins + Losses): {len(df)}")
+    # print(f"Partidas ganadoras (para entrenar): {len(df_wins)}")
 
     player_rows = []
     
@@ -28,7 +28,7 @@ def transform_to_player_centric(input_csv, output_csv):
     
     print("Transformando filas... (Esto puede tardar un poco)")
     
-    for idx, row in df_wins.iterrows():
+    for idx, row in df.iterrows():
         # Para cada partida, generamos 5 filas (una por jugador)
         
         # Extraemos IDs de Aliados y Enemigos para el contexto global
@@ -42,6 +42,7 @@ def transform_to_player_centric(input_csv, output_csv):
             new_row = {
                 'matchId': row['matchId'],
                 'gameDuration': row['gameDuration'],
+                'win': row['win'],
                 # --- INPUTS (Contexto) ---
                 'Input_Role': target_role,
                 'Input_Player_ID': row[f"{target_role}_Ally_ID"], # El ID del protagonista
@@ -75,9 +76,9 @@ def transform_to_player_centric(input_csv, output_csv):
     print(f"¡Hecho! Generadas {len(df_final)} filas de entrenamiento.")
     print(f"Guardado en: {output_csv}")
     
-    # Verificación rápida
-    print("\nColumnas generadas:")
-    print(df_final.columns[:].tolist())
+    # # Verificación rápida
+    # print("\nColumnas generadas:")
+    # print(df_final.columns[:].tolist())
 
 if __name__ == "__main__":
     transform_to_player_centric(INPUT_FILE, OUTPUT_FILE)

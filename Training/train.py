@@ -11,21 +11,22 @@ from loss import LoLWeightedLoss
 
 # --- CONFIGURACIÓN ---
 BATCH_SIZE = 256
-LEARNING_RATE = 0.001
-EPOCHS = 200
+LEARNING_RATE = 0.0005
+EPOCHS = 100
 EMBEDDING_DIM = 32
+CONTEXT_DIM = 6
 
 EARLY_STOPPING_PATIENCE = 10   # epochs sin mejorar antes de parar
-EARLY_STOPPING_MIN_DELTA = 1e-4
 SAVE_BEST_PATH = "Models/lol_model_best.pth"
 
 # Archivos generados por robust_baseline_calculator.py
 TRAIN_FILE = "Data/train_split.csv"
 TEST_FILE = "Data/test_split.csv"
 JSON_FILE = "Data/champion_stats_3.json"
+CONTEXT_JSON_FILE = "Data/champion_context_pca.json"
 
 # TU LISTA DE MÉTRICAS (Asegúrate de que es la misma que usaste antes)
-USEFUL_METRICS = [
+SAVED_METRICS = [
     'GoldDiff_5', 'XpDiff_5', 'CsDiff_5', 
     'GoldDiff_10', 'XpDiff_10', 'CsDiff_10',
     'GoldDiff_15', 'XpDiff_15', 'CsDiff_15',
@@ -40,53 +41,63 @@ USEFUL_METRICS = [
     'Team_Dragons', 'Team_Barons', 'Team_Towers', 'Team_Inhibitors' # Agregamos objetivos de equipo si están
 ]
 
-# --- WIN CONDITIONS (targets agregados, estables) ---
-WIN_CONDITIONS = {
-    # “Ganar línea / ventaja early en tu rol”
-    "LaneAdvantage": ["GoldDiff_10", "XpDiff_10", "CsDiff_10", "LaneCsBefore10", "SoloKills"],
-
-    # “Convertir early en bola de nieve”
-    "Snowball": ["GoldDiff_15", "XpDiff_15", "CsDiff_15", "EarlyTakedowns"],
-
-    # “Escalado / rendimiento late por recursos”
-    "Scaling": ["GoldDiff_20", "XpDiff_20", "CsDiff_20", "TotalCS", "GoldEarned"],
-
-    # “Impacto en peleas (daño + CC + estar en kills)”
-    "TeamfightImpact": ["DmgTotal", "TimeCC", "KillParticipation", "DamageMitigated"],
-
-    # “Sustain/utility (curas)”
-    "Sustain": ["TotalHeal", "HealOnTeammates"],
-
-    # “Control de visión”
-    "VisionControl": ["VisionScore", "WardsPlaced", "WardsKilled", "ControlWardsPlaced"],
-
-    # “Control de objetivos neutrales (personal + equipo)”
-    "ObjectiveControl": ["DragonTakedowns", "RiftHeraldTakedowns", "BaronTakedowns", "VoidMonsterTakedowns",
-                         "Team_Dragons", "Team_Barons"],
-
-    # “Siege / cerrar partida por estructuras”
-    "Siege": ["DmgTurret", "TurretPlates", "Team_Towers", "Team_Inhibitors", "DmgObj"],
-}
-
-WIN_CONDITION_NAMES = list(WIN_CONDITIONS.keys())
-
-def compute_win_condition_vector(z_by_metric, clip=5.0):
-    out = []
-    for _, metric_list in WIN_CONDITIONS.items():
-        vals = [float(z_by_metric.get(m, 0.0)) for m in metric_list]
-        v = float(np.mean(vals)) if len(vals) else 0.0
-        v = max(-clip, min(clip, v))
-        out.append(v)
-    return out
+USEFUL_METRICS = [
+    'GoldDiff_10', 'XpDiff_10', 'CsDiff_10',
+    'GoldDiff_15', 'XpDiff_15', 'CsDiff_15',
+    'EarlyTakedowns', 'LaneCsBefore10', 'JgCsBefore10',
+    'DmgTotal', 'DmgTurret', 'DmgObj', 'VisionScore',
+    'KillParticipation', 'SoloKills', 
+    'TotalCS', 'GoldEarned',
+    'Team_Dragons', 'Team_Barons', 'Team_Towers'
+]
 
 # --- CLASE DATASET ---
 class LoLDataset(Dataset):
-    def __init__(self, csv_file, json_file, useful_metrics):
-        self.data = pd.read_csv(csv_file)
+    def __init__(self, csv_file, json_file, useful_metrics, context_json, mode='train'):
+        """
+        mode: 'train' o 'val'. 
+        """
+        # 1. Cargamos CSV crudo
+        df_raw = pd.read_csv(csv_file)
+
+        # 2. FILTRO DE BEHAVIORAL CLONING
+        # Queremos aprender SOLO de los que ganaron.
+        # El JSON de stats (json_file) ya tiene la media global (Wins+Losses),
+        # así que compararemos a los ganadores contra el promedio global.
+        self.data = df_raw[df_raw['win'] == 1].copy().reset_index(drop=True)
+
+        print(f"Dataset ({mode}): Cargadas {len(self.data)} partidas ganadoras (de un total de {len(df_raw)}).")
+
+        # 3. Cargar Stats Globales (Norma)
         with open(json_file, 'r') as f:
             self.stats = json.load(f)
+        
         self.metrics = useful_metrics
         self.role_map = {'TOP': 0, 'JUNGLE': 1, 'MIDDLE': 2, 'BOTTOM': 3, 'UTILITY': 4}
+
+        # Cargamos el contexto PCA pre-calculado
+        with open(context_json, 'r') as f:
+            self.pca_context = json.load(f)
+            
+        # Vector de ceros por si falta algún campeón (fallback)
+        self.context_dim = 5 # Debe coincidir con N_COMPONENTS
+        self.empty_context = [0.0] * self.context_dim
+
+    def get_team_context_pca(self, team_tuples):
+        """
+        Suma los vectores PCA de los 5 campeones del equipo.
+        team_tuples: Lista de [(ID, 'TOP'), (ID, 'JUNGLE')...]
+        """
+        # Inicializamos vector de ceros
+        team_vector = np.zeros(self.context_dim, dtype=np.float32)
+        
+        for cid, role in team_tuples:
+            key = f"{cid}_{role}"
+            # Buscamos en el JSON PCA, si no existe, devolvemos ceros
+            vec = self.pca_context.get(key, self.empty_context)
+            team_vector += np.array(vec, dtype=np.float32)
+            
+        return team_vector
 
     def __len__(self):
         return len(self.data)
@@ -98,118 +109,62 @@ class LoLDataset(Dataset):
         player = int(row['Input_Player_ID'])
         role_str = row['Input_Role']
         role_id = self.role_map.get(role_str, 0)
-        
-        allies = [
-            int(row['Input_Ally_TOP_ID']), int(row['Input_Ally_JUNGLE_ID']),
-            int(row['Input_Ally_MIDDLE_ID']), int(row['Input_Ally_BOTTOM_ID']),
-            int(row['Input_Ally_UTILITY_ID'])
-        ]
-        
-        enemies = [
-            int(row['Input_Enemy_TOP_ID']), int(row['Input_Enemy_JUNGLE_ID']),
-            int(row['Input_Enemy_MIDDLE_ID']), int(row['Input_Enemy_BOTTOM_ID']),
-            int(row['Input_Enemy_UTILITY_ID'])
-        ]
 
-        # El jugador principal (player) ya está en allies[role_id], lo eliminamos para quedarnos con 4 teammates
-        allies_other = allies.copy()
-        allies_other.pop(role_id)  # len = 4
+        # --- 2. RECONSTRUCCIÓN DE EQUIPOS (Para el Contexto) ---
+        roles_order = ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'UTILITY']
+        allies_tuples = []
+        enemies_tuples = []
         
-        # Targets (Z-Scores)
+        # Inputs normales (IDs)
+        allies_ids_input = []
+        enemies_ids_input = []
+        
+        for r in roles_order:
+            a_id = int(row[f'Input_Ally_{r}_ID'])
+            e_id = int(row[f'Input_Enemy_{r}_ID'])
+            
+            # Guardamos tuplas para buscar en el JSON PCA
+            allies_tuples.append((a_id, r))
+            enemies_tuples.append((e_id, r))
+
+            # Guardamos IDs para el modelo (excluyendo al jugador principal en aliados)
+            if r != role_str:
+                allies_ids_input.append(a_id)
+            enemies_ids_input.append(e_id)
+
+        # --- 3. CÁLCULO DE CONTEXTO ---
+        # Vector Aliado (5 dimensiones) + Vector Enemigo (5 dimensiones)
+        ctx_ally = self.get_team_context_pca(allies_tuples)
+        ctx_enemy = self.get_team_context_pca(enemies_tuples)
+
+        context_vector = np.concatenate([ctx_ally, ctx_enemy]) # Total 10 dimensiones de contexto
+
+        # --- 4. TARGETS (Z-Scores) ---
         key = f"{player}_{role_str}"
-        champ_stats = self.stats.get(key, None)
-
-        z_by_metric = {}
+        champ_stats = self.stats.get(key, {})
+        z_scores = []
 
         for metric in self.metrics:
             col_name = f"Target_{metric}"
+            real_val = row.get(col_name, 0.0)
 
-            if col_name not in row:
-                z_by_metric[metric] = 0.0
-                continue
-
-            real_val = row[col_name]
-
-            if champ_stats and col_name in champ_stats:
-                mean = champ_stats[col_name]["mean"]
-                std = champ_stats[col_name]["std"]
-                if std is None or std == 0:
-                    std = 1.0
-                z = (real_val - mean) / std
-                z = max(-5.0, min(5.0, z))
+            if col_name in champ_stats:
+                mean_global = champ_stats[col_name]["mean"]
+                std_global = champ_stats[col_name]["std"]
+                z = (real_val - mean_global) / std_global if std_global > 0 else 0.0
+                z = max(-4.0, min(4.0, z)) # Clipping para evitar outliers extremos
             else:
-                z = 0.0
-
-            z_by_metric[metric] = float(z)
-
-        targets = compute_win_condition_vector(z_by_metric)
+                z = 0.0 # Si no hay datos, asumimos promedio (0)
+            z_scores.append(float(z))
 
         return {
             'player': torch.tensor(player, dtype=torch.long),
-            'allies': torch.tensor(allies_other, dtype=torch.long), # Solo los 4 teammates restantes
-            'enemies': torch.tensor(enemies, dtype=torch.long), # Los 5 enemigos
+            'allies': torch.tensor(allies_ids_input, dtype=torch.long), # Solo los 4 teammates restantes
+            'enemies': torch.tensor(enemies_ids_input, dtype=torch.long), # Los 5 enemigos
             'role': torch.tensor(role_id, dtype=torch.long),
-            'target': torch.tensor(targets, dtype=torch.float32)
+            'context': torch.tensor(context_vector, dtype=torch.float32),
+            'target': torch.tensor(z_scores, dtype=torch.float32)
         }
-
-def evaluate_model_and_baseline(model, data_loader, device, num_metrics):
-    """
-    Devuelve:
-      - model_mse_global: float
-      - baseline_mse_global: float  (baseline = predecir 0)
-      - model_mse_per_metric: np.ndarray shape [num_metrics]
-      - baseline_mse_per_metric: np.ndarray shape [num_metrics]
-    """
-    model.eval()
-
-    sum_sqerr_model = torch.zeros(num_metrics, device=device)
-    sum_sqerr_base = torch.zeros(num_metrics, device=device)
-    n_samples = 0
-
-    with torch.no_grad():
-        for batch in data_loader:
-            p = batch['player'].to(device)
-            a = batch['allies'].to(device)
-            e = batch['enemies'].to(device)
-            r = batch['role'].to(device)
-            y = batch['target'].to(device)  # [B, M]
-
-            preds = model(p, a, e, r)       # [B, M]
-
-            # Modelo
-            sqerr_model = (preds - y) ** 2  # [B, M]
-            sum_sqerr_model += sqerr_model.sum(dim=0)
-
-            # Baseline: predecir 0
-            sqerr_base = (0.0 - y) ** 2
-            sum_sqerr_base += sqerr_base.sum(dim=0)
-
-            n_samples += y.size(0)
-
-    model_mse_per_metric = (sum_sqerr_model / n_samples).detach().cpu().numpy()
-    base_mse_per_metric = (sum_sqerr_base / n_samples).detach().cpu().numpy()
-
-    model_mse_global = float(model_mse_per_metric.mean())
-    base_mse_global = float(base_mse_per_metric.mean())
-    
-    return model_mse_global, base_mse_global, model_mse_per_metric, base_mse_per_metric
-
-def print_metric_report(metric_names, model_mse_per_metric, base_mse_per_metric, top_k=10):
-    rows = []
-    for name, m_mse, b_mse in zip(metric_names, model_mse_per_metric, base_mse_per_metric):
-        rows.append((name, float(m_mse), float(b_mse), float(b_mse - m_mse)))
-
-    # Ordenar por “mejora sobre baseline” (más positivo = mejor)
-    rows.sort(key=lambda x: x[3], reverse=True)
-
-    print("\n--- BASELINE vs MODELO (TEST) ---")
-    print(f"Mejoras (baseline_mse - model_mse), top {top_k}:")
-    for name, m_mse, b_mse, gain in rows[:top_k]:
-        print(f"  {name:24s} | model={m_mse:.4f} | base0={b_mse:.4f} | gain={gain:+.4f}")
-
-    print(f"\nPeores (el modelo empeora), top {top_k}:")
-    for name, m_mse, b_mse, gain in rows[-top_k:]:
-        print(f"  {name:24s} | model={m_mse:.4f} | base0={b_mse:.4f} | gain={gain:+.4f}")
 
 # --- BUCLE DE ENTRENAMIENTO ---
 def train():
@@ -217,8 +172,8 @@ def train():
     print("--- PREPARANDO DATOS ---")
     
     # 1. Datasets
-    train_dataset = LoLDataset(TRAIN_FILE, JSON_FILE, USEFUL_METRICS)
-    test_dataset = LoLDataset(TEST_FILE, JSON_FILE, USEFUL_METRICS)
+    train_dataset = LoLDataset(TRAIN_FILE, JSON_FILE, USEFUL_METRICS, context_json=CONTEXT_JSON_FILE, mode='train')
+    test_dataset = LoLDataset(TEST_FILE, JSON_FILE, USEFUL_METRICS, context_json=CONTEXT_JSON_FILE, mode='val')
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device:", device)
@@ -232,7 +187,7 @@ def train():
                             persistent_workers=(num_workers > 0))
     
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False,
-                            num_workers=num_workers, pin_memory=pin_memory,
+                            num_workers=num_workers,
                             persistent_workers=(num_workers > 0))
     
     print(f"Train: {len(train_dataset)} filas | Test: {len(test_dataset)} filas")
@@ -240,56 +195,48 @@ def train():
     # 2. Modelo
     max_id = 1000 # O calcula el max(Input_Player_ID) real
     model = LoLWinConditionModel(num_champions=max_id,
-                                 num_metrics=len(WIN_CONDITION_NAMES),
-                                 embedding_dim=EMBEDDING_DIM).to(device)
+                                 num_metrics=len(USEFUL_METRICS),
+                                 embedding_dim=EMBEDDING_DIM,
+                                 context_dim=CONTEXT_DIM*2).to(device)
     
-    # print("\n--- EVALUACIÓN INICIAL (sin entrenar) ---")
-    # m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
-    #     model, test_loader, device, num_metrics=len(USEFUL_METRICS)
-    # )
-    # print(f"Global MSE modelo (init): {m_global:.4f}")
-    # print(f"Global MSE baseline(0):   {b_global:.4f}")
-    # print()
-
-    # criterion = nn.MSELoss()
-    # criterion = nn.SmoothL1Loss(beta=1.0)
-    # criterion_train = LoLWeightedLoss(WIN_CONDITION_NAMES).to(device)
-    criterion = nn.MSELoss()
-
+    criterion = LoLWeightedLoss(USEFUL_METRICS, device=device)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=4)
     
     print("--- INICIANDO ENTRENAMIENTO ---")
     
-    best_test_loss = float("inf")
-    epochs_no_improve = 0
+    best_loss = float("inf")
+    patience_counter = 0
 
     for epoch in range(EPOCHS):
         # A) TRAIN LOOP
         model.train()
         train_loss = 0
+
         for batch in train_loader:
             # Desempaquetar
             p = batch['player'].to(device) # (batch_size,)
             a = batch['allies'].to(device) # (batch_size, 4)
             e = batch['enemies'].to(device) # (batch_size, 5)
             r = batch['role'].to(device) # (batch_size,)
+            c = batch['context'].to(device) # (batch_size, 10)
             y = batch['target'].to(device) # (batch_size, num_metrics)
             
             optimizer.zero_grad()
-            preds = model(p, a, e, r)
+
+            preds = model(p, a, e, r, c)
+
             loss = criterion(preds, y)
             loss.backward()
             optimizer.step()
+
             train_loss += loss.item()
             
         avg_train_loss = train_loss / len(train_loader)
         
         # B) VALIDATION LOOP (¡Sin Data Leakage!)
         model.eval()
-
-        sum_sqerr = 0.0
-        n_elems = 0
+        val_loss = 0
 
         with torch.no_grad():
             for batch in test_loader:
@@ -297,49 +244,29 @@ def train():
                 a = batch['allies'].to(device)
                 e = batch['enemies'].to(device)
                 r = batch['role'].to(device)
+                c = batch['context'].to(device)
                 y = batch['target'].to(device)  # [B, 8]
 
-                preds = model(p, a, e, r)       # [B, 8]
-                sq = (preds - y) ** 2           # [B, 8]
+                preds = model(p, a, e, r, c)       # [B, 8]
+                loss = criterion(preds, y) # Usamos la misma Loss ponderada para validar
+                val_loss += loss.item()
 
-                sum_sqerr += sq.sum().item()
-                n_elems += y.numel()
+        avg_val_loss = val_loss / len(test_loader)
+        scheduler.step(avg_val_loss)
 
-        avg_test_loss = sum_sqerr / n_elems     # úsalo para early stopping + scheduler
+        print(f"Epoch {epoch+1:02d} | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
-        improved = avg_test_loss < (best_test_loss - EARLY_STOPPING_MIN_DELTA)
-
-        epoch_message = f"Epoch {epoch+1:02d}/{EPOCHS} | Train Loss: {avg_train_loss:.4f} | Test MSE: {avg_test_loss:.4f}"
-
-        if improved:
-            best_test_loss = avg_test_loss
-            epochs_no_improve = 0
-            
-            # Guardar “best” en CPU sin mover el modelo entero
-            state_cpu = {k: v.detach().cpu() for k, v in model.state_dict().items()}
-            torch.save(state_cpu, SAVE_BEST_PATH)
-            print(f"{epoch_message} || [OK] Best model guardado: {SAVE_BEST_PATH} (loss={best_test_loss:.4f})")
+        if avg_val_loss < best_loss:
+            best_loss = avg_val_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), SAVE_BEST_PATH)
         else:
-            epochs_no_improve += 1
-            print(f"{epoch_message} || [EarlyStopping] no mejora: {epochs_no_improve}/{EARLY_STOPPING_PATIENCE}")
-            if epochs_no_improve >= EARLY_STOPPING_PATIENCE:
-                print(f"\n[EarlyStopping] Deteniendo entrenamiento después de {epoch+1} epochs sin mejora.")
+            patience_counter += 1
+            if patience_counter >= EARLY_STOPPING_PATIENCE:
+                print("Early Stopping activado.")
                 break
-        
-        scheduler.step(avg_test_loss)
 
-    # print("\n--- EVALUACIÓN FINAL (best checkpoint) ---")
-    # if os.path.exists(SAVE_BEST_PATH):
-    #     model.load_state_dict(torch.load(SAVE_BEST_PATH, map_location=device))
-
-    # m_global, b_global, m_per, b_per = evaluate_model_and_baseline(
-    #     model, test_loader, device, num_metrics=len(USEFUL_METRICS)
-    # )
-    # print(f"Global MSE modelo (best): {m_global:.4f}")
-    # print(f"Global MSE baseline(0):   {b_global:.4f}")
-    # print_metric_report(USEFUL_METRICS, m_per, b_per, top_k=10)
-
-    print(f"\n[OK] Best checkpoint ya guardado en {SAVE_BEST_PATH}")
+    print(f"Entrenamiento finalizado. Modelo guardado en {SAVE_BEST_PATH}")
 
 if __name__ == "__main__":
     train()

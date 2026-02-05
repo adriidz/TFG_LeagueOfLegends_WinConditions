@@ -4,53 +4,46 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # --- CONFIGURACIÓN ---
-INPUT_FILE = "Data/dataset_train_2.csv"
+INPUT_FILE = "Data/dataset_full_2.csv"
 OUTPUT_JSON = "Data/champion_stats_3.json"
 TRAIN_CSV = "Data/train_split.csv"
 TEST_CSV = "Data/test_split.csv"
 
-MIN_GAMES_THRESHOLD = 20  # Backoff: si hay menos de 20 games, usamos media del Rol
+MIN_GAMES_THRESHOLD = 20
 
 def generate_robust_baselines():
     print(f"1. Cargando {INPUT_FILE}...")
     try:
         df = pd.read_csv(INPUT_FILE)
     except FileNotFoundError:
-        print("ERROR: No encuentro el archivo. ¿Has ejecutado dataset_transformer.py?")
+        print("ERROR: No encuentro el archivo.")
         return
 
-    # --- CORRECCIÓN CRÍTICA: SPLIT POR MATCH_ID ---
+    # Limpieza previa: Rellenar NaNs en el DataFrame original con 0 para evitar propagación
+    # Esto es útil si alguna columna venía vacía del crawler
+    df.fillna(0, inplace=True)
+
     if 'matchId' not in df.columns:
-        print("ERROR CRÍTICO: No encuentro la columna 'matchId'. No puedo hacer el split seguro.")
-        # Si tu transformer borró el matchId, tendrás que modificarlo para que lo mantenga.
+        print("ERROR CRÍTICO: No encuentro la columna 'matchId'.")
         return
 
     print("   Identificando partidas únicas...")
     unique_matches = df['matchId'].unique()
-    print(f"   Total de partidas únicas: {len(unique_matches)}")
-    
-    # Dividimos los IDs de las partidas, no las filas
     train_ids, test_ids = train_test_split(unique_matches, test_size=0.2, random_state=42)
     
-    # Filtramos el DataFrame usando esos IDs
     df_train = df[df['matchId'].isin(train_ids)].copy()
     df_test = df[df['matchId'].isin(test_ids)].copy()
     
-    # Guardamos los splits para que train.py los use
     df_train.to_csv(TRAIN_CSV, index=False)
     df_test.to_csv(TEST_CSV, index=False)
     
-    print(f"-> Split realizado: {len(train_ids)} partidas a Train, {len(test_ids)} a Test.")
-    print(f"-> Filas Train: {len(df_train)} | Filas Test: {len(df_test)}")
-
-    # --- CÁLCULO DE BASELINES (SOLO CON TRAIN) ---
+    # --- CÁLCULO DE BASELINES ---
     target_cols = [c for c in df.columns if c.startswith('Target_')]
     
-    # A) Stats Globales por Rol (Red de seguridad)
-    print("2. Calculando Backoff (Stats por Rol)...")
+    print("2. Calculando Stats por Rol (Fallback)...")
+    # Calculamos media y std por ROL (ej: todos los TOPs juntos)
     role_stats = df_train.groupby('Input_Role')[target_cols].agg(['mean', 'std'])
     
-    # B) Stats por Campeón
     print("3. Calculando Stats por Campeón...")
     champ_grouped = df_train.groupby(['Input_Player_ID', 'Input_Role'])[target_cols]
     champ_stats_agg = champ_grouped.agg(['mean', 'std'])
@@ -63,45 +56,65 @@ def generate_robust_baselines():
         final_dict[key] = {}
         
         n_games = champ_counts.loc[(champ_id, role)]
-        c_row = champ_stats_agg.loc[(champ_id, role)]
+        final_dict[key]["games"] = int(n_games)
         
-        # Obtenemos fallback del rol
+        # Recuperamos la fila de estadísticas del ROL por si la necesitamos
         try:
             r_row = role_stats.loc[role]
         except KeyError:
             r_row = None
-            
-        final_dict[key]["games"] = int(n_games)
-        final_dict[key]["used_fallback"] = False
+
+        # Fila del campeón específico
+        c_row = champ_stats_agg.loc[(champ_id, role)]
 
         for metric in target_cols:
-            c_mean = c_row[(metric, 'mean')]
-            c_std = c_row[(metric, 'std')]
+            # 1. Intentamos obtener valores del campeón
+            val_mean = c_row[(metric, 'mean')]
+            val_std = c_row[(metric, 'std')]
             
-            # Lógica de Backoff
+            # 2. Condiciones para usar Fallback (Rol)
             use_fallback = False
+            
+            # A) Pocas partidas
             if n_games < MIN_GAMES_THRESHOLD:
                 use_fallback = True
-            elif pd.isna(c_std) or c_std == 0:
+            
+            # B) Valores corruptos (NaN o Infinito)
+            if pd.isna(val_mean) or pd.isna(val_std) or np.isinf(val_mean) or np.isinf(val_std):
                 use_fallback = True
+                
+            # C) Desviación estándar 0 (Evita división por cero luego)
+            if val_std == 0:
+                use_fallback = True
+
+            # 3. Aplicar Lógica
+            final_mean = 0.0
+            final_std = 1.0
             
             if use_fallback and r_row is not None:
-                final_mean = r_row[(metric, 'mean')]
-                final_std = r_row[(metric, 'std')]
-                final_dict[key]["used_fallback"] = True
+                # Usamos la media del ROL
+                r_mean = r_row[(metric, 'mean')]
+                r_std = r_row[(metric, 'std')]
+                
+                # Si el rol también está mal (muy raro), ponemos 0 y 1
+                final_mean = float(r_mean) if not pd.isna(r_mean) else 0.0
+                final_std = float(r_std) if not pd.isna(r_std) and r_std > 0 else 1.0
+                
             else:
-                final_mean = c_mean
-                final_std = c_std if not pd.isna(c_std) and c_std > 0 else 1.0
+                # Usamos la media del CAMPEÓN
+                final_mean = float(val_mean)
+                final_std = float(val_std) if val_std > 0 else 1.0
 
             final_dict[key][metric] = {
-                "mean": float(final_mean),
-                "std": float(final_std)
+                "mean": final_mean,
+                "std": final_std
             }
 
+    # Guardado seguro
     with open(OUTPUT_JSON, 'w') as f:
         json.dump(final_dict, f, indent=4)
         
-    print(f"-> JSON generado con éxito: {OUTPUT_JSON}")
+    print(f"-> JSON generado SIN NaNs: {OUTPUT_JSON}")
 
 if __name__ == "__main__":
     generate_robust_baselines()
