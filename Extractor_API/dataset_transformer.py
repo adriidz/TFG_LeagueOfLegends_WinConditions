@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 
 # --- CONFIGURACIÓN ---
-INPUT_FILE = "Data/dataset_adriidz.csv"  # Tu archivo actual
-OUTPUT_FILE = "Data/dataset_final_train.csv" # El archivo para la IA
+INPUT_FILE = "Data/dataset_raw_1.csv"  # Tu archivo actual
+OUTPUT_FILE = "Data/dataset_train_2.csv" # El archivo para la IA
 
 def transform_to_player_centric(input_csv, output_csv):
     print(f"Cargando {input_csv}...")

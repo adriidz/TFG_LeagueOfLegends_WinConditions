@@ -2,9 +2,9 @@ import pandas as pd
 import json
 
 # --- CONFIGURACIÓN ---
-INPUT_FILE = "Data/dataset_final_train.csv"
-OUTPUT_JSON = "Data/champion_stats.json"  # Diccionario para la IA
-OUTPUT_CSV = "Data/champion_stats.csv"    # Para ti (Excel)
+INPUT_FILE = "Data/dataset_train_2.csv"
+OUTPUT_JSON = "Data/champion_stats_3.json"  # Diccionario para la IA
+OUTPUT_CSV = "Data/champion_stats_3.csv"    # Para ti (Excel)
 
 # Lista de métricas que queremos (las "USEFUL_METRICS" del paso anterior)
 # Si no filtras aquí, calculará todo lo que empiece por Target_
