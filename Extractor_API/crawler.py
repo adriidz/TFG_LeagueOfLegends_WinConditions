@@ -119,6 +119,7 @@ def run_crawler():
                 new_data_buffer.extend(rows)
                 processed_ids.add(m_id)
                 matches_collected += 1
+                unsaved_count
                 print(f"OK. Total: {matches_collected}")
             else:
                 session_ignored_ids.add(m_id)

@@ -1,5 +1,0 @@
-pandas>=2.0,<2.1
-numpy>=1.24,<1.26
-python-dotenv>=1.0
-riotwatcher>=3.3
-scikit-learn>=1.3
