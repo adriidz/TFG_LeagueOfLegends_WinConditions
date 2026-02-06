@@ -13,10 +13,15 @@
 
 set -euo pipefail
 
+# Por defecto 'both', pero se puede pasar como argumento:
+#   sbatch train.sh both
+#   sbatch train.sh emb_only
+#   sbatch train.sh pca_only
+MODE=${1:-both}
+
 source /fhome/maed01/tfg/.venv/bin/activate
 
-python -u -c "import torch; print('cuda_available=', torch.cuda.is_available()); print('cuda_device_count=', torch.cuda.device_count())"
-# opcional (si el nodo tiene nvidia-smi):
-# nvidia-smi || true
+python -u -c "import torch; print('cuda_available=', torch.cuda.is_available())"
 
-srun python -u Training/train.py
+echo "=== Ejecutando experimento: $MODE ==="
+srun python -u Training/inference.py --mode "$MODE"

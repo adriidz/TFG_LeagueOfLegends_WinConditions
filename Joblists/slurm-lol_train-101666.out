@@ -1,0 +1,158 @@
+cuda_available= True
+=== Ejecutando experimento: pca_only ===
+Cargando modelo...
+
+============================================================
+  WIN CONDITION COACH — Jax TOP
+============================================================
+
+  PERFIL ESTRATÉGICO (0 = nulo, 1 = máximo):
+  Target                    | Baseline | Draft Adj |  Final
+  --------------------------+----------+-----------+-------
+  LaneDominance             |    0.467 | →  +0.01σ |  0.471
+  EarlyAggression           |    0.312 | →  +0.03σ |  0.320
+  MapPressure               |    0.191 | ▼  -0.13σ |  0.179
+  ObjectiveFocus            |    0.398 | ▲  +0.16σ |  0.427
+  ResourceEfficiency        |    0.539 | ▼  -0.16σ |  0.520
+
+  MÉTRICAS CLAVE:
+  Métrica              |   Baseline | Draft Adj | Predicción
+  ---------------------+------------+-----------+-----------
+  GoldDiff_10          |     -140.9 | →  -0.03σ |     -173.5 gold
+  GoldDiff_15          |     -167.3 | →  +0.00σ |     -160.4 gold
+  EarlyTakedowns       |        3.2 | →  +0.10σ |        3.4 kills
+  DmgTotal             |      776.1 | ▼  -0.22σ |      720.3 dmg/min
+  DmgTurret            |      448.0 | →  +0.05σ |      460.3 dmg/min
+  DmgObj               |      530.9 | →  +0.03σ |      538.3 dmg/min
+  KillParticipation    |        0.3 | ▼  -0.12σ |        0.3 %
+  SoloKills            |        2.1 | →  -0.08σ |        2.0 kills
+
+  OBJETIVOS DE EQUIPO:
+  Team_Dragons         |   1.8 | → +0.09σ |   1.9
+  Team_Barons          |   0.6 | → -0.04σ |   0.5
+  Team_Towers          |   6.0 | ▲ +0.17σ |   6.6
+
+
+============================================================
+  WIN CONDITION COACH — Mundo JUNGLE
+============================================================
+
+  PERFIL ESTRATÉGICO (0 = nulo, 1 = máximo):
+  Target                    | Baseline | Draft Adj |  Final
+  --------------------------+----------+-----------+-------
+  LaneDominance             |    0.485 | ▲  +0.40σ |  0.562
+  EarlyAggression           |    0.364 | ▲  +0.25σ |  0.408
+  MapPressure               |    0.310 | →  -0.05σ |  0.305
+  ObjectiveFocus            |    0.393 | ▲  +0.54σ |  0.517
+  ResourceEfficiency        |    0.514 | ▲  +0.14σ |  0.533
+
+  MÉTRICAS CLAVE:
+  Métrica              |   Baseline | Draft Adj | Predicción
+  ---------------------+------------+-----------+-----------
+  GoldDiff_10          |     -163.3 | ▲  +0.26σ |       37.1 gold
+  GoldDiff_15          |     -379.5 | ▲  +0.30σ |        6.7 gold
+  EarlyTakedowns       |        4.9 | ▲  +0.29σ |        5.7 kills
+  DmgTotal             |      734.6 | →  +0.04σ |      746.1 dmg/min
+  DmgTurret            |       92.6 | ▲  +0.21σ |      117.8 dmg/min
+  DmgObj               |     1057.6 | ▲  +0.37σ |     1287.1 dmg/min
+  KillParticipation    |        0.5 | →  -0.06σ |        0.5 %
+  SoloKills            |        0.6 | →  +0.02σ |        0.6 kills
+
+  OBJETIVOS DE EQUIPO:
+  Team_Dragons         |   2.0 | ▲ +0.31σ |   2.4
+  Team_Barons          |   0.5 | ▲ +0.13σ |   0.6
+  Team_Towers          |   5.3 | ▲ +0.44σ |   6.9
+
+
+============================================================
+  WIN CONDITION COACH — Ryze MIDDLE
+============================================================
+
+  PERFIL ESTRATÉGICO (0 = nulo, 1 = máximo):
+  Target                    | Baseline | Draft Adj |  Final
+  --------------------------+----------+-----------+-------
+  LaneDominance             |    0.474 | ▲  +0.26σ |  0.527
+  EarlyAggression           |    0.308 | ▲  +0.20σ |  0.347
+  MapPressure               |    0.250 | →  -0.02σ |  0.248
+  ObjectiveFocus            |    0.294 | ▲  +0.43σ |  0.370
+  ResourceEfficiency        |    0.590 | →  +0.08σ |  0.601
+
+  MÉTRICAS CLAVE:
+  Métrica              |   Baseline | Draft Adj | Predicción
+  ---------------------+------------+-----------+-----------
+  GoldDiff_10          |        3.9 | ▲  +0.15σ |      124.6 gold
+  GoldDiff_15          |     -162.9 | ▲  +0.21σ |      128.5 gold
+  EarlyTakedowns       |        4.0 | ▲  +0.22σ |        4.6 kills
+  DmgTotal             |      818.0 | →  +0.05σ |      832.4 dmg/min
+  DmgTurret            |      237.6 | ▲  +0.23σ |      269.2 dmg/min
+  DmgObj               |      355.9 | ▲  +0.25σ |      409.9 dmg/min
+  KillParticipation    |        0.4 | →  -0.00σ |        0.4 %
+  SoloKills            |        0.9 | →  +0.00σ |        0.9 kills
+
+  OBJETIVOS DE EQUIPO:
+  Team_Dragons         |   1.7 | ▲ +0.31σ |   2.1
+  Team_Barons          |   0.5 | ▲ +0.16σ |   0.6
+  Team_Towers          |   5.4 | ▲ +0.44σ |   7.0
+
+
+============================================================
+  WIN CONDITION COACH — Aphelios BOTTOM
+============================================================
+
+  PERFIL ESTRATÉGICO (0 = nulo, 1 = máximo):
+  Target                    | Baseline | Draft Adj |  Final
+  --------------------------+----------+-----------+-------
+  LaneDominance             |    0.456 | ▲  +0.37σ |  0.545
+  EarlyAggression           |    0.342 | ▲  +0.25σ |  0.394
+  MapPressure               |    0.239 | →  +0.06σ |  0.246
+  ObjectiveFocus            |    0.391 | ▲  +0.48σ |  0.505
+  ResourceEfficiency        |    0.603 | ▲  +0.16σ |  0.628
+
+  MÉTRICAS CLAVE:
+  Métrica              |   Baseline | Draft Adj | Predicción
+  ---------------------+------------+-----------+-----------
+  GoldDiff_10          |      -21.0 | ▲  +0.24σ |      234.3 gold
+  GoldDiff_15          |      -49.8 | ▲  +0.29σ |      541.9 gold
+  EarlyTakedowns       |        5.0 | ▲  +0.24σ |        5.7 kills
+  DmgTotal             |      931.5 | →  +0.09σ |      963.4 dmg/min
+  DmgTurret            |      338.1 | ▲  +0.29σ |      405.5 dmg/min
+  DmgObj               |      570.3 | ▲  +0.29σ |      689.9 dmg/min
+  KillParticipation    |        0.4 | →  +0.08σ |        0.5 %
+  SoloKills            |        0.7 | →  -0.02σ |        0.7 kills
+
+  OBJETIVOS DE EQUIPO:
+  Team_Dragons         |   1.8 | ▲ +0.27σ |   2.2
+  Team_Barons          |   0.5 | → +0.09σ |   0.6
+  Team_Towers          |   5.6 | ▲ +0.38σ |   6.9
+
+
+============================================================
+  WIN CONDITION COACH — Nautilus UTILITY
+============================================================
+
+  PERFIL ESTRATÉGICO (0 = nulo, 1 = máximo):
+  Target                    | Baseline | Draft Adj |  Final
+  --------------------------+----------+-----------+-------
+  LaneDominance             |    0.431 | ▲  +0.20σ |  0.453
+  EarlyAggression           |    0.413 | ▲  +0.22σ |  0.450
+  MapPressure               |    0.730 | ▲  +0.11σ |  0.746
+  ObjectiveFocus            |    0.124 | ▲  +0.24σ |  0.150
+  ResourceEfficiency        |    0.147 | →  +0.10σ |  0.153
+
+  MÉTRICAS CLAVE:
+  Métrica              |   Baseline | Draft Adj | Predicción
+  ---------------------+------------+-----------+-----------
+  GoldDiff_10          |       -4.0 | ▲  +0.12σ |       58.0 gold
+  GoldDiff_15          |      -75.4 | ▲  +0.18σ |       60.7 gold
+  EarlyTakedowns       |        6.6 | ▲  +0.20σ |        7.3 kills
+  DmgTotal             |      345.6 | →  +0.07σ |      352.4 dmg/min
+  DmgTurret            |       25.7 | →  +0.07σ |       28.4 dmg/min
+  DmgObj               |       53.7 | →  +0.07σ |       57.4 dmg/min
+  KillParticipation    |        0.5 | →  +0.05σ |        0.5 %
+  SoloKills            |        0.2 | ▼  -0.13σ |        0.1 kills
+
+  OBJETIVOS DE EQUIPO:
+  Team_Dragons         |   1.9 | ▲ +0.21σ |   2.2
+  Team_Barons          |   0.6 | → +0.03σ |   0.6
+  Team_Towers          |   5.6 | ▲ +0.31σ |   6.7
+

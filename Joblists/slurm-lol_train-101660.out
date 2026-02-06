@@ -1,0 +1,414 @@
+cuda_available= True
+=== Ejecutando experimento: pca_only ===
+
+============================================================
+  LoL Win Condition Coach — Experiment: PCA_ONLY
+  Targets: 17 individual + 3 team + 5 strategic
+============================================================
+Dataset (train): 59440 filas (29720 wins, 29720 losses)
+Dataset (val): 14860 filas (7430 wins, 7430 losses)
+Device: cuda
+Train: 59440 | Test: 14860
+Parámetros: 132,289
+--- INICIANDO ENTRENAMIENTO (pca_only) ---
+
+Epoch 001 | Train: 1.1009 (ind=0.5134 team=0.0900 strat=0.4975) | Val: 1.0122 (ind=0.4839 team=0.0827 strat=0.4456) | LR: 0.000500
+Epoch 002 | Train: 0.9868 (ind=0.4744 team=0.0738 strat=0.4386) | Val: 0.9275 (ind=0.4604 team=0.0621 strat=0.4049) | LR: 0.000500
+Epoch 003 | Train: 0.9330 (ind=0.4586 team=0.0630 strat=0.4113) | Val: 0.9171 (ind=0.4580 team=0.0595 strat=0.3995) | LR: 0.000500
+Epoch 004 | Train: 0.9159 (ind=0.4537 team=0.0597 strat=0.4025) | Val: 0.9137 (ind=0.4572 team=0.0586 strat=0.3979) | LR: 0.000500
+Epoch 005 | Train: 0.9085 (ind=0.4514 team=0.0583 strat=0.3988) | Val: 0.9106 (ind=0.4562 team=0.0581 strat=0.3962) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9464 |       1.0065 |   OK
+  XpDiff_10                 |     0.9491 |       1.0031 |   OK
+  CsDiff_10                 |     0.9560 |       1.0083 |   OK
+  GoldDiff_15               |     0.8901 |       1.0053 |   OK
+  XpDiff_15                 |     0.8888 |       0.9967 |   OK
+  CsDiff_15                 |     0.9311 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9640 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7987 |       0.8133 |   OK
+  JgCsBefore10              |     0.1898 |       0.1928 |   OK
+  DmgTotal                  |     0.9514 |       1.0446 |   OK
+  DmgTurret                 |     0.7523 |       0.9887 |   OK
+  DmgObj                    |     0.6678 |       0.9973 |   OK
+  VisionScore               |     1.0050 |       1.0197 |   OK
+  KillParticipation         |     1.0065 |       1.0228 |   OK
+  SoloKills                 |     0.9868 |       0.9787 |   MAL
+  TotalCS                   |     1.0060 |       1.0276 |   OK
+  GoldEarned                |     0.9486 |       1.0234 |   OK
+  Team_Dragons              |     0.7370 |       0.9815 |   OK
+  Team_Barons               |     0.8295 |       1.0649 |   OK
+  Team_Towers               |     0.4424 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4920 |       0.5776 |   OK
+  EarlyAggression           |     0.5329 |       0.5601 |   OK
+  MapPressure               |     0.4354 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3465 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3432 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5425 | Baseline=1.9653 | MODELO GANA (+21.5%)
+  STRATEGIC TARGETS: Modelo=0.4300 | Baseline=0.5080 | MODELO GANA (+15.4%)
+
+Epoch 006 | Train: 0.9047 (ind=0.4502 team=0.0575 strat=0.3970) | Val: 0.9084 (ind=0.4557 team=0.0578 strat=0.3948) | LR: 0.000500
+Epoch 007 | Train: 0.9019 (ind=0.4496 team=0.0571 strat=0.3952) | Val: 0.9070 (ind=0.4553 team=0.0576 strat=0.3941) | LR: 0.000500
+Epoch 008 | Train: 0.8993 (ind=0.4484 team=0.0567 strat=0.3942) | Val: 0.9061 (ind=0.4549 team=0.0576 strat=0.3936) | LR: 0.000500
+Epoch 009 | Train: 0.8972 (ind=0.4477 team=0.0564 strat=0.3931) | Val: 0.9045 (ind=0.4542 team=0.0576 strat=0.3927) | LR: 0.000500
+Epoch 010 | Train: 0.8966 (ind=0.4476 team=0.0564 strat=0.3926) | Val: 0.9046 (ind=0.4543 team=0.0575 strat=0.3928) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9397 |       1.0065 |   OK
+  XpDiff_10                 |     0.9460 |       1.0031 |   OK
+  CsDiff_10                 |     0.9440 |       1.0083 |   OK
+  GoldDiff_15               |     0.8841 |       1.0053 |   OK
+  XpDiff_15                 |     0.8864 |       0.9967 |   OK
+  CsDiff_15                 |     0.9209 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9657 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7931 |       0.8133 |   OK
+  JgCsBefore10              |     0.1888 |       0.1928 |   OK
+  DmgTotal                  |     0.9494 |       1.0446 |   OK
+  DmgTurret                 |     0.7569 |       0.9887 |   OK
+  DmgObj                    |     0.6694 |       0.9973 |   OK
+  VisionScore               |     1.0051 |       1.0197 |   OK
+  KillParticipation         |     1.0041 |       1.0228 |   OK
+  SoloKills                 |     0.9789 |       0.9787 |   MAL
+  TotalCS                   |     1.0058 |       1.0276 |   OK
+  GoldEarned                |     0.9513 |       1.0234 |   OK
+  Team_Dragons              |     0.7378 |       0.9815 |   OK
+  Team_Barons               |     0.8321 |       1.0649 |   OK
+  Team_Towers               |     0.4332 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4881 |       0.5776 |   OK
+  EarlyAggression           |     0.5339 |       0.5601 |   OK
+  MapPressure               |     0.4329 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3442 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3326 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5377 | Baseline=1.9653 | MODELO GANA (+21.8%)
+  STRATEGIC TARGETS: Modelo=0.4263 | Baseline=0.5080 | MODELO GANA (+16.1%)
+
+Epoch 011 | Train: 0.8947 (ind=0.4469 team=0.0562 strat=0.3916) | Val: 0.9034 (ind=0.4538 team=0.0577 strat=0.3919) | LR: 0.000500
+Epoch 012 | Train: 0.8937 (ind=0.4464 team=0.0563 strat=0.3910) | Val: 0.9025 (ind=0.4534 team=0.0576 strat=0.3915) | LR: 0.000500
+Epoch 013 | Train: 0.8932 (ind=0.4464 team=0.0562 strat=0.3906) | Val: 0.9021 (ind=0.4534 team=0.0575 strat=0.3912) | LR: 0.000500
+Epoch 014 | Train: 0.8911 (ind=0.4456 team=0.0560 strat=0.3895) | Val: 0.9010 (ind=0.4531 team=0.0575 strat=0.3904) | LR: 0.000500
+Epoch 015 | Train: 0.8905 (ind=0.4453 team=0.0559 strat=0.3893) | Val: 0.9012 (ind=0.4532 team=0.0574 strat=0.3905) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9369 |       1.0065 |   OK
+  XpDiff_10                 |     0.9427 |       1.0031 |   OK
+  CsDiff_10                 |     0.9359 |       1.0083 |   OK
+  GoldDiff_15               |     0.8798 |       1.0053 |   OK
+  XpDiff_15                 |     0.8838 |       0.9967 |   OK
+  CsDiff_15                 |     0.9134 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9605 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7910 |       0.8133 |   OK
+  JgCsBefore10              |     0.1885 |       0.1928 |   OK
+  DmgTotal                  |     0.9476 |       1.0446 |   OK
+  DmgTurret                 |     0.7484 |       0.9887 |   OK
+  DmgObj                    |     0.6637 |       0.9973 |   OK
+  VisionScore               |     1.0027 |       1.0197 |   OK
+  KillParticipation         |     1.0023 |       1.0228 |   OK
+  SoloKills                 |     0.9782 |       0.9787 |   OK
+  TotalCS                   |     1.0032 |       1.0276 |   OK
+  GoldEarned                |     0.9485 |       1.0234 |   OK
+  Team_Dragons              |     0.7373 |       0.9815 |   OK
+  Team_Barons               |     0.8230 |       1.0649 |   OK
+  Team_Towers               |     0.4313 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4864 |       0.5776 |   OK
+  EarlyAggression           |     0.5309 |       0.5601 |   OK
+  MapPressure               |     0.4302 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3377 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3292 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5301 | Baseline=1.9653 | MODELO GANA (+22.1%)
+  STRATEGIC TARGETS: Modelo=0.4229 | Baseline=0.5080 | MODELO GANA (+16.8%)
+
+Epoch 016 | Train: 0.8893 (ind=0.4449 team=0.0558 strat=0.3885) | Val: 0.9006 (ind=0.4529 team=0.0575 strat=0.3902) | LR: 0.000500
+Epoch 017 | Train: 0.8895 (ind=0.4452 team=0.0558 strat=0.3885) | Val: 0.9000 (ind=0.4527 team=0.0574 strat=0.3899) | LR: 0.000500
+Epoch 018 | Train: 0.8881 (ind=0.4447 team=0.0556 strat=0.3878) | Val: 0.8995 (ind=0.4525 team=0.0574 strat=0.3896) | LR: 0.000500
+Epoch 019 | Train: 0.8874 (ind=0.4443 team=0.0557 strat=0.3875) | Val: 0.8996 (ind=0.4527 team=0.0575 strat=0.3894) | LR: 0.000500
+Epoch 020 | Train: 0.8862 (ind=0.4436 team=0.0558 strat=0.3868) | Val: 0.8995 (ind=0.4527 team=0.0575 strat=0.3892) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9349 |       1.0065 |   OK
+  XpDiff_10                 |     0.9429 |       1.0031 |   OK
+  CsDiff_10                 |     0.9346 |       1.0083 |   OK
+  GoldDiff_15               |     0.8796 |       1.0053 |   OK
+  XpDiff_15                 |     0.8837 |       0.9967 |   OK
+  CsDiff_15                 |     0.9123 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9574 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7913 |       0.8133 |   OK
+  JgCsBefore10              |     0.1891 |       0.1928 |   OK
+  DmgTotal                  |     0.9430 |       1.0446 |   OK
+  DmgTurret                 |     0.7521 |       0.9887 |   OK
+  DmgObj                    |     0.6658 |       0.9973 |   OK
+  VisionScore               |     1.0033 |       1.0197 |   OK
+  KillParticipation         |     1.0004 |       1.0228 |   OK
+  SoloKills                 |     0.9713 |       0.9787 |   OK
+  TotalCS                   |     1.0058 |       1.0276 |   OK
+  GoldEarned                |     0.9481 |       1.0234 |   OK
+  Team_Dragons              |     0.7340 |       0.9815 |   OK
+  Team_Barons               |     0.8268 |       1.0649 |   OK
+  Team_Towers               |     0.4322 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4862 |       0.5776 |   OK
+  EarlyAggression           |     0.5272 |       0.5601 |   OK
+  MapPressure               |     0.4288 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3369 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3270 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5300 | Baseline=1.9653 | MODELO GANA (+22.2%)
+  STRATEGIC TARGETS: Modelo=0.4212 | Baseline=0.5080 | MODELO GANA (+17.1%)
+
+Epoch 021 | Train: 0.8848 (ind=0.4432 team=0.0555 strat=0.3861) | Val: 0.8992 (ind=0.4526 team=0.0575 strat=0.3891) | LR: 0.000500
+Epoch 022 | Train: 0.8852 (ind=0.4435 team=0.0557 strat=0.3860) | Val: 0.8986 (ind=0.4524 team=0.0575 strat=0.3887) | LR: 0.000500
+Epoch 023 | Train: 0.8833 (ind=0.4427 team=0.0554 strat=0.3852) | Val: 0.8990 (ind=0.4526 team=0.0575 strat=0.3890) | LR: 0.000500
+Epoch 024 | Train: 0.8842 (ind=0.4433 team=0.0554 strat=0.3855) | Val: 0.8982 (ind=0.4523 team=0.0574 strat=0.3884) | LR: 0.000500
+Epoch 025 | Train: 0.8830 (ind=0.4425 team=0.0556 strat=0.3849) | Val: 0.8987 (ind=0.4524 team=0.0575 strat=0.3888) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9348 |       1.0065 |   OK
+  XpDiff_10                 |     0.9422 |       1.0031 |   OK
+  CsDiff_10                 |     0.9297 |       1.0083 |   OK
+  GoldDiff_15               |     0.8795 |       1.0053 |   OK
+  XpDiff_15                 |     0.8852 |       0.9967 |   OK
+  CsDiff_15                 |     0.9082 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9547 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7887 |       0.8133 |   OK
+  JgCsBefore10              |     0.1883 |       0.1928 |   OK
+  DmgTotal                  |     0.9421 |       1.0446 |   OK
+  DmgTurret                 |     0.7473 |       0.9887 |   OK
+  DmgObj                    |     0.6633 |       0.9973 |   OK
+  VisionScore               |     1.0054 |       1.0197 |   OK
+  KillParticipation         |     1.0005 |       1.0228 |   OK
+  SoloKills                 |     0.9775 |       0.9787 |   OK
+  TotalCS                   |     1.0065 |       1.0276 |   OK
+  GoldEarned                |     0.9481 |       1.0234 |   OK
+  Team_Dragons              |     0.7312 |       0.9815 |   OK
+  Team_Barons               |     0.8260 |       1.0649 |   OK
+  Team_Towers               |     0.4314 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4854 |       0.5776 |   OK
+  EarlyAggression           |     0.5268 |       0.5601 |   OK
+  MapPressure               |     0.4287 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3353 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3267 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5277 | Baseline=1.9653 | MODELO GANA (+22.3%)
+  STRATEGIC TARGETS: Modelo=0.4206 | Baseline=0.5080 | MODELO GANA (+17.2%)
+
+Epoch 026 | Train: 0.8829 (ind=0.4425 team=0.0554 strat=0.3850) | Val: 0.8984 (ind=0.4525 team=0.0574 strat=0.3886) | LR: 0.000500
+Epoch 027 | Train: 0.8813 (ind=0.4419 team=0.0554 strat=0.3840) | Val: 0.8995 (ind=0.4527 team=0.0574 strat=0.3893) | LR: 0.000500
+Epoch 028 | Train: 0.8821 (ind=0.4424 team=0.0553 strat=0.3844) | Val: 0.8983 (ind=0.4523 team=0.0575 strat=0.3885) | LR: 0.000500
+Epoch 029 | Train: 0.8809 (ind=0.4419 team=0.0552 strat=0.3839) | Val: 0.8988 (ind=0.4526 team=0.0575 strat=0.3886) | LR: 0.000500
+Epoch 030 | Train: 0.8799 (ind=0.4415 team=0.0553 strat=0.3831) | Val: 0.8983 (ind=0.4524 team=0.0574 strat=0.3885) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9342 |       1.0065 |   OK
+  XpDiff_10                 |     0.9427 |       1.0031 |   OK
+  CsDiff_10                 |     0.9305 |       1.0083 |   OK
+  GoldDiff_15               |     0.8790 |       1.0053 |   OK
+  XpDiff_15                 |     0.8841 |       0.9967 |   OK
+  CsDiff_15                 |     0.9089 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9556 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7894 |       0.8133 |   OK
+  JgCsBefore10              |     0.1884 |       0.1928 |   OK
+  DmgTotal                  |     0.9412 |       1.0446 |   OK
+  DmgTurret                 |     0.7476 |       0.9887 |   OK
+  DmgObj                    |     0.6653 |       0.9973 |   OK
+  VisionScore               |     1.0046 |       1.0197 |   OK
+  KillParticipation         |     0.9993 |       1.0228 |   OK
+  SoloKills                 |     0.9699 |       0.9787 |   OK
+  TotalCS                   |     1.0057 |       1.0276 |   OK
+  GoldEarned                |     0.9482 |       1.0234 |   OK
+  Team_Dragons              |     0.7360 |       0.9815 |   OK
+  Team_Barons               |     0.8254 |       1.0649 |   OK
+  Team_Towers               |     0.4299 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4857 |       0.5776 |   OK
+  EarlyAggression           |     0.5259 |       0.5601 |   OK
+  MapPressure               |     0.4274 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3358 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3263 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5282 | Baseline=1.9653 | MODELO GANA (+22.2%)
+  STRATEGIC TARGETS: Modelo=0.4202 | Baseline=0.5080 | MODELO GANA (+17.3%)
+
+Epoch 031 | Train: 0.8781 (ind=0.4407 team=0.0551 strat=0.3822) | Val: 0.8982 (ind=0.4524 team=0.0575 strat=0.3883) | LR: 0.000250
+Epoch 032 | Train: 0.8752 (ind=0.4396 team=0.0549 strat=0.3808) | Val: 0.8983 (ind=0.4526 team=0.0575 strat=0.3882) | LR: 0.000250
+Epoch 033 | Train: 0.8747 (ind=0.4393 team=0.0548 strat=0.3806) | Val: 0.8978 (ind=0.4523 team=0.0576 strat=0.3880) | LR: 0.000250
+Epoch 034 | Train: 0.8753 (ind=0.4397 team=0.0549 strat=0.3806) | Val: 0.8985 (ind=0.4526 team=0.0576 strat=0.3884) | LR: 0.000250
+Epoch 035 | Train: 0.8743 (ind=0.4392 team=0.0549 strat=0.3802) | Val: 0.8982 (ind=0.4526 team=0.0576 strat=0.3880) | LR: 0.000250
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9339 |       1.0065 |   OK
+  XpDiff_10                 |     0.9433 |       1.0031 |   OK
+  CsDiff_10                 |     0.9300 |       1.0083 |   OK
+  GoldDiff_15               |     0.8799 |       1.0053 |   OK
+  XpDiff_15                 |     0.8858 |       0.9967 |   OK
+  CsDiff_15                 |     0.9091 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9562 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7886 |       0.8133 |   OK
+  JgCsBefore10              |     0.1882 |       0.1928 |   OK
+  DmgTotal                  |     0.9411 |       1.0446 |   OK
+  DmgTurret                 |     0.7519 |       0.9887 |   OK
+  DmgObj                    |     0.6668 |       0.9973 |   OK
+  VisionScore               |     1.0056 |       1.0197 |   OK
+  KillParticipation         |     0.9993 |       1.0228 |   OK
+  SoloKills                 |     0.9746 |       0.9787 |   OK
+  TotalCS                   |     1.0066 |       1.0276 |   OK
+  GoldEarned                |     0.9504 |       1.0234 |   OK
+  Team_Dragons              |     0.7340 |       0.9815 |   OK
+  Team_Barons               |     0.8265 |       1.0649 |   OK
+  Team_Towers               |     0.4333 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4862 |       0.5776 |   OK
+  EarlyAggression           |     0.5251 |       0.5601 |   OK
+  MapPressure               |     0.4273 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3347 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3241 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5300 | Baseline=1.9653 | MODELO GANA (+22.2%)
+  STRATEGIC TARGETS: Modelo=0.4195 | Baseline=0.5080 | MODELO GANA (+17.4%)
+
+Epoch 036 | Train: 0.8735 (ind=0.4390 team=0.0548 strat=0.3797) | Val: 0.8985 (ind=0.4526 team=0.0576 strat=0.3883) | LR: 0.000250
+Epoch 037 | Train: 0.8744 (ind=0.4394 team=0.0548 strat=0.3802) | Val: 0.8989 (ind=0.4529 team=0.0576 strat=0.3885) | LR: 0.000250
+Epoch 038 | Train: 0.8738 (ind=0.4390 team=0.0549 strat=0.3799) | Val: 0.8986 (ind=0.4526 team=0.0576 strat=0.3884) | LR: 0.000250
+Epoch 039 | Train: 0.8718 (ind=0.4384 team=0.0547 strat=0.3787) | Val: 0.8987 (ind=0.4529 team=0.0575 strat=0.3883) | LR: 0.000250
+Epoch 040 | Train: 0.8708 (ind=0.4377 team=0.0547 strat=0.3785) | Val: 0.8984 (ind=0.4528 team=0.0575 strat=0.3881) | LR: 0.000125
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9347 |       1.0065 |   OK
+  XpDiff_10                 |     0.9440 |       1.0031 |   OK
+  CsDiff_10                 |     0.9304 |       1.0083 |   OK
+  GoldDiff_15               |     0.8808 |       1.0053 |   OK
+  XpDiff_15                 |     0.8872 |       0.9967 |   OK
+  CsDiff_15                 |     0.9099 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9588 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7877 |       0.8133 |   OK
+  JgCsBefore10              |     0.1883 |       0.1928 |   OK
+  DmgTotal                  |     0.9426 |       1.0446 |   OK
+  DmgTurret                 |     0.7545 |       0.9887 |   OK
+  DmgObj                    |     0.6696 |       0.9973 |   OK
+  VisionScore               |     1.0049 |       1.0197 |   OK
+  KillParticipation         |     0.9992 |       1.0228 |   OK
+  SoloKills                 |     0.9778 |       0.9787 |   OK
+  TotalCS                   |     1.0085 |       1.0276 |   OK
+  GoldEarned                |     0.9513 |       1.0234 |   OK
+  Team_Dragons              |     0.7363 |       0.9815 |   OK
+  Team_Barons               |     0.8271 |       1.0649 |   OK
+  Team_Towers               |     0.4322 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4869 |       0.5776 |   OK
+  EarlyAggression           |     0.5259 |       0.5601 |   OK
+  MapPressure               |     0.4266 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3360 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3244 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5317 | Baseline=1.9653 | MODELO GANA (+22.1%)
+  STRATEGIC TARGETS: Modelo=0.4200 | Baseline=0.5080 | MODELO GANA (+17.3%)
+
+Epoch 041 | Train: 0.8692 (ind=0.4372 team=0.0547 strat=0.3773) | Val: 0.8984 (ind=0.4526 team=0.0576 strat=0.3882) | LR: 0.000125
+Epoch 042 | Train: 0.8689 (ind=0.4371 team=0.0546 strat=0.3772) | Val: 0.8982 (ind=0.4527 team=0.0576 strat=0.3880) | LR: 0.000125
+Epoch 043 | Train: 0.8695 (ind=0.4375 team=0.0546 strat=0.3775) | Val: 0.8985 (ind=0.4528 team=0.0576 strat=0.3882) | LR: 0.000125
+Epoch 044 | Train: 0.8688 (ind=0.4372 team=0.0545 strat=0.3771) | Val: 0.8989 (ind=0.4528 team=0.0576 strat=0.3884) | LR: 0.000125
+Epoch 045 | Train: 0.8669 (ind=0.4363 team=0.0544 strat=0.3762) | Val: 0.8990 (ind=0.4529 team=0.0576 strat=0.3885) | LR: 0.000125
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9358 |       1.0065 |   OK
+  XpDiff_10                 |     0.9447 |       1.0031 |   OK
+  CsDiff_10                 |     0.9304 |       1.0083 |   OK
+  GoldDiff_15               |     0.8813 |       1.0053 |   OK
+  XpDiff_15                 |     0.8875 |       0.9967 |   OK
+  CsDiff_15                 |     0.9094 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9602 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7884 |       0.8133 |   OK
+  JgCsBefore10              |     0.1884 |       0.1928 |   OK
+  DmgTotal                  |     0.9421 |       1.0446 |   OK
+  DmgTurret                 |     0.7541 |       0.9887 |   OK
+  DmgObj                    |     0.6697 |       0.9973 |   OK
+  VisionScore               |     1.0058 |       1.0197 |   OK
+  KillParticipation         |     0.9995 |       1.0228 |   OK
+  SoloKills                 |     0.9774 |       0.9787 |   OK
+  TotalCS                   |     1.0091 |       1.0276 |   OK
+  GoldEarned                |     0.9529 |       1.0234 |   OK
+  Team_Dragons              |     0.7353 |       0.9815 |   OK
+  Team_Barons               |     0.8291 |       1.0649 |   OK
+  Team_Towers               |     0.4333 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4883 |       0.5776 |   OK
+  EarlyAggression           |     0.5265 |       0.5601 |   OK
+  MapPressure               |     0.4271 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3361 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3241 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5328 | Baseline=1.9653 | MODELO GANA (+22.0%)
+  STRATEGIC TARGETS: Modelo=0.4204 | Baseline=0.5080 | MODELO GANA (+17.2%)
+
+
+Early Stopping en epoch 45. Best Val Loss: 0.8978
+
+--- DIAGNÓSTICO FINAL (pca_only) ---
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9334 |       1.0065 |   OK
+  XpDiff_10                 |     0.9420 |       1.0031 |   OK
+  CsDiff_10                 |     0.9289 |       1.0083 |   OK
+  GoldDiff_15               |     0.8784 |       1.0053 |   OK
+  XpDiff_15                 |     0.8845 |       0.9967 |   OK
+  CsDiff_15                 |     0.9069 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9593 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7883 |       0.8133 |   OK
+  JgCsBefore10              |     0.1884 |       0.1928 |   OK
+  DmgTotal                  |     0.9402 |       1.0446 |   OK
+  DmgTurret                 |     0.7519 |       0.9887 |   OK
+  DmgObj                    |     0.6671 |       0.9973 |   OK
+  VisionScore               |     1.0049 |       1.0197 |   OK
+  KillParticipation         |     0.9990 |       1.0228 |   OK
+  SoloKills                 |     0.9767 |       0.9787 |   OK
+  TotalCS                   |     1.0063 |       1.0276 |   OK
+  GoldEarned                |     0.9500 |       1.0234 |   OK
+  Team_Dragons              |     0.7379 |       0.9815 |   OK
+  Team_Barons               |     0.8275 |       1.0649 |   OK
+  Team_Towers               |     0.4327 |       0.9982 |   OK
+  --------------------------+------------+--------------+-------
+      STRATEGIC TARGETS    
+  --------------------------+------------+--------------+-------
+  LaneDominance             |     0.4861 |       0.5776 |   OK
+  EarlyAggression           |     0.5260 |       0.5601 |   OK
+  MapPressure               |     0.4275 |       0.4475 |   OK
+  ObjectiveFocus            |     0.3357 |       0.5619 |   OK
+  ResourceEfficiency        |     0.3234 |       0.3931 |   OK
+
+  RAW METRICS:       Modelo=1.5311 | Baseline=1.9653 | MODELO GANA (+22.1%)
+  STRATEGIC TARGETS: Modelo=0.4198 | Baseline=0.5080 | MODELO GANA (+17.4%)
+
+Modelo guardado en Models/lol_model_pca_only.pth

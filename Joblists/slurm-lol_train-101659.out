@@ -1,0 +1,201 @@
+cuda_available= True
+=== Ejecutando experimento: pca_only ===
+
+============================================================
+  LoL Win Condition Coach — Experiment: PCA_ONLY
+============================================================
+Dataset (train): 59440 filas (29720 wins, 29720 losses)
+Dataset (val): 14860 filas (7430 wins, 7430 losses)
+Device: cuda
+Train: 59440 | Test: 14860
+Parámetros: 135,868
+--- INICIANDO ENTRENAMIENTO (pca_only) ---
+
+Epoch 001 | Train: 0.5978 (ind=0.5099 team=0.0879) | Val: 0.5582 (ind=0.4796 team=0.0786) | LR: 0.000500
+Epoch 002 | Train: 0.5396 (ind=0.4693 team=0.0703) | Val: 0.5210 (ind=0.4596 team=0.0614) | LR: 0.000500
+Epoch 003 | Train: 0.5171 (ind=0.4560 team=0.0611) | Val: 0.5152 (ind=0.4567 team=0.0585) | LR: 0.000500
+Epoch 004 | Train: 0.5089 (ind=0.4510 team=0.0579) | Val: 0.5142 (ind=0.4562 team=0.0579) | LR: 0.000500
+Epoch 005 | Train: 0.5051 (ind=0.4485 team=0.0566) | Val: 0.5129 (ind=0.4553 team=0.0577) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9438 |       1.0065 |   OK
+  XpDiff_10                 |     0.9470 |       1.0031 |   OK
+  CsDiff_10                 |     0.9514 |       1.0083 |   OK
+  GoldDiff_15               |     0.8859 |       1.0053 |   OK
+  XpDiff_15                 |     0.8863 |       0.9967 |   OK
+  CsDiff_15                 |     0.9266 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9606 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7979 |       0.8133 |   OK
+  JgCsBefore10              |     0.1888 |       0.1928 |   OK
+  DmgTotal                  |     0.9487 |       1.0446 |   OK
+  DmgTurret                 |     0.7545 |       0.9887 |   OK
+  DmgObj                    |     0.6667 |       0.9973 |   OK
+  VisionScore               |     1.0027 |       1.0197 |   OK
+  KillParticipation         |     1.0014 |       1.0228 |   OK
+  SoloKills                 |     0.9743 |       0.9787 |   OK
+  TotalCS                   |     1.0044 |       1.0276 |   OK
+  GoldEarned                |     0.9483 |       1.0234 |   OK
+  Team_Dragons              |     0.7341 |       0.9815 |   OK
+  Team_Barons               |     0.8231 |       1.0649 |   OK
+  Team_Towers               |     0.4361 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5344 | Baseline=1.9653 | MODELO GANA (+21.9%)
+
+Epoch 006 | Train: 0.5026 (ind=0.4467 team=0.0559) | Val: 0.5120 (ind=0.4545 team=0.0576) | LR: 0.000500
+Epoch 007 | Train: 0.5015 (ind=0.4459 team=0.0556) | Val: 0.5116 (ind=0.4541 team=0.0575) | LR: 0.000500
+Epoch 008 | Train: 0.5000 (ind=0.4447 team=0.0553) | Val: 0.5110 (ind=0.4535 team=0.0575) | LR: 0.000500
+Epoch 009 | Train: 0.4988 (ind=0.4439 team=0.0549) | Val: 0.5105 (ind=0.4530 team=0.0575) | LR: 0.000500
+Epoch 010 | Train: 0.4983 (ind=0.4435 team=0.0549) | Val: 0.5104 (ind=0.4528 team=0.0575) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9360 |       1.0065 |   OK
+  XpDiff_10                 |     0.9415 |       1.0031 |   OK
+  CsDiff_10                 |     0.9312 |       1.0083 |   OK
+  GoldDiff_15               |     0.8806 |       1.0053 |   OK
+  XpDiff_15                 |     0.8828 |       0.9967 |   OK
+  CsDiff_15                 |     0.9093 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9564 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7917 |       0.8133 |   OK
+  JgCsBefore10              |     0.1878 |       0.1928 |   OK
+  DmgTotal                  |     0.9409 |       1.0446 |   OK
+  DmgTurret                 |     0.7486 |       0.9887 |   OK
+  DmgObj                    |     0.6605 |       0.9973 |   OK
+  VisionScore               |     1.0047 |       1.0197 |   OK
+  KillParticipation         |     1.0012 |       1.0228 |   OK
+  SoloKills                 |     0.9706 |       0.9787 |   OK
+  TotalCS                   |     1.0031 |       1.0276 |   OK
+  GoldEarned                |     0.9484 |       1.0234 |   OK
+  Team_Dragons              |     0.7305 |       0.9815 |   OK
+  Team_Barons               |     0.8249 |       1.0649 |   OK
+  Team_Towers               |     0.4330 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5272 | Baseline=1.9653 | MODELO GANA (+22.3%)
+
+Epoch 011 | Train: 0.4975 (ind=0.4427 team=0.0548) | Val: 0.5106 (ind=0.4530 team=0.0576) | LR: 0.000500
+Epoch 012 | Train: 0.4965 (ind=0.4420 team=0.0545) | Val: 0.5105 (ind=0.4528 team=0.0577) | LR: 0.000500
+Epoch 013 | Train: 0.4951 (ind=0.4408 team=0.0543) | Val: 0.5108 (ind=0.4531 team=0.0577) | LR: 0.000500
+Epoch 014 | Train: 0.4947 (ind=0.4404 team=0.0543) | Val: 0.5105 (ind=0.4527 team=0.0578) | LR: 0.000500
+Epoch 015 | Train: 0.4942 (ind=0.4401 team=0.0541) | Val: 0.5098 (ind=0.4521 team=0.0576) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9341 |       1.0065 |   OK
+  XpDiff_10                 |     0.9395 |       1.0031 |   OK
+  CsDiff_10                 |     0.9270 |       1.0083 |   OK
+  GoldDiff_15               |     0.8789 |       1.0053 |   OK
+  XpDiff_15                 |     0.8816 |       0.9967 |   OK
+  CsDiff_15                 |     0.9054 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9572 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7908 |       0.8133 |   OK
+  JgCsBefore10              |     0.1872 |       0.1928 |   OK
+  DmgTotal                  |     0.9380 |       1.0446 |   OK
+  DmgTurret                 |     0.7507 |       0.9887 |   OK
+  DmgObj                    |     0.6636 |       0.9973 |   OK
+  VisionScore               |     1.0039 |       1.0197 |   OK
+  KillParticipation         |     0.9991 |       1.0228 |   OK
+  SoloKills                 |     0.9703 |       0.9787 |   OK
+  TotalCS                   |     1.0035 |       1.0276 |   OK
+  GoldEarned                |     0.9509 |       1.0234 |   OK
+  Team_Dragons              |     0.7353 |       0.9815 |   OK
+  Team_Barons               |     0.8267 |       1.0649 |   OK
+  Team_Towers               |     0.4358 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5296 | Baseline=1.9653 | MODELO GANA (+22.2%)
+
+Epoch 016 | Train: 0.4939 (ind=0.4399 team=0.0540) | Val: 0.5105 (ind=0.4529 team=0.0576) | LR: 0.000500
+Epoch 017 | Train: 0.4932 (ind=0.4393 team=0.0539) | Val: 0.5108 (ind=0.4529 team=0.0579) | LR: 0.000500
+Epoch 018 | Train: 0.4923 (ind=0.4386 team=0.0538) | Val: 0.5110 (ind=0.4530 team=0.0580) | LR: 0.000500
+Epoch 019 | Train: 0.4916 (ind=0.4380 team=0.0536) | Val: 0.5109 (ind=0.4530 team=0.0579) | LR: 0.000500
+Epoch 020 | Train: 0.4908 (ind=0.4373 team=0.0535) | Val: 0.5109 (ind=0.4531 team=0.0578) | LR: 0.000500
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9366 |       1.0065 |   OK
+  XpDiff_10                 |     0.9419 |       1.0031 |   OK
+  CsDiff_10                 |     0.9273 |       1.0083 |   OK
+  GoldDiff_15               |     0.8824 |       1.0053 |   OK
+  XpDiff_15                 |     0.8844 |       0.9967 |   OK
+  CsDiff_15                 |     0.9063 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9613 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7892 |       0.8133 |   OK
+  JgCsBefore10              |     0.1880 |       0.1928 |   OK
+  DmgTotal                  |     0.9399 |       1.0446 |   OK
+  DmgTurret                 |     0.7563 |       0.9887 |   OK
+  DmgObj                    |     0.6682 |       0.9973 |   OK
+  VisionScore               |     1.0067 |       1.0197 |   OK
+  KillParticipation         |     0.9990 |       1.0228 |   OK
+  SoloKills                 |     0.9825 |       0.9787 |   MAL
+  TotalCS                   |     1.0153 |       1.0276 |   OK
+  GoldEarned                |     0.9588 |       1.0234 |   OK
+  Team_Dragons              |     0.7391 |       0.9815 |   OK
+  Team_Barons               |     0.8293 |       1.0649 |   OK
+  Team_Towers               |     0.4360 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5354 | Baseline=1.9653 | MODELO GANA (+21.9%)
+
+Epoch 021 | Train: 0.4905 (ind=0.4371 team=0.0534) | Val: 0.5111 (ind=0.4530 team=0.0581) | LR: 0.000500
+Epoch 022 | Train: 0.4882 (ind=0.4352 team=0.0530) | Val: 0.5111 (ind=0.4530 team=0.0581) | LR: 0.000250
+Epoch 023 | Train: 0.4858 (ind=0.4332 team=0.0526) | Val: 0.5116 (ind=0.4535 team=0.0581) | LR: 0.000250
+Epoch 024 | Train: 0.4857 (ind=0.4333 team=0.0525) | Val: 0.5118 (ind=0.4537 team=0.0581) | LR: 0.000250
+Epoch 025 | Train: 0.4856 (ind=0.4330 team=0.0526) | Val: 0.5118 (ind=0.4536 team=0.0581) | LR: 0.000250
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9394 |       1.0065 |   OK
+  XpDiff_10                 |     0.9428 |       1.0031 |   OK
+  CsDiff_10                 |     0.9257 |       1.0083 |   OK
+  GoldDiff_15               |     0.8861 |       1.0053 |   OK
+  XpDiff_15                 |     0.8874 |       0.9967 |   OK
+  CsDiff_15                 |     0.9062 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9628 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7880 |       0.8133 |   OK
+  JgCsBefore10              |     0.1875 |       0.1928 |   OK
+  DmgTotal                  |     0.9408 |       1.0446 |   OK
+  DmgTurret                 |     0.7549 |       0.9887 |   OK
+  DmgObj                    |     0.6670 |       0.9973 |   OK
+  VisionScore               |     1.0094 |       1.0197 |   OK
+  KillParticipation         |     0.9992 |       1.0228 |   OK
+  SoloKills                 |     0.9792 |       0.9787 |   MAL
+  TotalCS                   |     1.0216 |       1.0276 |   OK
+  GoldEarned                |     0.9703 |       1.0234 |   OK
+  Team_Dragons              |     0.7432 |       0.9815 |   OK
+  Team_Barons               |     0.8361 |       1.0649 |   OK
+  Team_Towers               |     0.4395 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5417 | Baseline=1.9653 | MODELO GANA (+21.6%)
+
+Epoch 026 | Train: 0.4844 (ind=0.4322 team=0.0522) | Val: 0.5113 (ind=0.4532 team=0.0582) | LR: 0.000250
+Epoch 027 | Train: 0.4847 (ind=0.4324 team=0.0523) | Val: 0.5119 (ind=0.4536 team=0.0584) | LR: 0.000250
+
+Early Stopping en epoch 27. Best Val Loss: 0.5098
+
+--- DIAGNÓSTICO FINAL (pca_only) ---
+
+  Métrica                   | MSE Modelo | MSE Baseline | Mejor?
+  --------------------------+------------+--------------+-------
+  GoldDiff_10               |     0.9341 |       1.0065 |   OK
+  XpDiff_10                 |     0.9395 |       1.0031 |   OK
+  CsDiff_10                 |     0.9270 |       1.0083 |   OK
+  GoldDiff_15               |     0.8789 |       1.0053 |   OK
+  XpDiff_15                 |     0.8816 |       0.9967 |   OK
+  CsDiff_15                 |     0.9054 |       1.0099 |   OK
+  EarlyTakedowns            |     0.9572 |       1.0184 |   OK
+  LaneCsBefore10            |     0.7908 |       0.8133 |   OK
+  JgCsBefore10              |     0.1872 |       0.1928 |   OK
+  DmgTotal                  |     0.9380 |       1.0446 |   OK
+  DmgTurret                 |     0.7507 |       0.9887 |   OK
+  DmgObj                    |     0.6636 |       0.9973 |   OK
+  VisionScore               |     1.0039 |       1.0197 |   OK
+  KillParticipation         |     0.9991 |       1.0228 |   OK
+  SoloKills                 |     0.9703 |       0.9787 |   OK
+  TotalCS                   |     1.0035 |       1.0276 |   OK
+  GoldEarned                |     0.9509 |       1.0234 |   OK
+  Team_Dragons              |     0.7353 |       0.9815 |   OK
+  Team_Barons               |     0.8267 |       1.0649 |   OK
+  Team_Towers               |     0.4358 |       0.9982 |   OK
+
+  TOTAL: Modelo=1.5296 | Baseline=1.9653 | MODELO GANA (+22.2%)
+
+Modelo guardado en Models/lol_model_pca_only.pth

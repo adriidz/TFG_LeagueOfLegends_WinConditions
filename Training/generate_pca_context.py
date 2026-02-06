@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 
 INPUT_JSON = "Data/champion_stats_3.json"
 OUTPUT_PCA = "Data/champion_context_pca.json"
-N_COMPONENTS = 6 # Comprimimos toda la info del campeón en 8 números
+N_COMPONENTS = 6 # Comprimimos toda la info del campeón en 6 números
 
 def generate_pca_embeddings():
     with open(INPUT_JSON, 'r') as f:
