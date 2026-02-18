@@ -170,12 +170,12 @@ def process_match(match_id):
             
             row[f"{prefix}_EarlyTakedowns"] = snapshots[15][pid_ally]['takedowns']
 
-            # C. ESTADÍSTICAS ROL (Early)
-            if role == 'JUNGLE':
-                row[f"{prefix}_JgCsBefore10"] = snapshots[10][pid_ally]['jungle_cs']
-                row[f"{prefix}_EnemyJgInvades"] = ally_p.get('challenges', {}).get('enemyJungleMonsterKills', 0)
-            else:
-                row[f"{prefix}_LaneCsBefore10"] = snapshots[10][pid_ally]['lane_cs']
+            # # C. ESTADÍSTICAS ROL (Early)
+            # if role == 'JUNGLE':
+            #     row[f"{prefix}_JgCsBefore10"] = snapshots[10][pid_ally]['jungle_cs']
+            #     row[f"{prefix}_EnemyJgInvades"] = ally_p.get('challenges', {}).get('enemyJungleMonsterKills', 0)
+            # else:
+            #     row[f"{prefix}_LaneCsBefore10"] = snapshots[10][pid_ally]['lane_cs']
 
             # D. ESTADÍSTICAS GLOBALES
             stats = ally_p
