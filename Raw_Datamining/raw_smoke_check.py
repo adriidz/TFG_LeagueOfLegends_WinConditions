@@ -3,7 +3,7 @@ import os
 import json
 import random
 
-RAW_ROOT = os.getenv("RAW_ROOT", "Data/raw")
+RAW_ROOT = os.getenv("RAW_ROOT", "Data_raw/raw")
 REGION = os.getenv("REGION", "europe")
 
 def main(n=1000):

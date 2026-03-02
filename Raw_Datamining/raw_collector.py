@@ -27,6 +27,9 @@ QUEUE_RANKED_SOLO = int(os.getenv("RAW_QUEUE_ID", "420"))
 MATCHES_PER_PLAYER = int(os.getenv("RAW_MATCHES_PER_PLAYER", "300"))
 TOTAL_MATCHES_TARGET = int(os.getenv("RAW_TOTAL_MATCHES_TARGET", "200000"))
 
+MIN_PATCH_MAJOR = 16
+MIN_PATCH_MINOR = 2
+
 SAVE_EVERY_N = int(os.getenv("RAW_SAVE_EVERY_N", "50"))
 
 watcher = LolWatcher(API_KEY)
@@ -55,6 +58,20 @@ def patch_major_minor(game_version: Optional[str]) -> Optional[str]:
     parts = game_version.split(".")
     return ".".join(parts[:2]) if len(parts) >= 2 else game_version
 
+def parse_patch_mm(game_version: Optional[str]):
+    if not game_version or not isinstance(game_version, str):
+        return None
+    try:
+        parts = game_version.split(".")
+        return int(parts[0]), int(parts[1])
+    except Exception:
+        return None
+
+def is_patch_at_least(mm, min_major: int, min_minor: int) -> bool:
+    if mm is None:
+        return False
+    major, minor = mm
+    return (major > min_major) or (major == min_major and minor >= min_minor)
 
 def get_high_elo_players() -> List[Dict]:
     """Muy parecido a tu crawler: challenger/gm/master mezclados."""
@@ -128,6 +145,14 @@ def collect_one_match(conn, match_id: str) -> bool:
 
     try:
         match = riot_call_with_retry(watcher.match.by_id, REGION, match_id)
+
+        info = (match or {}).get("info", {}) or {}
+        mm = parse_patch_mm(info.get("gameVersion"))
+        if not is_patch_at_least(mm, MIN_PATCH_MAJOR, MIN_PATCH_MINOR):
+            # no descargamos timeline, no guardamos en disco
+            state_set(conn, match_id, REGION, "SKIP_PATCH", f"patch<{MIN_PATCH_MAJOR}.{MIN_PATCH_MINOR}")
+            return None
+
         timeline = riot_call_with_retry(watcher.match.timeline_by_match, REGION, match_id)
     except ApiError as err:
         code = getattr(err.response, "status_code", None)
@@ -163,8 +188,12 @@ def collect_one_match(conn, match_id: str) -> bool:
 
 
 def run():
-    os.makedirs("Data", exist_ok=True)
+    os.makedirs("Data_clean", exist_ok=True)
     conn = open_state_db(STATE_DB)
+
+    print("=== INICIO COLECCIÓN RAW ===")
+
+    print("Parche mínimo:", f"{MIN_PATCH_MAJOR}.{MIN_PATCH_MINOR}\n")
 
     players = get_high_elo_players()
     total_ok = 0

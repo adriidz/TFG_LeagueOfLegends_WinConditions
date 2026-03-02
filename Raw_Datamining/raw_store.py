@@ -5,9 +5,9 @@ import csv
 import sqlite3
 from datetime import datetime
 
-RAW_ROOT_DEFAULT = "Data/raw"
-INDEX_CSV_DEFAULT = "Data/raw_index.csv"
-STATE_DB_DEFAULT = "Data/raw_state.sqlite"
+RAW_ROOT_DEFAULT = "Data_raw/raw"
+INDEX_CSV_DEFAULT = "Data_clean/raw_index.csv"
+STATE_DB_DEFAULT = "Data_clean/raw_state.sqlite"
 
 
 def ensure_dir(path: str):
@@ -19,12 +19,6 @@ def _match_dir(raw_root: str, routing_region: str, match_id: str) -> str:
 
 
 def save_raw_match(raw_root: str, routing_region: str, match_id: str, match_json: dict, timeline_json: dict):
-    """
-    Persistencia RAW: 2 json + meta.json opcional.
-    Estructura:
-      Data/raw/<routing>/<matchId>/match.json
-      Data/raw/<routing>/<matchId>/timeline.json
-    """
     mdir = _match_dir(raw_root, routing_region, match_id)
     ensure_dir(mdir)
 

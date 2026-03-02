@@ -1,0 +1,5 @@
+Mi TFG va sobre hacer un modelo el cual permita a una aplicación devolver planes de partida personalizados a un equipo y a cada participante de éste en League of Legends.
+
+El caso de uso es el siguiente: el usuario introduce los 5 campeones aliados y los 5 campeones enemigos, en sus respectivas posiciones. La aplicación entonces es capaz de inferir el Plan de Partida que deberá seguir el equipo para conseguir la victoria (a nivel de Composición y a nivel Individual).
+
+- hacer que haya menos cantidad de carpetas en el mismo nivel (europe/x/y/match_id)
