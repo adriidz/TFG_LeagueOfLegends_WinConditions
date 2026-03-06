@@ -1,0 +1,70 @@
+TFG (Ingeniería de Datos): Coach de Planes de Partida en League of Legends con Machine Learning
+
+Idea en 7 líneas
+Desarrollo una aplicación “Coach” que, tras el draft (campeones + roles, opcionalmente runas/keystones y hechizos), genera un plan de partida recomendado a nivel individual y de equipo para maximizar la probabilidad de victoria. Para ello, construyo un pipeline end-to-end: extracción de partidas desde la API de Riot, generación automática de labels (casuísticas objetivas) a partir de señales macro-tempranas, entrenamiento/validación de modelos, visualizaciones y conclusiones experimentales.
+
+Caso de uso
+Input: (Aliados: 5 campeones + posición) + (Enemigos: 5 campeones + posición) + opcional (keystone/runas principales + hechizos).
+Output: “plan de partida” recomendado (vector de pautas) + explicación resumida por rol/equipo.
+
+Objetivo general
+Construir y evaluar un sistema basado en ML que prediga planes de partida desde información pre-partida y estime su impacto en probabilidad de victoria.
+
+Objetivos específicos
+1. Implementar extracción robusta de datos de Riot (alto elo) y almacenamiento reproducible.
+
+2. Definir casuísticas/labels objetivas (no dependientes directamente de habilidad individual ni de win/loss) y generar dataset CSV.
+
+3. Entrenar y comparar modelos para:
+	- Modelo A (Plan Predictor): draft → etiquetas/plan.
+
+	- Modelo B (Win Predictor condicionado): (draft + plan) → probabilidad de victoria.
+
+4. Diseñar un protocolo experimental sólido (splits, métricas, baselines, ablations) + visualizaciones.
+
+5. Integrar en un prototipo de Coach (CLI/servicio) y discutir limitaciones y trabajo futuro.
+
+Alcance / no alcance
+Sí: predicción de planes a partir del draft; análisis macro-temprano; explicabilidad básica; evaluación offline.
+
+No: recomendaciones micro (mecánicas/combos), coaching en tiempo real in-game, interacción con usuarios a gran escala.
+
+Datos
+	- Fuente: Riot Games API.
+
+	- Población: partidas de jugadores Master/Grandmaster/Challenger.
+
+	- Features pre-partida: campeones + roles; opcional runas/keystone y hechizos.
+
+	- Targets/labels: generados por código propio aplicando filtros y señales macro-tempranas por equipo (y/o por rol).
+
+Diseño de labels (principio guía)
+Labels deben ser: (1) observables y computables, (2) definidas por reglas objetivas, (3) no triviales (no usar win/loss), (4) idealmente interpretables como “plan”.
+Ejemplos de familias: estilo (agresivo/escalar), prioridad de objetivos (dragones/heraldo), jungla (full clear vs gank-heavy), macro (roams/dive), etc.
+
+Modelos
+	- Modelo A: problema principal como multi-label classification (plan = vector binario/ordinal de etiquetas) a nivel equipo y/o rol.
+		- Baselines: reglas simples, logistic regression, árboles/GBDT.
+		- Modelos: MLP con embeddings, DeepSets/Transformer sobre los 10 picks, features de sinergia/contrapicks.
+
+	- Modelo B: estimar P(win | draft, plan).
+		- Métricas: LogLoss/Brier (calibración), AUC, ECE, curvas de calibración.
+		- Uso en Coach: evaluar varios planes candidatos y escoger el de mayor P(win) (con cautela: evaluación observacional, no causal).
+
+Protocolo experimental (mínimos imprescindibles)
+	- Splits por tiempo/patch (evitar leakage por meta) o al menos por ventana temporal; reportar distribución por patch.
+
+	- Manejo de desbalance: métricas macro/micro, F1 por label, PR-AUC por labels raras.
+
+	- Ablations: sin runas/hechizos vs con; sin enemigas vs con; sinergias explícitas vs implícitas; tamaño dataset.
+
+	- Robustez: rendimiento por rol/comp, por patch, por región (si aplica).
+
+	- Visualizaciones: distribución de labels, correlaciones plan↔winrate, matriz de co-ocurrencias, importancia/SHAP (si GBDT), calibración Modelo B, embeddings (PCA/UMAP).
+
+Estado actual
+	- Pipeline operativo: extracción cruda → generación de labels → export CSV.
+	- Pendiente: optimización de pipeline, definición final de casuísticas, entrenamiento/validación, visualizaciones y redacción final.
+
+Herramientas
+Python (VS Code), GitHub, GPU NVIDIA con CUDA, librerías ML (PyTorch/TF + sklearn), visualización (matplotlib/plotly), experiment tracking opcional (wandb/mlflow).
