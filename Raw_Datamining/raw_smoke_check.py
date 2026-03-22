@@ -1,4 +1,3 @@
-# raw_smoke_check.py
 import os
 import json
 import random

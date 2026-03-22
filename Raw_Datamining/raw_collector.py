@@ -81,7 +81,7 @@ def get_high_elo_players() -> List[Dict]:
     for name, func in [
         ("CHALLENGER", watcher.league.challenger_by_queue),
         ("GRANDMASTER", watcher.league.grandmaster_by_queue),
-        ("MASTER", watcher.league.masters_by_queue),
+        # ("MASTER", watcher.league.masters_by_queue),
     ]:
         try:
             league = riot_call_with_retry(func, MATCH_REGION, queue_type)

@@ -1,0 +1,77 @@
+==========================================
+RESUMEN DEL ANÁLISIS DE FEATURES DEL DRAFT
+==========================================
+RAW base: Data_raw\raw\europe
+Partidas vistas: 102843
+Bad JSON / ilegibles: 7
+Sin teams azul/rojo identificables: 0
+Filtradas por duración < 15.0 min: 761
+Partidas analizadas: 102075
+
+==================
+PICKS DE CAMPEONES
+==================
+Campeones únicos observados: 172
+Picks totales contabilizados: 1020750
+Cobertura top-10: 151088 picks (14.80%)
+Cobertura top-20: 271671 picks (26.61%)
+Top 20 campeones por frecuencia:
+   1. Nami                 18504
+   2. Nautilus             15695
+   3. Yunara               15499
+   4. Varus                15468
+   5. Ezreal               15337
+   6. Ambessa              14836
+   7. Kaisa                14695
+   8. Karma                14224
+   9. Yasuo                13906
+  10. Corki                12924
+  11. Jhin                 12610
+  12. Zaahen               12597
+  13. Bard                 12594
+  14. Caitlyn              12315
+  15. Jayce                12143
+  16. Ahri                 12040
+  17. Viego                11725
+  18. Lulu                 11716
+  19. Sylas                11511
+  20. Ryze                 11332
+
+Campeones con menos de 5 picks:  0
+Campeones con menos de 10 picks: 0
+Campeones con menos de 25 picks: 0
+
+========================
+VICTORIA GLOBAL POR LADO
+========================
+BLUE: 51124 (50.09%)
+RED:  50947 (49.91%)
+Sesgo neto hacia BLUE: +0.17 puntos porcentuales
+
+====================
+FIRST BLOOD POR LADO
+====================
+BLUE: 51578 (50.93%)
+RED:  49685 (49.07%)
+
+======================
+PRIMER DRAGÓN POR LADO
+======================
+BLUE: 39632 (39.23%)
+RED:  61397 (60.77%)
+
+=====================================
+PRIMERAS LARVAS / VOID GRUBS POR LADO
+=====================================
+BLUE: 60020 (59.38%)
+RED:  41061 (40.62%)
+
+=============
+PNG GENERADOS
+=============
+Data_clean\draft_input_reports\champion_pick_frequencies_topN.png
+Data_clean\draft_input_reports\champion_pick_rank_frequency.png
+Data_clean\draft_input_reports\side_win_rate.png
+Data_clean\draft_input_reports\side_first_blood_rate.png
+Data_clean\draft_input_reports\side_first_dragon_rate.png
+Data_clean\draft_input_reports\side_first_void_grubs_rate.png

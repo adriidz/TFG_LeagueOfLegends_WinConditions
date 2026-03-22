@@ -1,0 +1,57 @@
+=== QC SANITY CHECKS ===
+RAW base:              Data_raw/raw\europe
+Match dirs:            102573
+Good json:             102566
+Bad json:              7
+Bad json sample:       [('EUW1_7739120046', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739168774', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739204131', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739294544', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739594013', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739864721', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)'), ('EUW1_7739961503', 'JSONDecodeError: Expecting value: line 1 column 1 (char 0)')]
+
+Duración de la partida
+----------------------
+min    = 0.78
+p05    = 15.40
+p25    = 23.68
+median = 27.58
+p75    = 31.52
+p95    = 37.85
+max    = 61.05
+mean   = 27.31
+<5 min                     = 1155
+<10 min                    = 1394
+<12 min                    = 1497
+<15 min                    = 1663
+<20 min                    = 13075
+Sample <15.0 min = [('EUW1_7696120017', 1.75), ('EUW1_7696129273', 14.85), ('EUW1_7696177768', 1.2), ('EUW1_7696221641', 9.083333333333334), ('EUW1_7696235289', 1.25), ('EUW1_7696261682', 1.15), ('EUW1_7696262857', 13.716666666666667), ('EUW1_7696295593', 1.2166666666666666), ('EUW1_7696311202', 1.1833333333333333), ('EUW1_7696313749', 1.1833333333333333)]
+
+Integridad de roles
+-------------------
+Teams analyzed:                205132
+Perfect teams:                 205023 (99.95%)
+Perfect teams:                 205023 (99.95%)
+Perfect teams:                 205023 (99.95%)
+Matches with both teams clean: 102462 (99.90%)
+Teams with empty teamPosition: 109
+Teams with duplicate JUNGLE:   0
+Matches with both teams clean: 102462 (99.90%)
+Teams with empty teamPosition: 109
+Teams with duplicate JUNGLE:   0
+Teams with empty teamPosition: 109
+Teams with duplicate JUNGLE:   0
+Teams missing UTILITY:         30
+Global teamPosition counts:    {BOTTOM: 205108, JUNGLE: 205117, MIDDLE: 205112, TOP: 205112, UTILITY: 205102}
+Missing roles by team:         {BOTTOM: 24, JUNGLE: 15, MIDDLE: 20, TOP: 20, UTILITY: 30}
+Teams missing UTILITY:         30
+Global teamPosition counts:    {BOTTOM: 205108, JUNGLE: 205117, MIDDLE: 205112, TOP: 205112, UTILITY: 205102}
+Missing roles by team:         {BOTTOM: 24, JUNGLE: 15, MIDDLE: 20, TOP: 20, UTILITY: 30}
+Global teamPosition counts:    {BOTTOM: 205108, JUNGLE: 205117, MIDDLE: 205112, TOP: 205112, UTILITY: 205102}
+Missing roles by team:         {BOTTOM: 24, JUNGLE: 15, MIDDLE: 20, TOP: 20, UTILITY: 30}
+Missing roles by team:         {BOTTOM: 24, JUNGLE: 15, MIDDLE: 20, TOP: 20, UTILITY: 30}
+Duplicate roles by team:       {}
+Duplicate roles by team:       {}
+Sample non-perfect matches:    ['EUW1_7696956510', 'EUW1_7697687691', 'EUW1_7698055596', 'EUW1_7698287286', 'EUW1_7698514745', 'EUW1_7698547889', 'EUW1_7698556331', 'EUW1_7699529126', 'EUW1_7699823002', 'EUW1_7700275968']
+Sample duplicate JUNGLE:       []
+Sample missing UTILITY:        ['EUW1_7698055596', 'EUW1_7702722746', 'EUW1_7703278214', 'EUW1_7703963874', 'EUW1_7705425023', 'EUW1_7705713625', 'EUW1_7706668985', 'EUW1_7706912569', 'EUW1_7707874257', 'EUW1_7708217246']
+
+Filtro básico sugerido
+----------------------
+Criterio: good_json + duration>=15.0 + roles perfectos en ambos equipos
+Usable matches: 100897 / 102566 (98.37%)

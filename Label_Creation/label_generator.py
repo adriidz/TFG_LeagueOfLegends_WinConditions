@@ -22,8 +22,8 @@ class Config:
 
     # Neutralidad (filtro / máscara)
     neutral_minute: int = 14
-    neutral_gold_thresh: int = 2500
-    neutral_tower_thresh: int = 1
+    neutral_gold_thresh: int = 4000
+    neutral_tower_thresh: int = 2
 
     # Heurísticas OBS_*
     focus_ratio_hi: float = 0.58
@@ -41,7 +41,7 @@ class Config:
     # --- filtros de dataset para entrenar ---
     filter_patch: bool = (os.getenv("FILTER_PATCH", "1") == "1")
     filter_neutral_only: bool = (os.getenv("FILTER_NEUTRAL_ONLY", "1") == "1")
-    filter_win_only: bool = (os.getenv("FILTER_WIN_ONLY", "1") == "1")
+    filter_win_only: bool = (os.getenv("FILTER_WIN_ONLY", "1") == "0")
 
     # --- columnas opcionales (EDA) ---
     include_success_cols: bool = (os.getenv("INCLUDE_SUCCESS_COLS", "0") == "1")
