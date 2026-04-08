@@ -1,0 +1,588 @@
+HASTA MIN 6:
+============================================================
+ Multi-Output Embedding Classifier (PyTorch)
+ Dispositivo: CUDA
+ Feature groups: ['champions', 'summoner_spells', 'context']
+ Label window: m06
+============================================================
+
+[Datos] Cargando: /content/data/training/model_input_multioutput_sample5_m06.parquet
+        Filas: 16120
+
+[Validación] Comprobando columnas target...
+      ✓ farm_oriented: 6092 (38.3%)
+      ✓ ambiguous: 6249 (39.3%)
+      ✓ map_presence: 3550 (22.3%)
+      NaN: 229 (1.4%)
+      ✓ lane_anchored: 4386 (27.4%)
+      ✓ ambiguous: 6257 (39.0%)
+      ✓ roamer: 5382 (33.6%)
+      NaN: 95 (0.6%)
+      ✓ botside_oriented: 4729 (29.3%)
+      ✓ ambiguous: 7113 (44.1%)
+      ✓ topside_oriented: 4278 (26.5%)
+      NaN: 0 (0.0%)
+
+[Features] 31 columnas de 3 grupos
+
+[Split] GroupShuffleSplit por match_id...
+        Train: 12896 | Val: 3224
+
+[Preprocesamiento] Construyendo vocabularios desde train...
+        31 embeddings → 122 dimensiones totales
+        (vs ~1308+ con OneHot)
+
+        Parámetros del modelo: 35,039
+
+============================================================
+ ENTRENAMIENTO (60 épocas max, patience=15)
+============================================================
+
+Época [01/60] TrLoss: 1.2002 | VlLoss: 1.0865 | jun:acc=0.341  sup:acc=0.343  tea:acc=0.299 ★
+Época [02/60] TrLoss: 1.1442 | VlLoss: 1.0813 | jun:acc=0.368  sup:acc=0.341  tea:acc=0.277 ★
+Época [03/60] TrLoss: 1.1120 | VlLoss: 1.0783 | jun:acc=0.383  sup:acc=0.338  tea:acc=0.272 ★
+Época [04/60] TrLoss: 1.0948 | VlLoss: 1.0765 | jun:acc=0.386  sup:acc=0.337  tea:acc=0.274 ★
+Época [05/60] TrLoss: 1.0871 | VlLoss: 1.0755 | jun:acc=0.387  sup:acc=0.338  tea:acc=0.275 ★
+Época [06/60] TrLoss: 1.0810 | VlLoss: 1.0745 | jun:acc=0.387  sup:acc=0.337  tea:acc=0.277 ★
+Época [07/60] TrLoss: 1.0772 | VlLoss: 1.0736 | jun:acc=0.387  sup:acc=0.336  tea:acc=0.278 ★
+Época [08/60] TrLoss: 1.0743 | VlLoss: 1.0730 | jun:acc=0.387  sup:acc=0.335  tea:acc=0.277 ★
+Época [09/60] TrLoss: 1.0737 | VlLoss: 1.0727 | jun:acc=0.387  sup:acc=0.337  tea:acc=0.279 ★
+Época [10/60] TrLoss: 1.0720 | VlLoss: 1.0721 | jun:acc=0.387  sup:acc=0.337  tea:acc=0.276 ★
+Época [11/60] TrLoss: 1.0705 | VlLoss: 1.0718 | jun:acc=0.387  sup:acc=0.339  tea:acc=0.280 ★
+Época [12/60] TrLoss: 1.0704 | VlLoss: 1.0717 | jun:acc=0.387  sup:acc=0.340  tea:acc=0.280 ★
+Época [13/60] TrLoss: 1.0688 | VlLoss: 1.0715 | jun:acc=0.387  sup:acc=0.338  tea:acc=0.280 ★
+Época [14/60] TrLoss: 1.0677 | VlLoss: 1.0712 | jun:acc=0.387  sup:acc=0.340  tea:acc=0.281 ★
+Época [15/60] TrLoss: 1.0663 | VlLoss: 1.0709 | jun:acc=0.387  sup:acc=0.340  tea:acc=0.282 ★
+Época [16/60] TrLoss: 1.0653 | VlLoss: 1.0706 | jun:acc=0.388  sup:acc=0.340  tea:acc=0.282 ★
+Época [17/60] TrLoss: 1.0657 | VlLoss: 1.0704 | jun:acc=0.388  sup:acc=0.339  tea:acc=0.280 ★
+Época [18/60] TrLoss: 1.0640 | VlLoss: 1.0702 | jun:acc=0.388  sup:acc=0.340  tea:acc=0.278 ★
+Época [19/60] TrLoss: 1.0635 | VlLoss: 1.0699 | jun:acc=0.389  sup:acc=0.340  tea:acc=0.281 ★
+Época [20/60] TrLoss: 1.0629 | VlLoss: 1.0699 | jun:acc=0.391  sup:acc=0.342  tea:acc=0.279 ★
+Época [21/60] TrLoss: 1.0612 | VlLoss: 1.0698 | jun:acc=0.390  sup:acc=0.338  tea:acc=0.280 ★
+Época [22/60] TrLoss: 1.0608 | VlLoss: 1.0701 | jun:acc=0.390  sup:acc=0.340  tea:acc=0.278
+Época [23/60] TrLoss: 1.0587 | VlLoss: 1.0700 | jun:acc=0.388  sup:acc=0.343  tea:acc=0.282
+Época [24/60] TrLoss: 1.0580 | VlLoss: 1.0702 | jun:acc=0.389  sup:acc=0.343  tea:acc=0.280
+Época [25/60] TrLoss: 1.0575 | VlLoss: 1.0701 | jun:acc=0.387  sup:acc=0.349  tea:acc=0.279
+Época [26/60] TrLoss: 1.0560 | VlLoss: 1.0705 | jun:acc=0.387  sup:acc=0.344  tea:acc=0.283
+Época [27/60] TrLoss: 1.0545 | VlLoss: 1.0703 | jun:acc=0.389  sup:acc=0.345  tea:acc=0.282
+Época [28/60] TrLoss: 1.0543 | VlLoss: 1.0703 | jun:acc=0.387  sup:acc=0.344  tea:acc=0.281
+Época [29/60] TrLoss: 1.0557 | VlLoss: 1.0698 | jun:acc=0.386  sup:acc=0.351  tea:acc=0.285 ★
+Época [30/60] TrLoss: 1.0533 | VlLoss: 1.0696 | jun:acc=0.386  sup:acc=0.350  tea:acc=0.284 ★
+Época [31/60] TrLoss: 1.0509 | VlLoss: 1.0695 | jun:acc=0.387  sup:acc=0.348  tea:acc=0.285 ★
+Época [32/60] TrLoss: 1.0509 | VlLoss: 1.0697 | jun:acc=0.387  sup:acc=0.349  tea:acc=0.286
+Época [33/60] TrLoss: 1.0490 | VlLoss: 1.0698 | jun:acc=0.387  sup:acc=0.351  tea:acc=0.284
+Época [34/60] TrLoss: 1.0490 | VlLoss: 1.0700 | jun:acc=0.388  sup:acc=0.349  tea:acc=0.285
+Época [35/60] TrLoss: 1.0469 | VlLoss: 1.0696 | jun:acc=0.389  sup:acc=0.350  tea:acc=0.284
+Época [36/60] TrLoss: 1.0458 | VlLoss: 1.0693 | jun:acc=0.387  sup:acc=0.351  tea:acc=0.288 ★
+Época [37/60] TrLoss: 1.0453 | VlLoss: 1.0698 | jun:acc=0.389  sup:acc=0.349  tea:acc=0.286
+Época [38/60] TrLoss: 1.0411 | VlLoss: 1.0706 | jun:acc=0.390  sup:acc=0.347  tea:acc=0.286
+Época [39/60] TrLoss: 1.0405 | VlLoss: 1.0706 | jun:acc=0.387  sup:acc=0.351  tea:acc=0.285
+Época [40/60] TrLoss: 1.0393 | VlLoss: 1.0705 | jun:acc=0.391  sup:acc=0.351  tea:acc=0.286
+Época [41/60] TrLoss: 1.0373 | VlLoss: 1.0720 | jun:acc=0.388  sup:acc=0.348  tea:acc=0.286
+Época [42/60] TrLoss: 1.0398 | VlLoss: 1.0718 | jun:acc=0.389  sup:acc=0.349  tea:acc=0.278
+Época [43/60] TrLoss: 1.0363 | VlLoss: 1.0720 | jun:acc=0.389  sup:acc=0.351  tea:acc=0.282
+Época [44/60] TrLoss: 1.0327 | VlLoss: 1.0724 | jun:acc=0.387  sup:acc=0.351  tea:acc=0.279
+Época [45/60] TrLoss: 1.0325 | VlLoss: 1.0723 | jun:acc=0.392  sup:acc=0.352  tea:acc=0.282
+Época [46/60] TrLoss: 1.0291 | VlLoss: 1.0730 | jun:acc=0.392  sup:acc=0.347  tea:acc=0.285
+Época [47/60] TrLoss: 1.0288 | VlLoss: 1.0722 | jun:acc=0.388  sup:acc=0.351  tea:acc=0.283
+Época [48/60] TrLoss: 1.0266 | VlLoss: 1.0732 | jun:acc=0.394  sup:acc=0.346  tea:acc=0.282
+Época [49/60] TrLoss: 1.0253 | VlLoss: 1.0730 | jun:acc=0.395  sup:acc=0.348  tea:acc=0.280
+Época [50/60] TrLoss: 1.0249 | VlLoss: 1.0737 | jun:acc=0.396  sup:acc=0.354  tea:acc=0.276
+Época [51/60] TrLoss: 1.0221 | VlLoss: 1.0751 | jun:acc=0.392  sup:acc=0.355  tea:acc=0.279
+
+⏹ Early stopping: 15 épocas sin mejora.
+
+============================================================
+ ENTRENAMIENTO FINALIZADO
+ Mejor época: 36 (Val Loss: 1.0693)
+============================================================
+
+ Métricas de validación (mejor checkpoint):
+
+  ● jungle_presence_label:
+      Accuracy:          0.3868
+      Balanced Accuracy: 0.3418
+      F1 Macro:          0.2201
+      Muestras válidas:  3185
+      Predicciones: {'farm_oriented': 3022, 'ambiguous': 0, 'map_presence': 163}
+  ● support_roam_label:
+      Accuracy:          0.3506
+      Balanced Accuracy: 0.3723
+      F1 Macro:          0.2799
+      Muestras válidas:  3203
+      Predicciones: {'lane_anchored': 1084, 'ambiguous': 0, 'roamer': 2119}
+  ● team_tendency_label:
+      Accuracy:          0.2885
+      Balanced Accuracy: 0.3458
+      F1 Macro:          0.2336
+      Muestras válidas:  3224
+      Predicciones: {'botside_oriented': 2448, 'ambiguous': 0, 'topside_oriented': 776}
+
+HASTA MIN 8:
+============================================================
+ Multi-Output Embedding Classifier (PyTorch)
+ Dispositivo: CUDA
+ Feature groups: ['champions', 'summoner_spells', 'context']
+ Label window: m08
+============================================================
+
+[Datos] Cargando: /content/data/training/model_input_multioutput_sample5_m08.parquet
+        Filas: 16120
+
+[Validación] Comprobando columnas target...
+      ✓ farm_oriented: 6096 (37.8%)
+      ✓ ambiguous: 6163 (38.2%)
+      ✓ map_presence: 3860 (23.9%)
+      NaN: 1 (0.0%)
+      ✓ lane_anchored: 5373 (33.3%)
+      ✓ ambiguous: 5759 (35.7%)
+      ✓ roamer: 4986 (30.9%)
+      NaN: 2 (0.0%)
+      ✓ botside_oriented: 3255 (20.2%)
+      ✓ ambiguous: 9164 (56.8%)
+      ✓ topside_oriented: 3701 (23.0%)
+      NaN: 0 (0.0%)
+
+[Features] 31 columnas de 3 grupos
+
+[Split] GroupShuffleSplit por match_id...
+        Train: 12896 | Val: 3224
+
+[Preprocesamiento] Construyendo vocabularios desde train...
+        31 embeddings → 122 dimensiones totales
+        (vs ~1308+ con OneHot)
+
+        Parámetros del modelo: 35,039
+
+============================================================
+ ENTRENAMIENTO (60 épocas max, patience=15)
+============================================================
+
+Época [01/60] TrLoss: 1.2046 | VlLoss: 1.0861 | jun:acc=0.338  sup:acc=0.322  tea:acc=0.442 ★
+Época [02/60] TrLoss: 1.1420 | VlLoss: 1.0793 | jun:acc=0.367  sup:acc=0.332  tea:acc=0.475 ★
+Época [03/60] TrLoss: 1.1092 | VlLoss: 1.0761 | jun:acc=0.377  sup:acc=0.334  tea:acc=0.527 ★
+Época [04/60] TrLoss: 1.0958 | VlLoss: 1.0739 | jun:acc=0.381  sup:acc=0.343  tea:acc=0.553 ★
+Época [05/60] TrLoss: 1.0845 | VlLoss: 1.0725 | jun:acc=0.381  sup:acc=0.346  tea:acc=0.565 ★
+Época [06/60] TrLoss: 1.0789 | VlLoss: 1.0712 | jun:acc=0.381  sup:acc=0.353  tea:acc=0.571 ★
+Época [07/60] TrLoss: 1.0741 | VlLoss: 1.0705 | jun:acc=0.381  sup:acc=0.362  tea:acc=0.571 ★
+Época [08/60] TrLoss: 1.0722 | VlLoss: 1.0696 | jun:acc=0.381  sup:acc=0.364  tea:acc=0.572 ★
+Época [09/60] TrLoss: 1.0699 | VlLoss: 1.0687 | jun:acc=0.381  sup:acc=0.365  tea:acc=0.572 ★
+Época [10/60] TrLoss: 1.0683 | VlLoss: 1.0677 | jun:acc=0.381  sup:acc=0.372  tea:acc=0.570 ★
+Época [11/60] TrLoss: 1.0679 | VlLoss: 1.0675 | jun:acc=0.381  sup:acc=0.369  tea:acc=0.567 ★
+Época [12/60] TrLoss: 1.0662 | VlLoss: 1.0670 | jun:acc=0.381  sup:acc=0.367  tea:acc=0.566 ★
+Época [13/60] TrLoss: 1.0648 | VlLoss: 1.0666 | jun:acc=0.380  sup:acc=0.369  tea:acc=0.563 ★
+Época [14/60] TrLoss: 1.0628 | VlLoss: 1.0661 | jun:acc=0.380  sup:acc=0.367  tea:acc=0.566 ★
+Época [15/60] TrLoss: 1.0619 | VlLoss: 1.0652 | jun:acc=0.380  sup:acc=0.370  tea:acc=0.564 ★
+Época [16/60] TrLoss: 1.0618 | VlLoss: 1.0647 | jun:acc=0.380  sup:acc=0.369  tea:acc=0.561 ★
+Época [17/60] TrLoss: 1.0593 | VlLoss: 1.0645 | jun:acc=0.381  sup:acc=0.369  tea:acc=0.553 ★
+Época [18/60] TrLoss: 1.0597 | VlLoss: 1.0647 | jun:acc=0.380  sup:acc=0.370  tea:acc=0.558
+Época [19/60] TrLoss: 1.0585 | VlLoss: 1.0643 | jun:acc=0.380  sup:acc=0.371  tea:acc=0.551 ★
+Época [20/60] TrLoss: 1.0568 | VlLoss: 1.0641 | jun:acc=0.381  sup:acc=0.367  tea:acc=0.557 ★
+Época [21/60] TrLoss: 1.0561 | VlLoss: 1.0642 | jun:acc=0.382  sup:acc=0.368  tea:acc=0.559
+Época [22/60] TrLoss: 1.0550 | VlLoss: 1.0640 | jun:acc=0.381  sup:acc=0.369  tea:acc=0.554 ★
+Época [23/60] TrLoss: 1.0536 | VlLoss: 1.0638 | jun:acc=0.381  sup:acc=0.369  tea:acc=0.546 ★
+Época [24/60] TrLoss: 1.0525 | VlLoss: 1.0638 | jun:acc=0.381  sup:acc=0.369  tea:acc=0.547
+Época [25/60] TrLoss: 1.0520 | VlLoss: 1.0633 | jun:acc=0.382  sup:acc=0.367  tea:acc=0.544 ★
+Época [26/60] TrLoss: 1.0515 | VlLoss: 1.0633 | jun:acc=0.382  sup:acc=0.370  tea:acc=0.552
+Época [27/60] TrLoss: 1.0505 | VlLoss: 1.0631 | jun:acc=0.382  sup:acc=0.371  tea:acc=0.547 ★
+Época [28/60] TrLoss: 1.0503 | VlLoss: 1.0631 | jun:acc=0.382  sup:acc=0.370  tea:acc=0.547 ★
+Época [29/60] TrLoss: 1.0494 | VlLoss: 1.0634 | jun:acc=0.378  sup:acc=0.373  tea:acc=0.547
+Época [30/60] TrLoss: 1.0474 | VlLoss: 1.0636 | jun:acc=0.379  sup:acc=0.371  tea:acc=0.543
+Época [31/60] TrLoss: 1.0464 | VlLoss: 1.0640 | jun:acc=0.380  sup:acc=0.372  tea:acc=0.543
+Época [32/60] TrLoss: 1.0463 | VlLoss: 1.0637 | jun:acc=0.382  sup:acc=0.376  tea:acc=0.545
+Época [33/60] TrLoss: 1.0444 | VlLoss: 1.0640 | jun:acc=0.379  sup:acc=0.374  tea:acc=0.545
+Época [34/60] TrLoss: 1.0422 | VlLoss: 1.0642 | jun:acc=0.381  sup:acc=0.375  tea:acc=0.533
+Época [35/60] TrLoss: 1.0420 | VlLoss: 1.0641 | jun:acc=0.380  sup:acc=0.375  tea:acc=0.537
+Época [36/60] TrLoss: 1.0394 | VlLoss: 1.0637 | jun:acc=0.379  sup:acc=0.376  tea:acc=0.536
+Época [37/60] TrLoss: 1.0394 | VlLoss: 1.0639 | jun:acc=0.379  sup:acc=0.375  tea:acc=0.538
+Época [38/60] TrLoss: 1.0383 | VlLoss: 1.0647 | jun:acc=0.380  sup:acc=0.373  tea:acc=0.539
+Época [39/60] TrLoss: 1.0357 | VlLoss: 1.0645 | jun:acc=0.381  sup:acc=0.373  tea:acc=0.539
+Época [40/60] TrLoss: 1.0348 | VlLoss: 1.0643 | jun:acc=0.378  sup:acc=0.380  tea:acc=0.531
+Época [41/60] TrLoss: 1.0315 | VlLoss: 1.0652 | jun:acc=0.380  sup:acc=0.376  tea:acc=0.527
+Época [42/60] TrLoss: 1.0336 | VlLoss: 1.0651 | jun:acc=0.379  sup:acc=0.374  tea:acc=0.534
+Época [43/60] TrLoss: 1.0299 | VlLoss: 1.0657 | jun:acc=0.381  sup:acc=0.374  tea:acc=0.528
+
+⏹ Early stopping: 15 épocas sin mejora.
+
+============================================================
+ ENTRENAMIENTO FINALIZADO
+ Mejor época: 28 (Val Loss: 1.0631)
+============================================================
+
+ Métricas de validación (mejor checkpoint):
+
+  ● jungle_presence_label:
+      Accuracy:          0.3818
+      Balanced Accuracy: 0.3379
+      F1 Macro:          0.2007
+      Muestras válidas:  3224
+      Predicciones: {'farm_oriented': 3163, 'ambiguous': 0, 'map_presence': 61}
+  ● support_roam_label:
+      Accuracy:          0.3703
+      Balanced Accuracy: 0.3872
+      F1 Macro:          0.3010
+      Muestras válidas:  3224
+      Predicciones: {'lane_anchored': 1801, 'ambiguous': 0, 'roamer': 1423}
+  ● team_tendency_label:
+      Accuracy:          0.5471
+      Balanced Accuracy: 0.3443
+      F1 Macro:          0.2953
+      Muestras válidas:  3224
+      Predicciones: {'botside_oriented': 4, 'ambiguous': 2874, 'topside_oriented': 346}
+
+HASTA MIN 10:
+============================================================
+ Multi-Output Embedding Classifier (PyTorch)
+ Dispositivo: CUDA
+ Feature groups: ['champions', 'summoner_spells', 'context']
+ Label window: m10
+============================================================
+
+[Datos] Cargando: /content/data/training/model_input_multioutput_sample5_m10.parquet
+        Filas: 16120
+
+[Validación] Comprobando columnas target...
+      ✓ farm_oriented: 3525 (21.9%)
+      ✓ ambiguous: 8462 (52.5%)
+      ✓ map_presence: 4133 (25.6%)
+      NaN: 0 (0.0%)
+      ✓ lane_anchored: 4242 (26.3%)
+      ✓ ambiguous: 7787 (48.3%)
+      ✓ roamer: 4091 (25.4%)
+      NaN: 0 (0.0%)
+      ✓ botside_oriented: 3670 (22.8%)
+      ✓ ambiguous: 8720 (54.1%)
+      ✓ topside_oriented: 3730 (23.1%)
+      NaN: 0 (0.0%)
+
+[Features] 31 columnas de 3 grupos
+
+[Split] GroupShuffleSplit por match_id...
+        Train: 12896 | Val: 3224
+
+[Preprocesamiento] Construyendo vocabularios desde train...
+        31 embeddings → 122 dimensiones totales
+        (vs ~1308+ con OneHot)
+
+        Parámetros del modelo: 35,039
+
+============================================================
+ ENTRENAMIENTO (60 épocas max, patience=15)
+============================================================
+
+Época [01/60] TrLoss: 1.2064 | VlLoss: 1.1018 | jun:acc=0.304  sup:acc=0.296  tea:acc=0.419 ★
+Época [02/60] TrLoss: 1.1510 | VlLoss: 1.0980 | jun:acc=0.355  sup:acc=0.299  tea:acc=0.473 ★
+Época [03/60] TrLoss: 1.1259 | VlLoss: 1.0963 | jun:acc=0.380  sup:acc=0.287  tea:acc=0.504 ★
+Época [04/60] TrLoss: 1.1097 | VlLoss: 1.0953 | jun:acc=0.391  sup:acc=0.284  tea:acc=0.523 ★
+Época [05/60] TrLoss: 1.1040 | VlLoss: 1.0943 | jun:acc=0.392  sup:acc=0.289  tea:acc=0.535 ★
+Época [06/60] TrLoss: 1.0975 | VlLoss: 1.0937 | jun:acc=0.398  sup:acc=0.288  tea:acc=0.538 ★
+Época [07/60] TrLoss: 1.0949 | VlLoss: 1.0930 | jun:acc=0.411  sup:acc=0.292  tea:acc=0.545 ★
+Época [08/60] TrLoss: 1.0927 | VlLoss: 1.0923 | jun:acc=0.451  sup:acc=0.295  tea:acc=0.549 ★
+Época [09/60] TrLoss: 1.0907 | VlLoss: 1.0911 | jun:acc=0.453  sup:acc=0.300  tea:acc=0.547 ★
+Época [10/60] TrLoss: 1.0897 | VlLoss: 1.0898 | jun:acc=0.467  sup:acc=0.297  tea:acc=0.544 ★
+Época [11/60] TrLoss: 1.0884 | VlLoss: 1.0888 | jun:acc=0.458  sup:acc=0.298  tea:acc=0.537 ★
+Época [12/60] TrLoss: 1.0867 | VlLoss: 1.0879 | jun:acc=0.456  sup:acc=0.300  tea:acc=0.535 ★
+Época [13/60] TrLoss: 1.0844 | VlLoss: 1.0869 | jun:acc=0.450  sup:acc=0.301  tea:acc=0.522 ★
+Época [14/60] TrLoss: 1.0826 | VlLoss: 1.0861 | jun:acc=0.437  sup:acc=0.303  tea:acc=0.519 ★
+Época [15/60] TrLoss: 1.0815 | VlLoss: 1.0855 | jun:acc=0.442  sup:acc=0.303  tea:acc=0.521 ★
+Época [16/60] TrLoss: 1.0799 | VlLoss: 1.0852 | jun:acc=0.439  sup:acc=0.309  tea:acc=0.523 ★
+Época [17/60] TrLoss: 1.0782 | VlLoss: 1.0846 | jun:acc=0.441  sup:acc=0.304  tea:acc=0.521 ★
+Época [18/60] TrLoss: 1.0792 | VlLoss: 1.0845 | jun:acc=0.454  sup:acc=0.302  tea:acc=0.520 ★
+Época [19/60] TrLoss: 1.0772 | VlLoss: 1.0841 | jun:acc=0.449  sup:acc=0.303  tea:acc=0.513 ★
+Época [20/60] TrLoss: 1.0753 | VlLoss: 1.0840 | jun:acc=0.446  sup:acc=0.305  tea:acc=0.515 ★
+Época [21/60] TrLoss: 1.0742 | VlLoss: 1.0838 | jun:acc=0.437  sup:acc=0.306  tea:acc=0.516 ★
+Época [22/60] TrLoss: 1.0724 | VlLoss: 1.0835 | jun:acc=0.436  sup:acc=0.310  tea:acc=0.514 ★
+Época [23/60] TrLoss: 1.0710 | VlLoss: 1.0831 | jun:acc=0.436  sup:acc=0.306  tea:acc=0.507 ★
+Época [24/60] TrLoss: 1.0704 | VlLoss: 1.0828 | jun:acc=0.439  sup:acc=0.311  tea:acc=0.510 ★
+Época [25/60] TrLoss: 1.0711 | VlLoss: 1.0827 | jun:acc=0.433  sup:acc=0.315  tea:acc=0.510 ★
+Época [26/60] TrLoss: 1.0677 | VlLoss: 1.0827 | jun:acc=0.441  sup:acc=0.311  tea:acc=0.516
+Época [27/60] TrLoss: 1.0673 | VlLoss: 1.0829 | jun:acc=0.430  sup:acc=0.310  tea:acc=0.516
+Época [28/60] TrLoss: 1.0669 | VlLoss: 1.0826 | jun:acc=0.430  sup:acc=0.314  tea:acc=0.508 ★
+Época [29/60] TrLoss: 1.0651 | VlLoss: 1.0825 | jun:acc=0.437  sup:acc=0.315  tea:acc=0.497 ★
+Época [30/60] TrLoss: 1.0637 | VlLoss: 1.0826 | jun:acc=0.436  sup:acc=0.312  tea:acc=0.497
+Época [31/60] TrLoss: 1.0609 | VlLoss: 1.0828 | jun:acc=0.431  sup:acc=0.311  tea:acc=0.493
+Época [32/60] TrLoss: 1.0610 | VlLoss: 1.0827 | jun:acc=0.426  sup:acc=0.311  tea:acc=0.493
+Época [33/60] TrLoss: 1.0593 | VlLoss: 1.0827 | jun:acc=0.415  sup:acc=0.310  tea:acc=0.505
+Época [34/60] TrLoss: 1.0566 | VlLoss: 1.0823 | jun:acc=0.419  sup:acc=0.309  tea:acc=0.498 ★
+Época [35/60] TrLoss: 1.0566 | VlLoss: 1.0831 | jun:acc=0.414  sup:acc=0.313  tea:acc=0.504
+Época [36/60] TrLoss: 1.0531 | VlLoss: 1.0833 | jun:acc=0.414  sup:acc=0.311  tea:acc=0.503
+Época [37/60] TrLoss: 1.0533 | VlLoss: 1.0834 | jun:acc=0.415  sup:acc=0.312  tea:acc=0.505
+Época [38/60] TrLoss: 1.0509 | VlLoss: 1.0840 | jun:acc=0.419  sup:acc=0.312  tea:acc=0.500
+Época [39/60] TrLoss: 1.0473 | VlLoss: 1.0839 | jun:acc=0.419  sup:acc=0.315  tea:acc=0.503
+Época [40/60] TrLoss: 1.0485 | VlLoss: 1.0849 | jun:acc=0.412  sup:acc=0.317  tea:acc=0.499
+Época [41/60] TrLoss: 1.0453 | VlLoss: 1.0847 | jun:acc=0.420  sup:acc=0.314  tea:acc=0.497
+Época [42/60] TrLoss: 1.0463 | VlLoss: 1.0845 | jun:acc=0.412  sup:acc=0.311  tea:acc=0.492
+Época [43/60] TrLoss: 1.0425 | VlLoss: 1.0842 | jun:acc=0.404  sup:acc=0.319  tea:acc=0.487
+Época [44/60] TrLoss: 1.0432 | VlLoss: 1.0846 | jun:acc=0.396  sup:acc=0.318  tea:acc=0.479
+Época [45/60] TrLoss: 1.0399 | VlLoss: 1.0856 | jun:acc=0.396  sup:acc=0.314  tea:acc=0.489
+Época [46/60] TrLoss: 1.0390 | VlLoss: 1.0860 | jun:acc=0.395  sup:acc=0.313  tea:acc=0.480
+Época [47/60] TrLoss: 1.0381 | VlLoss: 1.0872 | jun:acc=0.404  sup:acc=0.315  tea:acc=0.484
+Época [48/60] TrLoss: 1.0359 | VlLoss: 1.0877 | jun:acc=0.399  sup:acc=0.314  tea:acc=0.472
+Época [49/60] TrLoss: 1.0336 | VlLoss: 1.0890 | jun:acc=0.395  sup:acc=0.314  tea:acc=0.469
+
+⏹ Early stopping: 15 épocas sin mejora.
+
+============================================================
+ ENTRENAMIENTO FINALIZADO
+ Mejor época: 34 (Val Loss: 1.0823)
+============================================================
+
+ Métricas de validación (mejor checkpoint):
+
+  ● jungle_presence_label:
+      Accuracy:          0.4194
+      Balanced Accuracy: 0.3829
+      F1 Macro:          0.3740
+      Muestras válidas:  3224
+      Predicciones: {'farm_oriented': 481, 'ambiguous': 1522, 'map_presence': 1221}
+  ● support_roam_label:
+      Accuracy:          0.3086
+      Balanced Accuracy: 0.4039
+      F1 Macro:          0.2849
+      Muestras válidas:  3224
+      Predicciones: {'lane_anchored': 1641, 'ambiguous': 94, 'roamer': 1489}
+  ● team_tendency_label:
+      Accuracy:          0.4978
+      Balanced Accuracy: 0.3729
+      F1 Macro:          0.3445
+      Muestras válidas:  3224
+      Predicciones: {'botside_oriented': 94, 'ambiguous': 2337, 'topside_oriented': 793}
+
+HASTA MIN 12:
+============================================================
+ Multi-Output Embedding Classifier (PyTorch)
+ Dispositivo: CUDA
+ Feature groups: ['champions', 'summoner_spells', 'context']
+ Label window: m12
+============================================================
+
+[Datos] Cargando: /content/data/training/model_input_multioutput_sample5_m12.parquet
+        Filas: 16120
+
+[Validación] Comprobando columnas target...
+      ✓ farm_oriented: 4063 (25.2%)
+      ✓ ambiguous: 8399 (52.1%)
+      ✓ map_presence: 3658 (22.7%)
+      NaN: 0 (0.0%)
+      ✓ lane_anchored: 3324 (20.6%)
+      ✓ ambiguous: 8853 (54.9%)
+      ✓ roamer: 3943 (24.5%)
+      NaN: 0 (0.0%)
+      ✓ botside_oriented: 3494 (21.7%)
+      ✓ ambiguous: 9205 (57.1%)
+      ✓ topside_oriented: 3421 (21.2%)
+      NaN: 0 (0.0%)
+
+[Features] 31 columnas de 3 grupos
+
+[Split] GroupShuffleSplit por match_id...
+        Train: 12896 | Val: 3224
+
+[Preprocesamiento] Construyendo vocabularios desde train...
+        31 embeddings → 122 dimensiones totales
+        (vs ~1308+ con OneHot)
+
+        Parámetros del modelo: 35,039
+
+============================================================
+ ENTRENAMIENTO (60 épocas max, patience=15)
+============================================================
+
+Época [01/60] TrLoss: 1.2094 | VlLoss: 1.0984 | jun:acc=0.296  sup:acc=0.344  tea:acc=0.440 ★
+Época [02/60] TrLoss: 1.1511 | VlLoss: 1.0941 | jun:acc=0.310  sup:acc=0.382  tea:acc=0.493 ★
+Época [03/60] TrLoss: 1.1233 | VlLoss: 1.0920 | jun:acc=0.324  sup:acc=0.416  tea:acc=0.546 ★
+Época [04/60] TrLoss: 1.1091 | VlLoss: 1.0912 | jun:acc=0.342  sup:acc=0.432  tea:acc=0.561 ★
+Época [05/60] TrLoss: 1.1013 | VlLoss: 1.0902 | jun:acc=0.355  sup:acc=0.452  tea:acc=0.567 ★
+Época [06/60] TrLoss: 1.0960 | VlLoss: 1.0896 | jun:acc=0.350  sup:acc=0.475  tea:acc=0.569 ★
+Época [07/60] TrLoss: 1.0916 | VlLoss: 1.0890 | jun:acc=0.371  sup:acc=0.494  tea:acc=0.570 ★
+Época [08/60] TrLoss: 1.0907 | VlLoss: 1.0885 | jun:acc=0.384  sup:acc=0.505  tea:acc=0.570 ★
+Época [09/60] TrLoss: 1.0880 | VlLoss: 1.0877 | jun:acc=0.388  sup:acc=0.500  tea:acc=0.570 ★
+Época [10/60] TrLoss: 1.0871 | VlLoss: 1.0869 | jun:acc=0.395  sup:acc=0.505  tea:acc=0.568 ★
+Época [11/60] TrLoss: 1.0864 | VlLoss: 1.0867 | jun:acc=0.393  sup:acc=0.518  tea:acc=0.569 ★
+Época [12/60] TrLoss: 1.0860 | VlLoss: 1.0862 | jun:acc=0.389  sup:acc=0.515  tea:acc=0.569 ★
+Época [13/60] TrLoss: 1.0837 | VlLoss: 1.0855 | jun:acc=0.396  sup:acc=0.506  tea:acc=0.569 ★
+Época [14/60] TrLoss: 1.0805 | VlLoss: 1.0846 | jun:acc=0.382  sup:acc=0.496  tea:acc=0.565 ★
+Época [15/60] TrLoss: 1.0797 | VlLoss: 1.0836 | jun:acc=0.381  sup:acc=0.502  tea:acc=0.563 ★
+Época [16/60] TrLoss: 1.0781 | VlLoss: 1.0830 | jun:acc=0.372  sup:acc=0.503  tea:acc=0.562 ★
+Época [17/60] TrLoss: 1.0765 | VlLoss: 1.0821 | jun:acc=0.385  sup:acc=0.501  tea:acc=0.560 ★
+Época [18/60] TrLoss: 1.0754 | VlLoss: 1.0815 | jun:acc=0.378  sup:acc=0.500  tea:acc=0.560 ★
+Época [19/60] TrLoss: 1.0759 | VlLoss: 1.0810 | jun:acc=0.378  sup:acc=0.494  tea:acc=0.561 ★
+Época [20/60] TrLoss: 1.0723 | VlLoss: 1.0811 | jun:acc=0.383  sup:acc=0.488  tea:acc=0.558
+Época [21/60] TrLoss: 1.0712 | VlLoss: 1.0807 | jun:acc=0.372  sup:acc=0.493  tea:acc=0.559 ★
+Época [22/60] TrLoss: 1.0696 | VlLoss: 1.0804 | jun:acc=0.379  sup:acc=0.492  tea:acc=0.556 ★
+Época [23/60] TrLoss: 1.0683 | VlLoss: 1.0800 | jun:acc=0.385  sup:acc=0.493  tea:acc=0.557 ★
+Época [24/60] TrLoss: 1.0679 | VlLoss: 1.0794 | jun:acc=0.372  sup:acc=0.490  tea:acc=0.553 ★
+Época [25/60] TrLoss: 1.0672 | VlLoss: 1.0791 | jun:acc=0.380  sup:acc=0.481  tea:acc=0.552 ★
+Época [26/60] TrLoss: 1.0649 | VlLoss: 1.0788 | jun:acc=0.387  sup:acc=0.477  tea:acc=0.559 ★
+Época [27/60] TrLoss: 1.0624 | VlLoss: 1.0795 | jun:acc=0.383  sup:acc=0.479  tea:acc=0.554
+Época [28/60] TrLoss: 1.0621 | VlLoss: 1.0791 | jun:acc=0.384  sup:acc=0.465  tea:acc=0.554
+Época [29/60] TrLoss: 1.0612 | VlLoss: 1.0789 | jun:acc=0.383  sup:acc=0.473  tea:acc=0.552
+Época [30/60] TrLoss: 1.0592 | VlLoss: 1.0792 | jun:acc=0.390  sup:acc=0.473  tea:acc=0.549
+Época [31/60] TrLoss: 1.0566 | VlLoss: 1.0796 | jun:acc=0.386  sup:acc=0.468  tea:acc=0.543
+Época [32/60] TrLoss: 1.0563 | VlLoss: 1.0794 | jun:acc=0.385  sup:acc=0.465  tea:acc=0.543
+Época [33/60] TrLoss: 1.0552 | VlLoss: 1.0791 | jun:acc=0.375  sup:acc=0.465  tea:acc=0.546
+Época [34/60] TrLoss: 1.0540 | VlLoss: 1.0785 | jun:acc=0.368  sup:acc=0.467  tea:acc=0.546 ★
+Época [35/60] TrLoss: 1.0497 | VlLoss: 1.0782 | jun:acc=0.366  sup:acc=0.471  tea:acc=0.548 ★
+Época [36/60] TrLoss: 1.0493 | VlLoss: 1.0786 | jun:acc=0.371  sup:acc=0.468  tea:acc=0.546
+Época [37/60] TrLoss: 1.0474 | VlLoss: 1.0788 | jun:acc=0.379  sup:acc=0.473  tea:acc=0.540
+Época [38/60] TrLoss: 1.0452 | VlLoss: 1.0793 | jun:acc=0.376  sup:acc=0.467  tea:acc=0.539
+Época [39/60] TrLoss: 1.0464 | VlLoss: 1.0790 | jun:acc=0.382  sup:acc=0.464  tea:acc=0.544
+Época [40/60] TrLoss: 1.0449 | VlLoss: 1.0791 | jun:acc=0.385  sup:acc=0.463  tea:acc=0.542
+Época [41/60] TrLoss: 1.0420 | VlLoss: 1.0798 | jun:acc=0.383  sup:acc=0.458  tea:acc=0.537
+Época [42/60] TrLoss: 1.0421 | VlLoss: 1.0792 | jun:acc=0.391  sup:acc=0.462  tea:acc=0.537
+Época [43/60] TrLoss: 1.0367 | VlLoss: 1.0797 | jun:acc=0.385  sup:acc=0.459  tea:acc=0.530
+Época [44/60] TrLoss: 1.0352 | VlLoss: 1.0789 | jun:acc=0.385  sup:acc=0.456  tea:acc=0.530
+Época [45/60] TrLoss: 1.0337 | VlLoss: 1.0797 | jun:acc=0.391  sup:acc=0.453  tea:acc=0.524
+Época [46/60] TrLoss: 1.0325 | VlLoss: 1.0804 | jun:acc=0.396  sup:acc=0.458  tea:acc=0.522
+Época [47/60] TrLoss: 1.0323 | VlLoss: 1.0806 | jun:acc=0.394  sup:acc=0.458  tea:acc=0.533
+Época [48/60] TrLoss: 1.0304 | VlLoss: 1.0822 | jun:acc=0.387  sup:acc=0.450  tea:acc=0.517
+Época [49/60] TrLoss: 1.0277 | VlLoss: 1.0822 | jun:acc=0.401  sup:acc=0.449  tea:acc=0.525
+Época [50/60] TrLoss: 1.0268 | VlLoss: 1.0831 | jun:acc=0.396  sup:acc=0.443  tea:acc=0.527
+
+⏹ Early stopping: 15 épocas sin mejora.
+
+============================================================
+ ENTRENAMIENTO FINALIZADO
+ Mejor época: 35 (Val Loss: 1.0782)
+============================================================
+
+ Métricas de validación (mejor checkpoint):
+
+  ● jungle_presence_label:
+      Accuracy:          0.3657
+      Balanced Accuracy: 0.3643
+      F1 Macro:          0.3284
+      Muestras válidas:  3224
+      Predicciones: {'farm_oriented': 1764, 'ambiguous': 1148, 'map_presence': 312}
+  ● support_roam_label:
+      Accuracy:          0.4715
+      Balanced Accuracy: 0.4151
+      F1 Macro:          0.4117
+      Muestras válidas:  3224
+      Predicciones: {'lane_anchored': 512, 'ambiguous': 1740, 'roamer': 972}
+  ● team_tendency_label:
+      Accuracy:          0.5481
+      Balanced Accuracy: 0.3530
+      F1 Macro:          0.3105
+      Muestras válidas:  3224
+      Predicciones: {'botside_oriented': 39, 'ambiguous': 2874, 'topside_oriented': 311}
+
+HASTA MIN 14:
+============================================================
+ Multi-Output Embedding Classifier (PyTorch)
+ Dispositivo: CUDA
+ Feature groups: ['champions', 'summoner_spells', 'context']
+ Label window: m14
+============================================================
+
+[Datos] Cargando: /content/data/training/model_input_multioutput_sample5_m14.parquet
+        Filas: 16120
+
+[Validación] Comprobando columnas target...
+      ✓ farm_oriented: 3775 (23.4%)
+      ✓ ambiguous: 8678 (53.8%)
+      ✓ map_presence: 3667 (22.7%)
+      NaN: 0 (0.0%)
+      ✓ lane_anchored: 3557 (22.1%)
+      ✓ ambiguous: 8776 (54.4%)
+      ✓ roamer: 3787 (23.5%)
+      NaN: 0 (0.0%)
+      ✓ botside_oriented: 3329 (20.7%)
+      ✓ ambiguous: 9402 (58.3%)
+      ✓ topside_oriented: 3389 (21.0%)
+      NaN: 0 (0.0%)
+
+[Features] 31 columnas de 3 grupos
+
+[Split] GroupShuffleSplit por match_id...
+        Train: 12896 | Val: 3224
+
+[Preprocesamiento] Construyendo vocabularios desde train...
+        31 embeddings → 122 dimensiones totales
+        (vs ~1308+ con OneHot)
+
+        Parámetros del modelo: 35,039
+
+============================================================
+ ENTRENAMIENTO (60 épocas max, patience=15)
+============================================================
+
+Época [01/60] TrLoss: 1.2109 | VlLoss: 1.0982 | jun:acc=0.300  sup:acc=0.357  tea:acc=0.454 ★
+Época [02/60] TrLoss: 1.1529 | VlLoss: 1.0936 | jun:acc=0.343  sup:acc=0.400  tea:acc=0.514 ★
+Época [03/60] TrLoss: 1.1239 | VlLoss: 1.0916 | jun:acc=0.383  sup:acc=0.444  tea:acc=0.548 ★
+Época [04/60] TrLoss: 1.1078 | VlLoss: 1.0905 | jun:acc=0.401  sup:acc=0.455  tea:acc=0.578 ★
+Época [05/60] TrLoss: 1.1011 | VlLoss: 1.0897 | jun:acc=0.427  sup:acc=0.473  tea:acc=0.587 ★
+Época [06/60] TrLoss: 1.0959 | VlLoss: 1.0892 | jun:acc=0.445  sup:acc=0.492  tea:acc=0.589 ★
+Época [07/60] TrLoss: 1.0914 | VlLoss: 1.0886 | jun:acc=0.473  sup:acc=0.504  tea:acc=0.589 ★
+Época [08/60] TrLoss: 1.0901 | VlLoss: 1.0878 | jun:acc=0.480  sup:acc=0.508  tea:acc=0.589 ★
+Época [09/60] TrLoss: 1.0878 | VlLoss: 1.0871 | jun:acc=0.497  sup:acc=0.517  tea:acc=0.589 ★
+Época [10/60] TrLoss: 1.0863 | VlLoss: 1.0860 | jun:acc=0.498  sup:acc=0.515  tea:acc=0.589 ★
+Época [11/60] TrLoss: 1.0860 | VlLoss: 1.0854 | jun:acc=0.489  sup:acc=0.514  tea:acc=0.589 ★
+Época [12/60] TrLoss: 1.0846 | VlLoss: 1.0847 | jun:acc=0.490  sup:acc=0.504  tea:acc=0.589 ★
+Época [13/60] TrLoss: 1.0828 | VlLoss: 1.0840 | jun:acc=0.476  sup:acc=0.486  tea:acc=0.588 ★
+Época [14/60] TrLoss: 1.0804 | VlLoss: 1.0830 | jun:acc=0.472  sup:acc=0.463  tea:acc=0.588 ★
+Época [15/60] TrLoss: 1.0799 | VlLoss: 1.0820 | jun:acc=0.463  sup:acc=0.470  tea:acc=0.586 ★
+Época [16/60] TrLoss: 1.0767 | VlLoss: 1.0809 | jun:acc=0.453  sup:acc=0.455  tea:acc=0.582 ★
+Época [17/60] TrLoss: 1.0758 | VlLoss: 1.0795 | jun:acc=0.455  sup:acc=0.454  tea:acc=0.582 ★
+Época [18/60] TrLoss: 1.0737 | VlLoss: 1.0788 | jun:acc=0.461  sup:acc=0.444  tea:acc=0.582 ★
+Época [19/60] TrLoss: 1.0732 | VlLoss: 1.0779 | jun:acc=0.469  sup:acc=0.442  tea:acc=0.575 ★
+Época [20/60] TrLoss: 1.0693 | VlLoss: 1.0776 | jun:acc=0.465  sup:acc=0.437  tea:acc=0.577 ★
+Época [21/60] TrLoss: 1.0689 | VlLoss: 1.0772 | jun:acc=0.453  sup:acc=0.433  tea:acc=0.575 ★
+Época [22/60] TrLoss: 1.0670 | VlLoss: 1.0764 | jun:acc=0.441  sup:acc=0.435  tea:acc=0.573 ★
+Época [23/60] TrLoss: 1.0652 | VlLoss: 1.0753 | jun:acc=0.453  sup:acc=0.442  tea:acc=0.570 ★
+Época [24/60] TrLoss: 1.0648 | VlLoss: 1.0752 | jun:acc=0.459  sup:acc=0.445  tea:acc=0.571 ★
+Época [25/60] TrLoss: 1.0631 | VlLoss: 1.0754 | jun:acc=0.446  sup:acc=0.432  tea:acc=0.569
+Época [26/60] TrLoss: 1.0609 | VlLoss: 1.0753 | jun:acc=0.445  sup:acc=0.436  tea:acc=0.573
+Época [27/60] TrLoss: 1.0582 | VlLoss: 1.0752 | jun:acc=0.437  sup:acc=0.443  tea:acc=0.571 ★
+Época [28/60] TrLoss: 1.0588 | VlLoss: 1.0747 | jun:acc=0.449  sup:acc=0.437  tea:acc=0.570 ★
+Época [29/60] TrLoss: 1.0570 | VlLoss: 1.0741 | jun:acc=0.432  sup:acc=0.445  tea:acc=0.569 ★
+Época [30/60] TrLoss: 1.0544 | VlLoss: 1.0741 | jun:acc=0.431  sup:acc=0.441  tea:acc=0.572
+Época [31/60] TrLoss: 1.0541 | VlLoss: 1.0743 | jun:acc=0.431  sup:acc=0.434  tea:acc=0.565
+Época [32/60] TrLoss: 1.0524 | VlLoss: 1.0741 | jun:acc=0.430  sup:acc=0.442  tea:acc=0.566
+Época [33/60] TrLoss: 1.0510 | VlLoss: 1.0740 | jun:acc=0.425  sup:acc=0.436  tea:acc=0.566 ★
+Época [34/60] TrLoss: 1.0504 | VlLoss: 1.0739 | jun:acc=0.435  sup:acc=0.432  tea:acc=0.571 ★
+Época [35/60] TrLoss: 1.0478 | VlLoss: 1.0741 | jun:acc=0.428  sup:acc=0.432  tea:acc=0.565
+Época [36/60] TrLoss: 1.0451 | VlLoss: 1.0738 | jun:acc=0.429  sup:acc=0.437  tea:acc=0.569 ★
+Época [37/60] TrLoss: 1.0437 | VlLoss: 1.0746 | jun:acc=0.430  sup:acc=0.429  tea:acc=0.561
+Época [38/60] TrLoss: 1.0418 | VlLoss: 1.0755 | jun:acc=0.408  sup:acc=0.434  tea:acc=0.567
+Época [39/60] TrLoss: 1.0416 | VlLoss: 1.0753 | jun:acc=0.417  sup:acc=0.437  tea:acc=0.562
+Época [40/60] TrLoss: 1.0408 | VlLoss: 1.0747 | jun:acc=0.419  sup:acc=0.427  tea:acc=0.562
+Época [41/60] TrLoss: 1.0402 | VlLoss: 1.0747 | jun:acc=0.422  sup:acc=0.426  tea:acc=0.561
+Época [42/60] TrLoss: 1.0358 | VlLoss: 1.0739 | jun:acc=0.422  sup:acc=0.422  tea:acc=0.558
+Época [43/60] TrLoss: 1.0323 | VlLoss: 1.0753 | jun:acc=0.430  sup:acc=0.421  tea:acc=0.554
+Época [44/60] TrLoss: 1.0332 | VlLoss: 1.0749 | jun:acc=0.418  sup:acc=0.426  tea:acc=0.553
+Época [45/60] TrLoss: 1.0319 | VlLoss: 1.0748 | jun:acc=0.426  sup:acc=0.427  tea:acc=0.551
+Época [46/60] TrLoss: 1.0293 | VlLoss: 1.0755 | jun:acc=0.426  sup:acc=0.423  tea:acc=0.545
+Época [47/60] TrLoss: 1.0266 | VlLoss: 1.0761 | jun:acc=0.421  sup:acc=0.426  tea:acc=0.540
+Época [48/60] TrLoss: 1.0226 | VlLoss: 1.0769 | jun:acc=0.412  sup:acc=0.424  tea:acc=0.537
+Época [49/60] TrLoss: 1.0248 | VlLoss: 1.0771 | jun:acc=0.410  sup:acc=0.421  tea:acc=0.545
+Época [50/60] TrLoss: 1.0202 | VlLoss: 1.0771 | jun:acc=0.405  sup:acc=0.414  tea:acc=0.549
+Época [51/60] TrLoss: 1.0205 | VlLoss: 1.0785 | jun:acc=0.417  sup:acc=0.420  tea:acc=0.544
+
+⏹ Early stopping: 15 épocas sin mejora.
+
+============================================================
+ ENTRENAMIENTO FINALIZADO
+ Mejor época: 36 (Val Loss: 1.0738)
+============================================================
+
+ Métricas de validación (mejor checkpoint):
+
+  ● jungle_presence_label:
+      Accuracy:          0.4287
+      Balanced Accuracy: 0.3680
+      F1 Macro:          0.3553
+      Muestras válidas:  3224
+      Predicciones: {'farm_oriented': 1117, 'ambiguous': 1830, 'map_presence': 277}
+  ● support_roam_label:
+      Accuracy:          0.4367
+      Balanced Accuracy: 0.4188
+      F1 Macro:          0.4098
+      Muestras válidas:  3224
+      Predicciones: {'lane_anchored': 795, 'ambiguous': 1488, 'roamer': 941}
+  ● team_tendency_label:
+      Accuracy:          0.5692
+      Balanced Accuracy: 0.3504
+      F1 Macro:          0.3089
+      Muestras válidas:  3224
+      Predicciones: {'botside_oriented': 56, 'ambiguous': 2952, 'topside_oriented': 216}

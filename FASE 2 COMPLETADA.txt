@@ -1,0 +1,81 @@
+Resumen de la Fase 2: reformulación binaria y estudio del papel de la clase ambiguous
+
+Una vez cerrada la Fase 1, el siguiente objetivo fue estudiar hasta qué punto la clase intermedia ambiguous estaba limitando el rendimiento del sistema. El análisis temporal previo había mostrado que gran parte de la inestabilidad de las etiquetas no provenía de contradicciones entre extremos, sino de transiciones entre un extremo y la banda central. Eso sugería que la principal dificultad del modelo podía no estar tanto en distinguir comportamientos opuestos, sino en aprender una clase intermedia muy dominante y poco útil desde el punto de vista práctico.
+
+A partir de esa observación, la Fase 2 se planteó con una doble motivación. Por un lado, desde una perspectiva metodológica, se trataba de comprobar si la caída de rendimiento en la formulación ternaria se debía realmente a la presencia de ambiguous. Por otro lado, desde una perspectiva aplicada, se quería evaluar si una salida basada en una clase intermedia masiva tenía sentido en el contexto de un eventual coach assistant, donde una respuesta ambigua en un porcentaje muy elevado de casos reduce notablemente la utilidad del sistema.
+
+Reformulación del problema
+
+Para esta fase se implementaron tres esquemas de discretización a partir del mismo score continuo:
+
+ternary, que mantenía la formulación original en tres clases: extremo bajo, ambiguous y extremo alto;
+binary_clean, que conservaba únicamente los ejemplos situados en los extremos y descartaba la banda central;
+binary_full, que forzaba toda la distribución a dos clases, asignando también la zona central a uno de los extremos.
+
+La idea de fondo era comparar tres compromisos distintos entre calidad y cantidad de datos. La formulación ternaria conservaba la estructura original del problema, pero seguía arrastrando la gran masa central. La binaria limpia reducía cobertura, aunque a cambio producía etiquetas más nítidas. La binaria completa evitaba perder datos, pero potencialmente reintroducía ruido al forzar decisiones sobre casos intermedios.
+
+Como baseline se mantuvo la configuración más sólida derivada de la Fase 1: ventana global de 10 minutos, que había resultado la mejor solución simple y defendible para continuar el pipeline.
+
+Resultados de la comparación entre esquemas
+
+La comparación mostró de forma muy clara que la clase ambiguous estaba perjudicando el aprendizaje. En las tres tareas del problema —comportamiento del jungla, roaming del support y tendencia lateral del equipo— la reformulación binaria mejoró de manera consistente respecto a la formulación ternaria.
+
+En la tarea de jungla, la métrica F1 macro pasó de aproximadamente 0.37 en el esquema ternario a valores en torno a 0.51–0.53 en binario. En la tarea de support, la mejora fue aún más acusada, pasando de alrededor de 0.28 en ternario a más de 0.58–0.61 en binario. En la tarea de team tendency, que seguía siendo la más problemática, el rendimiento también mejoró claramente, pasando de valores próximos a 0.34 a un rango de 0.52–0.55.
+
+El patrón fue consistente en las tres tareas:
+binary_clean fue el mejor esquema, binary_full quedó en segundo lugar y ternary fue sistemáticamente el peor.
+
+Este resultado es importante por dos razones. Primero, porque confirma que la presencia de la clase intermedia estaba actuando como un cuello de botella real. Segundo, porque indica que la mejora no se debe únicamente a eliminar una clase y simplificar la tarea, sino a que el problema binario entre extremos parece estar mucho más alineado con la señal que el draft puede capturar de forma fiable.
+
+Interpretación de binary_clean frente a binary_full
+
+Una cuestión relevante dentro de la fase fue la comparación entre las dos formulaciones binarias. La versión binary_clean descartaba todos los casos centrales, mientras que binary_full preservaba toda la cobertura obligando a la banda intermedia a caer en una de las dos clases. Se esperaba que binary_full pudiera compensar la pérdida de datos introducida por la versión limpia. Sin embargo, los resultados mostraron que, aunque binary_full superaba claramente al ternario, seguía rindiendo peor que binary_clean en las tres tareas.
+
+Esto sugiere que la zona central no solo representa una región amplia del espacio de etiquetas, sino también una zona efectivamente ruidosa para el aprendizaje. Es decir, al obligar al modelo a tomar una decisión sobre ejemplos próximos a la franja intermedia, se recupera cobertura, pero se pierde pureza del target. En esta fase, la evidencia empírica apuntó a que la pureza del objetivo era más importante que el tamaño del conjunto de entrenamiento.
+
+Estudio adicional sobre el ancho de la banda central
+
+Dado que la principal desventaja de binary_clean era la pérdida de datos, se planteó una extensión natural del análisis: reducir el ancho de la banda central para comprobar si era posible conservar más observaciones sin degradar demasiado la calidad del target. Para ello, dentro del esquema binary_clean, se compararon tres configuraciones de quantiles:
+
+q20_80, correspondiente a la discretización más estricta;
+q30_70, con una banda central más estrecha;
+q40_60, con una banda central todavía más reducida.
+
+La hipótesis era que un estrechamiento moderado de ambiguous podría ofrecer un mejor compromiso entre cobertura y pureza. Sin embargo, los resultados mostraron que la configuración original q20_80 seguía siendo la mejor en las tres tareas. Aunque las versiones q30_70 y q40_60 aumentaban el número de ejemplos válidos, el rendimiento descendía de forma consistente. La interpretación más razonable es que esos ejemplos extra, situados más cerca del centro del score, siguen siendo lo suficientemente ambiguos como para empeorar el aprendizaje.
+
+En consecuencia, la fase permitió concluir que la banda ambiguous no solo era demasiado grande en la formulación original, sino que también representaba una región realmente conflictiva del target. La mejora obtenida al reincorporar parte de esa zona no compensó la pérdida de claridad en las etiquetas.
+
+Implicaciones prácticas para el objetivo del TFG
+
+Esta fase también tuvo una lectura muy importante desde el punto de vista del producto final. Aunque la formulación ternaria resultó útil para analizar la estructura del problema y entender la naturaleza de las etiquetas, su utilidad práctica como salida final de un sistema de asistencia es muy limitada. En un coach assistant, devolver una predicción ambiguous en cerca de la mitad o más de los casos reduce significativamente el valor de la herramienta para el usuario.
+
+Por el contrario, la reformulación binaria ofrece una salida mucho más interpretable y accionable. El sistema deja de responder con una categoría intermedia dominante y pasa a forzar una posición entre dos extremos claros, que además puede complementarse en el futuro con una medida de confianza. Esto encaja mejor con el uso esperado de una herramienta de apoyo al análisis de draft, donde resulta más útil decir que un draft “tiende más a map presence” o “tiende más a un support lane-anchored”, aunque la confianza no sea máxima, que responder con una categoría ambigua muy frecuente.
+
+Conclusión de la Fase 2
+
+Con todo lo anterior, la Fase 2 puede darse por cerrada. Los hallazgos principales son los siguientes:
+
+La clase ambiguous constituía un cuello de botella real del sistema.
+La reformulación binaria mejora de forma consistente el rendimiento en las tres tareas.
+Entre las formulaciones binarias, binary_clean supera a binary_full, lo que indica que la calidad del target es más importante que conservar toda la cobertura.
+Reducir el ancho de la banda central no mejora los resultados; la configuración estricta q20_80 sigue siendo la mejor.
+Desde un punto de vista aplicado, la salida ternaria resulta poco adecuada para un coach assistant, mientras que la formulación binaria es considerablemente más útil e interpretable.
+
+Como consecuencia, la configuración que queda mejor respaldada empíricamente para continuar el proyecto es:
+
+ventana temporal: 10 minutos
+schema de labels: binary_clean
+quantiles: 0.20 / 0.80
+feature groups baseline: standard
+
+En otras palabras, la Fase 2 ha servido para demostrar que la dirección correcta no es seguir refinando una clase intermedia dominante, sino adoptar una formulación binaria más limpia y más compatible con el objetivo final del TFG. El siguiente paso lógico, por tanto, pasa a ser mejorar la representación de la entrada —es decir, enriquecer las features del draft— partiendo ya de esta nueva formulación binaria estabilizada.
+
+Validación final sobre el dataset completo y ablaciones simples
+
+Como comprobación final antes de cerrar la Fase 2, se reentrenó el modelo con el dataset completo utilizando la configuración que había quedado mejor respaldada en los experimentos anteriores: ventana de 10 minutos, esquema binary_clean y discretización q20_80. Los resultados confirmaron el mismo patrón ya observado en los experimentos previos: la tarea de support siguió siendo la más predecible, mientras que jungle y team tendency se mantuvieron en un nivel de rendimiento intermedio pero estable. Esto refuerza la idea de que la reformulación binaria seleccionada no solo funciona en muestras reducidas, sino que también se sostiene cuando el pipeline se ejecuta a escala completa.
+
+De forma adicional, se realizaron unas ablaciones simples sobre la arquitectura y la optimización, aumentando ligeramente la capacidad del modelo y ajustando hiperparámetros básicos como el dropout, el learning rate y el batch size. Estas pruebas mostraron que todavía existía un pequeño margen de ajuste técnico: una arquitectura algo mayor y con menor regularización producía curvas de entrenamiento más limpias y una convergencia algo más sana. Sin embargo, las mejoras finales en validación fueron reducidas, y en todos los casos el modelo volvió a estabilizarse en una meseta muy similar.
+
+Este resultado tiene una lectura importante. Una vez corregidos los problemas más evidentes de overfitting, y una vez comprobado que pequeñas modificaciones arquitectónicas no cambian sustancialmente el rendimiento final, la limitación principal ya no parece estar en la red base ni en un ajuste fino de hiperparámetros. Todo apunta a que el siguiente cuello de botella se encuentra en la propia representación de entrada: el modelo recibe información de draft todavía demasiado “muda” y debe reconstruir desde cero relaciones estratégicas que podrían describirse de manera más explícita.
+
+Por tanto, esta validación final refuerza aún más la conclusión de la Fase 2. La formulación binaria seleccionada puede darse por estabilizada, y el siguiente paso lógico del proyecto no pasa por seguir aumentando complejidad de forma indiscriminada, sino por iniciar la Fase 3: enriquecer las features del draft con un pequeño conjunto de señales semánticas de alto nivel que permitan al modelo capturar mejor la estructura estratégica de la composición.

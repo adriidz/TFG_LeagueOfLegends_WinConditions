@@ -1,0 +1,55 @@
+Resumen del trabajo realizado y motivación de las fases
+
+Tras revisar el pipeline completo del TFG, la conclusión inicial fue que el principal cuello de botella no parecía estar, al menos de momento, en la arquitectura del modelo, sino en la calidad, definición y estabilidad de las etiquetas que se estaban intentando predecir a partir del draft. El sistema actual parte de una idea razonable: usar la información pregame del draft para inferir ciertas tendencias tempranas de comportamiento del equipo. Sin embargo, las etiquetas no se obtienen directamente de la intención estratégica del draft, sino del comportamiento observado en la partida durante los primeros minutos. Eso introduce un problema importante: el draft representa una intención o predisposición, mientras que la label refleja un resultado condicionado por la ejecución, el estado de la partida y eventos tempranos que pueden desviar el plan inicial. A partir de esa observación, se decidió estructurar el trabajo en varias fases, priorizando primero la revisión del target antes de modificar el modelo.
+
+La intención general de esta reorganización fue establecer un orden lógico de mejora. En lugar de intervenir directamente sobre la red neuronal, se consideró más adecuado empezar por comprobar si las etiquetas estaban bien definidas, si eran temporalmente estables y si realmente podían ser explicadas por el draft. Con esa lógica, se definió una Fase 1 centrada en las labels, una Fase 2 orientada al tratamiento de la clase intermedia ambiguous, una Fase 3 dedicada al enriquecimiento semántico de las features del draft, y fases posteriores ya más relacionadas con formulaciones alternativas del problema, como regresión o ajustes arquitectónicos.
+
+Intención de la Fase 1
+
+La Fase 1 se planteó con un objetivo muy claro: comprobar hasta qué punto la definición temporal de las etiquetas estaba condicionando el rendimiento del modelo. El punto de partida era que las tres tareas del pipeline —presencia/actividad del jungla, roaming del support y tendencia lateral del equipo— se estaban construyendo a partir de scores agregados sobre una ventana temprana de juego. La hipótesis era que esa ventana podía estar siendo demasiado larga o demasiado homogénea para las tres tareas, haciendo que el target recogiera cada vez más el desarrollo de la partida y menos la influencia del draft.
+
+Por tanto, la Fase 1 se dividió conceptualmente en tres subapartados. El primero consistía en probar varias ventanas temporales y observar cómo cambiaban tanto la distribución de las etiquetas como el rendimiento del modelo. El segundo consistía en comprobar si las tres tareas debían compartir o no una misma ventana óptima, es decir, si jungle, support y team tendency se estabilizaban igual de pronto. El tercero consistía en realizar un análisis explícito de estabilidad temporal de las labels, para ver si una misma observación (match_id, team_id) conservaba o no su etiqueta al pasar de una ventana a otra.
+
+Desarrollo de la Fase 1
+
+Para poder realizar esta fase con rigor, primero se adaptó el pipeline. El script de construcción de labels y draft features se modificó para permitir generar, en una sola pasada sobre los datos raw, distintas versiones de las etiquetas para varias ventanas temporales. En el experimento se trabajó con ventanas de 6, 8, 10, 12 y 14 minutos. Además, el pipeline se adaptó para que el ensamblado del model_input y el entrenamiento pudieran apuntar a una ventana concreta sin romper el flujo general de ejecución.
+
+Durante esta adaptación se detectó un problema práctico importante: los mínimos por defecto de frames requeridos para calcular algunas métricas eran demasiado exigentes para ventanas cortas, especialmente 6 y 8 minutos. Eso hacía que ciertas tareas generasen pocas filas o incluso quedasen mal definidas para esas ventanas. Se corrigió bajando esos umbrales para que el experimento entre ventanas fuese justo y no estuviese sesgado por filtros incompatibles con las ventanas más cortas.
+
+Una vez ajustado el pipeline, se reentrenó el modelo multioutput con la misma configuración básica en cada una de las ventanas temporales. Esto permitió observar no solo el rendimiento final, sino también cambios en la distribución de clases y comportamientos de colapso del clasificador.
+
+Resultados obtenidos en la comparación de ventanas
+
+El primer hallazgo fue que no existía una única ventana óptima para las tres tareas. Cada etiqueta parecía estabilizarse en un momento distinto del early game, y eso se reflejaba tanto en las métricas como en el comportamiento de las predicciones.
+
+La ventana de 6 minutos resultó demasiado temprana. En esa configuración, el modelo tendía a colapsar algunas clases y producía resultados poco consistentes, lo que sugirió que todavía no había suficiente señal consolidada para capturar de forma fiable el comportamiento que se quería etiquetar.
+
+La ventana de 8 minutos ofreció cierta mejora, pero en varios casos esa mejora venía acompañada de una fuerte explotación de la clase ambiguous, especialmente en la tarea de tendencia de equipo. Esto hizo evidente que la accuracy bruta podía estar siendo engañosa, porque parte del aparente rendimiento procedía de predecir la clase mayoritaria en lugar de distinguir realmente entre extremos.
+
+La ventana de 10 minutos resultó ser la mejor para la tarea de jungla, y también el mejor compromiso para team tendency. A partir de ese punto, el comportamiento del jungla ya aparecía suficientemente definido como para que la label fuese más estable y predecible, mientras que para tendencia de equipo seguía siendo la opción más razonable pese a que esta tarea continuaba siendo la más problemática del conjunto.
+
+La ventana de 12 minutos fue la que mejor funcionó en la tarea de support. Esto sugirió que el comportamiento de roaming del support necesita algo más de tiempo para consolidarse y diferenciarse con claridad, probablemente porque su impacto espacial y cooperativo tarda algo más en separarse de la fase de línea inicial.
+
+La ventana de 14 minutos no supuso una mejora clara adicional respecto a 12 para support, y en general empezaba a acercarse más a un punto donde el comportamiento observado podía estar más influido por el estado de la partida que por la intención inicial del draft.
+
+Análisis de estabilidad de labels (Fase 1C)
+
+Después de comparar el rendimiento por ventanas, se abordó el tercer subapartado de la Fase 1: el análisis directo de estabilidad de las etiquetas. Para ello se construyó un script específico que alineaba, por match_id y team_id, las labels generadas en las distintas ventanas y calculaba acuerdos entre ventanas consecutivas, acuerdo contra una ventana de referencia, número de cambios de etiqueta por fila y transiciones entre clases.
+
+Este análisis confirmó con bastante claridad lo que ya se intuía a partir del entrenamiento. La label de jungla mostraba una estabilización clara a partir de 10 minutos. La de support se estabilizaba mejor entre 12 y 14 minutos. La de team tendency era la menos estable de las tres, con más cambios y con peor acuerdo entre ventanas alejadas.
+
+Sin embargo, el hallazgo más importante del análisis de estabilidad fue otro: la mayor parte de la inestabilidad no procedía de saltos entre los dos extremos de cada tarea, sino de transiciones entre un extremo y la clase ambiguous. En jungle y support, los cambios directos entre extremos eran prácticamente inexistentes cuando se ignoraba ambiguous. En team tendency aparecían algunos más, pero aun así la mayor parte de la variación seguía pasando por la clase intermedia.
+
+Este punto es especialmente relevante, porque indica que las etiquetas no son arbitrarias ni caóticas. Al contrario, muestran una evolución temporal bastante coherente. Lo que ocurre es que la clase ambiguous actúa como una franja intermedia o zona de transición temporal, capturando estados todavía no resueltos o poco definidos del comportamiento del equipo. Esto da bastante solidez al planteamiento del TFG, ya que permite defender que la señal existe, pero también explica por qué el modelo encuentra dificultades cuando esa clase intermedia domina buena parte del conjunto de entrenamiento.
+
+Cierre de la Fase 1
+
+Con todo lo anterior, se dio por finalizada la Fase 1. Esta fase permitió validar varias ideas importantes. Primero, que el principal problema a resolver en esta etapa no era la arquitectura del modelo, sino la definición temporal y la estabilidad de las etiquetas. Segundo, que no conviene tratar por defecto las tres tareas como si fueran equivalentes, porque no se estabilizan al mismo ritmo. Tercero, que la mayor fuente de inestabilidad no son contradicciones entre extremos, sino el peso y la naturaleza de la clase ambiguous.
+
+Como resultado, quedaron dos configuraciones razonables para continuar. La primera, más simple metodológicamente, consiste en fijar 10 minutos como ventana global, ya que funciona muy bien para jungla, es la mejor opción razonable para team tendency y sigue siendo aceptable para support. La segunda, técnicamente más precisa, consiste en usar ventana por tarea: 10 minutos para jungla, 12 para support y 10 para team tendency. Esta segunda opción está mejor justificada empíricamente, aunque complica algo más la narrativa del pipeline.
+
+Conclusión y conexión con la siguiente fase
+
+La principal conclusión de esta fase es que el pipeline sí contiene señal útil y coherente, pero que gran parte del reto está concentrado en la clase intermedia ambiguous. Una vez comprobado que las labels tienen sentido temporal y que no presentan un comportamiento errático entre extremos, el siguiente paso lógico es abordar precisamente ese problema. Por eso, la Fase 2 se plantea ahora como el estudio del impacto de ambiguous: comparar entrenamiento ternario frente a versiones sin esa clase y evaluar si su presencia está dificultando innecesariamente el aprendizaje.
+
+En otras palabras, la Fase 1 ha servido para responder a la pregunta de si el target era razonable. La respuesta es que sí, aunque no de forma homogénea entre tareas y con una fuerte dependencia de la banda intermedia ambiguous. Con esto, el proyecto queda en una posición mucho más sólida para justificar la siguiente intervención sobre el pipeline.

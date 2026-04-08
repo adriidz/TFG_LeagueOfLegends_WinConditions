@@ -3,4 +3,5 @@ __pycache__/
 */__pycache__/
 *.pyc
 .venv/
-Data_raw/
+data/
+Models/
