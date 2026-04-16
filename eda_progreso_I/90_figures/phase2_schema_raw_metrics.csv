@@ -1,0 +1,10 @@
+run_dir,task,schema,quantile_tag,window,feature_groups,accuracy,balanced_accuracy,f1_macro,valid_samples
+eda_progreso_I\02_schema_study\binary_clean\training\multioutput_nn_q20_80_binary_clean,jungle,binary_clean,q20_80,,"champions,summoner_spells,context",0.554,0.5427,0.5206,2877
+eda_progreso_I\02_schema_study\binary_full\training\multioutput_nn_q20_80_binary_full,jungle,binary_full,q20_80,,"champions,summoner_spells,context",0.5254,0.5159,0.4947,5910
+eda_progreso_I\02_schema_study\ternary\training\multioutput_nn_q20_80_ternary,jungle,ternary,q20_80,,"champions,summoner_spells,context",0.4291,0.3797,0.3394,5910
+eda_progreso_I\02_schema_study\binary_clean\training\multioutput_nn_q20_80_binary_clean,support,binary_clean,q20_80,,"champions,summoner_spells,context",0.6473,0.6463,0.6461,3062
+eda_progreso_I\02_schema_study\binary_full\training\multioutput_nn_q20_80_binary_full,support,binary_full,q20_80,,"champions,summoner_spells,context",0.5978,0.5976,0.5976,5910
+eda_progreso_I\02_schema_study\ternary\training\multioutput_nn_q20_80_ternary,support,ternary,q20_80,,"champions,summoner_spells,context",0.3431,0.4292,0.3151,5910
+eda_progreso_I\02_schema_study\binary_clean\training\multioutput_nn_q20_80_binary_clean,team,binary_clean,q20_80,,"champions,summoner_spells,context",0.5586,0.5581,0.5581,2689
+eda_progreso_I\02_schema_study\binary_full\training\multioutput_nn_q20_80_binary_full,team,binary_full,q20_80,,"champions,summoner_spells,context",0.5311,0.5231,0.4944,5910
+eda_progreso_I\02_schema_study\ternary\training\multioutput_nn_q20_80_ternary,team,ternary,q20_80,,"champions,summoner_spells,context",0.4792,0.3609,0.3343,5910

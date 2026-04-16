@@ -1,0 +1,2 @@
+task,rows,fully_observed_rows,fully_stable_rows,rows_with_any_change,pct_fully_stable,mean_n_label_changes,median_n_label_changes,rows_with_extreme_flip_ignore_ambiguous,pct_rows_with_extreme_flip_ignore_ambiguous
+jungle,29550,29103,10256,19294,0.34707275803722504,1.0201353637901862,1.0,5,0.00016920473773265651

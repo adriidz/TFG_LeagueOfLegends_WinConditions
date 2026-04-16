@@ -18,6 +18,25 @@ RED_TEAM_ID = 200
 def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
+def apply_sample_suffix(path: str, frac: Optional[float]) -> str:
+    if frac is None or frac >= 1.0 or frac <= 0.0:
+        return path
+    base, ext = os.path.splitext(path)
+    if ext == "":
+        return f"{base}_sample{int(frac * 100)}"
+    return f"{base}_sample{int(frac * 100)}{ext}"
+
+def get_target_frac(args_frac: Optional[float]) -> Optional[float]:
+    if args_frac is not None:
+        return args_frac
+    env_frac = os.getenv("TFG_SAMPLE_FRAC")
+    if env_frac:
+        try:
+            return float(env_frac)
+        except ValueError:
+            pass
+    return None
+
 
 def list_match_dirs(base: str) -> List[str]:
     if not os.path.isdir(base):
@@ -343,11 +362,22 @@ def main() -> None:
     parser.add_argument("--min-duration-minutes", type=float, default=15.0)
     parser.add_argument("--require-perfect-roles", action="store_true")
     parser.add_argument("--top-n", type=int, default=150)
+    parser.add_argument("--sample-frac", type=float, default=None, help="Fracción (ej 0.1)")
     args = parser.parse_args()
+
+    target_frac = get_target_frac(args.sample_frac)
+    if target_frac is not None and 0.0 < target_frac < 1.0:
+        args.out_dir = apply_sample_suffix(args.out_dir, target_frac)
+        print(f"Muestreo detectado ({target_frac}). Reportes irán a {args.out_dir}")
 
     base = os.path.join(args.raw_root, args.region)
     ensure_dir(args.out_dir)
     match_dirs = list_match_dirs(base)
+
+    if target_frac is not None and 0.0 < target_frac < 1.0:
+        limit = max(1, int(len(match_dirs) * target_frac))
+        match_dirs = match_dirs[:limit]
+        print(f"Muestreo aplicado ({target_frac}): Limitado a {limit} partidas para EDA.")
 
     total_seen = 0
     total_kept = 0
@@ -371,6 +401,8 @@ def main() -> None:
 
     for mdir in match_dirs:
         total_seen += 1
+        if total_seen % 5000 == 0:
+            print(f"Progreso [Draft]: Procesando partida {total_seen} de {len(match_dirs)}...")
         try:
             match = load_match_json(mdir)
         except Exception:

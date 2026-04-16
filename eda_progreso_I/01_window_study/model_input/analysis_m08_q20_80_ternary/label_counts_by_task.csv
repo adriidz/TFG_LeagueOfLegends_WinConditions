@@ -1,0 +1,11 @@
+task,label_value,n
+jungle,ambiguous,11261
+jungle,farm_oriented,11108
+jungle,map_presence,7178
+jungle,,3
+support,ambiguous,10666
+support,lane_anchored,9722
+support,roamer,9162
+team,ambiguous,15786
+team,topside_oriented,7325
+team,botside_oriented,6439

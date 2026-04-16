@@ -322,7 +322,12 @@ def main() -> None:
     duplicate_jungle_sample: List[str] = []
     missing_utility_sample: List[str] = []
 
+    total_seen = 0
     for match_path in match_paths:
+        total_seen += 1
+        if total_seen % 5000 == 0:
+            print(f"Progreso [QC]: Procesando partida {total_seen} de {len(match_paths)}...")
+            
         analysis = analyze_match(match_path, args.min_duration_minutes)
         analyses.append(analysis)
 

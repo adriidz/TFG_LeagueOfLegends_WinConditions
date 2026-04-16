@@ -1,0 +1,4 @@
+table,left_rows,right_rows,left_unique_keys,right_unique_keys,overlap_keys,left_only_keys,right_only_keys
+jungle,29550,26781,29550,26781,26781,2769,0
+support,29550,29414,29550,29414,29414,136,0
+team,29550,24772,29550,24772,24772,4778,0

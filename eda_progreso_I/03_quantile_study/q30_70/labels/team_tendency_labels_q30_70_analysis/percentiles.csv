@@ -1,0 +1,12 @@
+metric,q,value
+team_side_focus_score,0.01,-0.8315151515151515
+team_side_focus_score,0.05,-0.75
+team_side_focus_score,0.1,-0.6842105263157895
+team_side_focus_score,0.25,-0.625
+team_side_focus_score,0.33,-0.5789473684210527
+team_side_focus_score,0.5,-0.375
+team_side_focus_score,0.66,-0.29411764705882354
+team_side_focus_score,0.75,-0.2631578947368421
+team_side_focus_score,0.9,-0.15789473684210525
+team_side_focus_score,0.95,-0.07692307692307693
+team_side_focus_score,0.99,0.06666666666666667

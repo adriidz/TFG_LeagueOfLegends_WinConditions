@@ -1,0 +1,10 @@
+run_dir,task,schema,quantile_tag,window,feature_groups,accuracy,balanced_accuracy,f1_macro,valid_samples
+eda_progreso_I\03_quantile_study\q20_80\training\multioutput_nn_q20_80_binary_clean,jungle,binary_clean,q20_80,,"champions,summoner_spells,context",0.554,0.5427,0.5206,2877
+eda_progreso_I\03_quantile_study\q30_70\training\multioutput_nn_q30_70_binary_clean,jungle,binary_clean,q30_70,,"champions,summoner_spells,context",0.5417,0.5391,0.5377,4541
+eda_progreso_I\03_quantile_study\q40_60\training\multioutput_nn_q40_60_binary_clean,jungle,binary_clean,q40_60,,"champions,summoner_spells,context",0.5219,0.5215,0.5214,5369
+eda_progreso_I\03_quantile_study\q20_80\training\multioutput_nn_q20_80_binary_clean,support,binary_clean,q20_80,,"champions,summoner_spells,context",0.6473,0.6463,0.6461,3062
+eda_progreso_I\03_quantile_study\q30_70\training\multioutput_nn_q30_70_binary_clean,support,binary_clean,q30_70,,"champions,summoner_spells,context",0.6046,0.6048,0.6045,4219
+eda_progreso_I\03_quantile_study\q40_60\training\multioutput_nn_q40_60_binary_clean,support,binary_clean,q40_60,,"champions,summoner_spells,context",0.5935,0.5929,0.5928,5882
+eda_progreso_I\03_quantile_study\q20_80\training\multioutput_nn_q20_80_binary_clean,team,binary_clean,q20_80,,"champions,summoner_spells,context",0.5586,0.5581,0.5581,2689
+eda_progreso_I\03_quantile_study\q30_70\training\multioutput_nn_q30_70_binary_clean,team,binary_clean,q30_70,,"champions,summoner_spells,context",0.5389,0.5383,0.538,3778
+eda_progreso_I\03_quantile_study\q40_60\training\multioutput_nn_q40_60_binary_clean,team,binary_clean,q40_60,,"champions,summoner_spells,context",0.5387,0.5324,0.5222,4930

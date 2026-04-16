@@ -1,0 +1,2 @@
+label_schema,quantile_or_threshold_tag,lower_quantile,upper_quantile,lower_threshold,upper_threshold,analysis_windows,sample_frac
+ternary,q20_80,0.2,0.8,,,"6.0,8.0,10.0,12.0,14.0",

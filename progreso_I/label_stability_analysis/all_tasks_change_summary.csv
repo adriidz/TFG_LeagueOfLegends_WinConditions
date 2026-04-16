@@ -1,0 +1,4 @@
+task,rows,fully_observed_rows,fully_stable_rows,rows_with_any_change,pct_fully_stable,mean_n_label_changes,median_n_label_changes,rows_with_extreme_flip_ignore_ambiguous,pct_rows_with_extreme_flip_ignore_ambiguous
+jungle,16120,15891,5586,10534,0.34652605459057073,1.0265508684863525,1.0,5,0.00031017369727047146
+support,16120,16025,5692,10428,0.3531017369727047,1.0060794044665013,1.0,0,0.0
+team,16120,16120,4275,11845,0.2651985111662531,1.2535359801488835,1.0,221,0.013709677419354839
