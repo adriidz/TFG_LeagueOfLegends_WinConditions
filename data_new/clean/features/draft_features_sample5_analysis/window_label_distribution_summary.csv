@@ -1,0 +1,10 @@
+task,max_minute,label,n
+jungle,8.0,ambiguous,6235
+jungle,8.0,farm_oriented,6153
+jungle,8.0,map_presence,3895
+support,8.0,ambiguous,5827
+support,8.0,lane_anchored,5429
+support,8.0,roamer,5026
+team,8.0,ambiguous,9256
+team,8.0,botside_oriented,3290
+team,8.0,topside_oriented,3738
