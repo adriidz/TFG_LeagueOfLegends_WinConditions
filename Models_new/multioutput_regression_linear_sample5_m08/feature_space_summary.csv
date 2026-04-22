@@ -1,0 +1,4 @@
+group,n_columns_present,raw_feature_columns_total,onehot_dimension_train
+champions,10,31,1308
+summoner_spells,20,31,1308
+context,1,31,1308
