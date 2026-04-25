@@ -158,6 +158,45 @@ python ProgresoActual\scripts\compare_support_champion_reference.py `
 - `ProgresoActual/models/support_mlp_regression*`: modelos, metricas e historiales.
 - `ProgresoActual/analysis/champion_reference/*`: comparacion por campeon.
 - `ProgresoActual/docs/informe_progreso_reinicio.md`: informe editable.
+- `ProgresoActual/experiments/support_oat/*`: manifests reproducibles de tuning OAT.
+- `ProgresoActual/analysis/oat_tuning/*`: agregados y rankings de tuning.
+
+## Tuning OAT
+
+El flujo de fine-tuning `one-at-a-time` esta documentado en
+`ProgresoActual/docs/support_oat_tuning.md`. Resumen:
+
+```powershell
+.\ProgresoActual\scripts\run_support_oat_tuning.ps1
+.\ProgresoActual\scripts\sync_support_oat_to_cluster.ps1
+```
+
+En cluster:
+
+```bash
+sbatch --array=1-N ProgresoActual/scripts/train_support_oat_array.sh
+```
+
+Tras traer modelos de vuelta:
+
+```powershell
+python ProgresoActual\scripts\aggregate_support_oat_results.py
+```
+
+## Diseno experimental 170k
+
+El protocolo para pasar de `sample5` al dataset completo actual esta en
+`ProgresoActual/docs/experimental_design_170k.md`. El primer paso caro es:
+
+```powershell
+.\ProgresoActual\scripts\run_full_snapshot.ps1
+```
+
+Despues, la baseline full m12:
+
+```powershell
+.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 1 -SkipFrameState -SkipDraftFeatures
+```
 
 No se copia ni se espera `data/raw/` en el cluster. Si algun dia se quiere
 preparar datos en remoto, hara falta definir un raw remoto estable antes de

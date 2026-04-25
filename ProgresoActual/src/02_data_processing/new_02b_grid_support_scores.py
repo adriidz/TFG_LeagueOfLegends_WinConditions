@@ -294,6 +294,13 @@ def main() -> None:
     frame_state_path = build_frame_state_path(args.frame_state_dir, args.frame_state_name, args.sample_frac)
     if not os.path.exists(frame_state_path):
         raise SystemExit(f"No existe el frame-state parquet: {frame_state_path}")
+    if os.path.isdir(frame_state_path):
+        success_path = os.path.join(frame_state_path, "_SUCCESS")
+        if not os.path.exists(success_path):
+            raise SystemExit(
+                f"El frame-state dataset existe pero parece incompleto: {frame_state_path}. "
+                "Falta el marcador _SUCCESS."
+            )
 
     ensure_dir(args.outdir)
     print(f"[Input] {os.path.abspath(frame_state_path)}")

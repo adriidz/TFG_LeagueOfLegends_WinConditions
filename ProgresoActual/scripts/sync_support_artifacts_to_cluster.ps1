@@ -88,4 +88,8 @@ Write-Host "Sync finished."
 Write-Host "Model input:    ${remote}:${remoteTrainingDir}/"
 Write-Host "Support scores: ${remote}:${remoteScoresDir}/"
 Write-Host "Label plots:    ${remote}:${remoteLabelParentDir}/$labelTag"
-Write-Host "Next step on cluster: sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh"
+if ($SampleTag -eq "full") {
+    Write-Host "Next step on cluster: SAMPLE_TAG=full WINDOW_TAG=$WindowTag sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh"
+} else {
+    Write-Host "Next step on cluster: SAMPLE_TAG=$SampleTag WINDOW_TAG=$WindowTag sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh"
+}

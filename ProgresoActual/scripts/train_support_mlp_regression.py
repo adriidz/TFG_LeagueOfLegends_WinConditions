@@ -19,6 +19,8 @@ import json
 import math
 import os
 import random
+import subprocess
+import sys
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -156,6 +158,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--wandb-mode", choices=["online", "offline", "disabled"], default="offline")
     p.add_argument("--run-name", default=None)
     p.add_argument("--tags", nargs="*", default=[])
+    p.add_argument("--skip-diagnostics-plots", action="store_true")
     return p.parse_args()
 
 
@@ -428,6 +431,23 @@ def main() -> None:
     with open(os.path.join(out_dir, "model_config.json"), "w", encoding="utf-8") as f:
         json.dump(run_config, f, indent=2, ensure_ascii=False)
     joblib.dump({"onehot": ohe, "feature_columns": feature_columns}, os.path.join(out_dir, "preprocess.joblib"))
+
+    if not args.skip_diagnostics_plots:
+        diagnostics_script = Path(__file__).with_name("plot_training_run_diagnostics.py")
+        if diagnostics_script.exists():
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(diagnostics_script),
+                    "--run-dir",
+                    out_dir,
+                    "--target-col",
+                    args.target_col,
+                ],
+                check=False,
+            )
+            if result.returncode != 0:
+                print("[WARN] Training diagnostics plot script failed.")
 
     print("\n[Validation metrics]")
     for key, value in metrics.items():

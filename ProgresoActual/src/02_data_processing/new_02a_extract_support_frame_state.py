@@ -25,9 +25,11 @@ python new_02a_extract_support_frame_state.py \
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import random
+import shutil
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -76,6 +78,54 @@ def ensure_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
+def prepare_output_path(path: str, overwrite: bool) -> None:
+    if not os.path.exists(path):
+        return
+    if not overwrite:
+        raise SystemExit(
+            f"Ya existe el output: {path}. Usa --overwrite-output para regenerarlo."
+        )
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    else:
+        os.remove(path)
+
+
+def write_dataset_manifest(out_path: str, payload: dict) -> None:
+    ensure_dir(out_path)
+    manifest_path = os.path.join(out_path, "_manifest.json")
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+
+def mark_dataset_success(out_path: str) -> None:
+    success_path = os.path.join(out_path, "_SUCCESS")
+    Path(success_path).write_text("", encoding="utf-8")
+
+
+def flush_part(rows: List[dict], out_path: str, part_idx: int) -> int:
+    if not rows:
+        return 0
+    ensure_dir(out_path)
+    df = pd.DataFrame(rows)
+    if df.empty:
+        rows.clear()
+        return 0
+    dup_mask = df.duplicated(subset=JOIN_KEYS, keep=False)
+    if dup_mask.any():
+        preview = df.loc[dup_mask, JOIN_KEYS].head(10)
+        raise SystemExit(
+            "Duplicados dentro del chunk por ['match_id', 'team_id', 'frame_idx'] en support_frame_state. "
+            f"Primeros ejemplos:\n{preview.to_string(index=False)}"
+        )
+    df = df.sort_values(JOIN_KEYS).reset_index(drop=True)
+    part_path = os.path.join(out_path, f"part-{part_idx:05d}.parquet")
+    df.to_parquet(part_path, index=False)
+    n_rows = len(df)
+    rows.clear()
+    return n_rows
+
+
 def safe_float(value) -> Optional[float]:
     if value is None:
         return None
@@ -107,6 +157,26 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--keep-only-post-minute", type=float, default=None,
                    help="Optional: only keep frames from this minute onward in the cached parquet.")
+    p.add_argument(
+        "--write-mode",
+        choices=["single", "dataset"],
+        default="single",
+        help=(
+            "single escribe un parquet monolitico al final. dataset escribe partes parquet incrementales "
+            "dentro de support_frame_state*.parquet y reduce presion de memoria."
+        ),
+    )
+    p.add_argument(
+        "--chunk-matches",
+        type=int,
+        default=5000,
+        help="Numero de matches kept entre escrituras parciales cuando --write-mode dataset.",
+    )
+    p.add_argument(
+        "--overwrite-output",
+        action="store_true",
+        help="Permite borrar/regenerar el output existente antes de escribir.",
+    )
     return p.parse_args()
 
 
@@ -134,20 +204,38 @@ def main() -> None:
 
     out_path = os.path.join(args.outdir, f"{args.out_name}{suffix}.parquet")
     ensure_dir(args.outdir)
+    if args.write_mode == "dataset":
+        prepare_output_path(out_path, args.overwrite_output)
     print(f"\n[Rutas] RAW: {os.path.abspath(raw_base)}")
     print(f"[Rutas] Output parquet: {os.path.abspath(out_path)}")
+    print(f"[Rutas] Write mode: {args.write_mode}")
 
     rows: List[dict] = []
+    dataset_rows_written = 0
+    dataset_parts_written = 0
     total_seen = kept_matches = 0
     short = bad_match = bad_tl = missing_info = bad_roles = 0
     t0 = time.time()
+    last_progress_t = t0
+    last_progress_seen = 0
+    last_chunk_t = t0
+    last_chunk_kept = 0
+    last_chunk_rows_written = 0
 
     for mdir in match_dirs:
         total_seen += 1
         if total_seen % 1000 == 0:
-            elapsed = time.time() - t0
-            rate = total_seen / elapsed if elapsed > 0 else 0.0
-            print(f"[{total_seen}/{len(match_dirs)}] kept_matches={kept_matches} rows={len(rows)} rate={rate:.1f}/s")
+            now = time.time()
+            interval_elapsed = now - last_progress_t
+            interval_seen = total_seen - last_progress_seen
+            rate = interval_seen / interval_elapsed if interval_elapsed > 0 else 0.0
+            total_elapsed = now - t0
+            print(
+                f"[{total_seen}/{len(match_dirs)}] kept_matches={kept_matches} rows_buffer={len(rows)} "
+                f"rate_last_print={rate:.1f}/s elapsed_total={total_elapsed:.1f}s"
+            )
+            last_progress_t = now
+            last_progress_seen = total_seen
 
         match_path = os.path.join(mdir, "match.json")
         tl_path = os.path.join(mdir, "timeline.json")
@@ -252,26 +340,91 @@ def main() -> None:
                     "adc_xp": safe_float(adc_pf.get("xp")) if adc_pf else None,
                 })
 
-    df = pd.DataFrame(rows)
-    if df.empty:
-        raise SystemExit("No se han generado filas para support_frame_state.")
+        if args.write_mode == "dataset" and args.chunk_matches > 0 and kept_matches % args.chunk_matches == 0:
+            dataset_parts_written += 1
+            now_before_write = time.time()
+            chunk_compute_elapsed = now_before_write - last_chunk_t
+            chunk_kept = kept_matches - last_chunk_kept
+            written = flush_part(rows, out_path, dataset_parts_written)
+            dataset_rows_written += written
+            now_after_write = time.time()
+            chunk_total_elapsed = now_after_write - last_chunk_t
+            chunk_write_elapsed = now_after_write - now_before_write
+            chunk_rows_written = dataset_rows_written - last_chunk_rows_written
+            chunk_rate = chunk_kept / chunk_compute_elapsed if chunk_compute_elapsed > 0 else 0.0
+            elapsed = now_after_write - t0
+            write_dataset_manifest(out_path, {
+                "status": "running",
+                "write_mode": "dataset",
+                "parts_written": dataset_parts_written,
+                "rows_written": dataset_rows_written,
+                "matches_seen": total_seen,
+                "matches_kept": kept_matches,
+                "elapsed_seconds": elapsed,
+                "last_chunk_seconds": chunk_total_elapsed,
+                "last_chunk_write_seconds": chunk_write_elapsed,
+                "last_chunk_kept_matches": chunk_kept,
+                "last_chunk_rows_written": chunk_rows_written,
+                "raw_base": os.path.abspath(raw_base),
+            })
+            print(
+                f"[chunk] part={dataset_parts_written:05d} rows_written={dataset_rows_written} "
+                f"matches_kept={kept_matches} chunk_kept={chunk_kept} "
+                f"chunk_rate={chunk_rate:.1f}/s chunk_elapsed={chunk_total_elapsed:.1f}s "
+                f"write_elapsed={chunk_write_elapsed:.1f}s elapsed_total={elapsed:.1f}s"
+            )
+            last_chunk_t = now_after_write
+            last_chunk_kept = kept_matches
+            last_chunk_rows_written = dataset_rows_written
 
-    dup_mask = df.duplicated(subset=JOIN_KEYS, keep=False)
-    if dup_mask.any():
-        preview = df.loc[dup_mask, JOIN_KEYS].head(10)
-        raise SystemExit(
-            "Duplicados por ['match_id', 'team_id', 'frame_idx'] en support_frame_state. "
-            f"Primeros ejemplos:\n{preview.to_string(index=False)}"
-        )
+    if args.write_mode == "dataset":
+        if rows:
+            dataset_parts_written += 1
+            dataset_rows_written += flush_part(rows, out_path, dataset_parts_written)
+        if dataset_rows_written == 0:
+            raise SystemExit("No se han generado filas para support_frame_state.")
+        elapsed = time.time() - t0
+        write_dataset_manifest(out_path, {
+            "status": "complete",
+            "write_mode": "dataset",
+            "parts_written": dataset_parts_written,
+            "rows_written": dataset_rows_written,
+            "matches_seen": total_seen,
+            "matches_kept": kept_matches,
+            "elapsed_seconds": elapsed,
+            "raw_base": os.path.abspath(raw_base),
+            "bad_match": bad_match,
+            "bad_tl": bad_tl,
+            "missing_info": missing_info,
+            "short": short,
+            "bad_roles": bad_roles,
+        })
+        mark_dataset_success(out_path)
+        output_rows = dataset_rows_written
+    else:
+        df = pd.DataFrame(rows)
+        if df.empty:
+            raise SystemExit("No se han generado filas para support_frame_state.")
 
-    df = df.sort_values(JOIN_KEYS).reset_index(drop=True)
-    df.to_parquet(out_path, index=False)
+        dup_mask = df.duplicated(subset=JOIN_KEYS, keep=False)
+        if dup_mask.any():
+            preview = df.loc[dup_mask, JOIN_KEYS].head(10)
+            raise SystemExit(
+                "Duplicados por ['match_id', 'team_id', 'frame_idx'] en support_frame_state. "
+                f"Primeros ejemplos:\n{preview.to_string(index=False)}"
+            )
+
+        df = df.sort_values(JOIN_KEYS).reset_index(drop=True)
+        df.to_parquet(out_path, index=False)
+        output_rows = len(df)
 
     elapsed = time.time() - t0
     print(f"\nHecho en {elapsed:.1f}s")
     print(f"Matches procesados: {total_seen}")
     print(f"Matches kept: {kept_matches}")
-    print(f"Rows frame-state: {len(df)}")
+    print(f"Rows frame-state: {output_rows}")
+    if args.write_mode == "dataset":
+        print(f"Dataset parts: {dataset_parts_written}")
     print(f"bad_match={bad_match} | bad_tl={bad_tl} | missing_info={missing_info} | short={short} | bad_roles={bad_roles}")
     print(f"Parquet guardado en: {os.path.abspath(out_path)}")
 

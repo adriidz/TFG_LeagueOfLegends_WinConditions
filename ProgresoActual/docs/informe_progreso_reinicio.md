@@ -83,6 +83,24 @@ La implementacion permite variar ventana, minuto de inicio, umbral de distancia
 y pesos de la formula. Cada configuracion queda trazada con `config_id` y puede
 exportarse como `support_scores.parquet` para entrenamiento.
 
+En el primer baseline completo `m12`, la distribucion observada queda desplazada
+hacia valores bajos, pero no colapsada. Esto es coherente con la interpretacion
+del score: no todos los supports abandonan la linea de forma intensa en todas las
+partidas. Tambien aparece una ligera asimetria por lado, con media superior en
+blue side. Esta diferencia se interpreta junto a un hallazgo temprano del
+proyecto: el equipo azul tomaba las larvas primero aproximadamente en el `60%`
+de las partidas analizadas. Dado que los accesos a dragon, larvas, heraldo y
+baron no son perfectamente simetricos, parte de la asimetria del roaming puede
+ser estructura real del mapa y del metajuego, no necesariamente ruido.
+
+La referencia por campeon usada hasta ahora combina la idea de metadatos
+oficiales con una tabla experta manual. En la practica actual, el score experto
+`expert_support_roam_score` procede de
+`references/manual_support_champion_reference.csv`: una curacion subjetiva por
+campeon con arquetipo, score esperado `[0,1]`, confianza y notas. Data Dragon no
+proporciona un score oficial de roaming; solo sirve como posible fuente de tags y
+metadatos generales.
+
 ## 7. Decisiones acertadas y equivocadas
 
 Decisiones acertadas:
@@ -138,3 +156,19 @@ experimentos nuevos.
 3. Entrenar MLP support-only con W&B offline.
 4. Revisar desviaciones por campeon contra la tabla experta.
 5. Actualizar este informe con metricas reales.
+
+## 11. Lineas futuras
+
+Una posible ampliacion metodologica, sugerida durante la tutorizacion, es
+explorar arquitecturas secuenciales como RNN, GRU o LSTM. La motivacion es que
+la timeline de la API de Riot no es solo una tabla agregada, sino una secuencia
+de "fotografias" del estado de la partida. El enfoque actual con MLP resume esa
+informacion en una etiqueta continua y entrena desde features de draft; una
+arquitectura secuencial permitiria modelar directamente la evolucion temporal de
+posiciones, experiencia, distancia al ADC y presencia en zonas del mapa.
+
+Esta linea queda fuera del primer reinicio porque antes se necesita una baseline
+tabular solida y defendible. Si la MLP aprende senal real y la etiqueta queda
+validada, una RNN podria plantearse como comparacion futura para comprobar si
+usar la secuencia completa mejora la prediccion o ayuda a explicar mejor los
+patrones tempranos de roaming.

@@ -47,7 +47,21 @@ SAMPLE_TAG="${SAMPLE_TAG:-sample5}"
 WINDOW_TAG="${WINDOW_TAG:-m12}"
 RUN_NAME="${RUN_NAME:-support_mlp_${SAMPLE_TAG}_${WINDOW_TAG}}"
 
-INPUT_PATH="${INPUT_PATH:-ProgresoActual/data/training/model_input_support_regression_${SAMPLE_TAG}_${WINDOW_TAG}.parquet}"
+if [[ -z "${SAMPLE_TAG}" || "${SAMPLE_TAG}" == "full" ]]; then
+  SAMPLE_SUFFIX=""
+  DEFAULT_INPUT_PATH="ProgresoActual/data/training/model_input_support_regression_${WINDOW_TAG}.parquet"
+  LEGACY_FULL_INPUT_PATH="ProgresoActual/data/training/model_input_support_regression_full_${WINDOW_TAG}.parquet"
+else
+  SAMPLE_SUFFIX="_${SAMPLE_TAG}"
+  DEFAULT_INPUT_PATH="ProgresoActual/data/training/model_input_support_regression${SAMPLE_SUFFIX}_${WINDOW_TAG}.parquet"
+  LEGACY_FULL_INPUT_PATH=""
+fi
+
+INPUT_PATH="${INPUT_PATH:-${DEFAULT_INPUT_PATH}}"
+if [[ "${SAMPLE_TAG}" == "full" && "${INPUT_PATH}" == "${LEGACY_FULL_INPUT_PATH}" && -f "${DEFAULT_INPUT_PATH}" ]]; then
+  echo "WARN: INPUT_PATH usaba el nombre antiguo para full (${LEGACY_FULL_INPUT_PATH}). Uso el artefacto canonico: ${DEFAULT_INPUT_PATH}" >&2
+  INPUT_PATH="${DEFAULT_INPUT_PATH}"
+fi
 OUTDIR="${OUTDIR:-ProgresoActual/models/${RUN_NAME}}"
 SUPPORT_CONFIG_JSON="${SUPPORT_CONFIG_JSON:-ProgresoActual/data/clean/scores/selected_support_score_config.json}"
 
@@ -89,11 +103,23 @@ RUN_METADATA="ProgresoActual/cluster_run_metadata/${RUN_NAME}_${SLURM_JOB_ID:-no
 
 if [[ ! -f "${INPUT_PATH}" ]]; then
   echo "ERROR: INPUT_PATH no existe: ${INPUT_PATH}" >&2
+  if [[ "${SAMPLE_TAG}" == "full" ]]; then
+    echo "Para SAMPLE_TAG=full el input canonico no lleva sufijo _full:" >&2
+    echo "  ${DEFAULT_INPUT_PATH}" >&2
+    if [[ "${INPUT_PATH}" == "${LEGACY_FULL_INPUT_PATH}" ]]; then
+      echo "El path con _full es antiguo/incorrecto para este flujo:" >&2
+      echo "  ${LEGACY_FULL_INPUT_PATH}" >&2
+    fi
+  fi
   echo "Generalo primero en local con:" >&2
-  echo "  .\\ProgresoActual\\run_support_pipeline.ps1 -SampleFrac 0.05" >&2
+  if [[ "${SAMPLE_TAG}" == "full" ]]; then
+    echo "  .\\ProgresoActual\\run_support_pipeline.ps1 -SampleFrac 1 -SkipFrameState -SkipDraftFeatures" >&2
+  else
+    echo "  .\\ProgresoActual\\run_support_pipeline.ps1 -SampleFrac 0.05" >&2
+  fi
   echo "y copialo al cluster con:" >&2
-  echo "  .\\ProgresoActual\\scripts\\sync_support_artifacts_to_cluster.ps1" >&2
-  echo "Default esperado para este job: ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet" >&2
+  echo "  .\\ProgresoActual\\scripts\\sync_support_artifacts_to_cluster.ps1 -SampleTag ${SAMPLE_TAG} -WindowTag ${WINDOW_TAG}" >&2
+  echo "Default esperado para este job: ${DEFAULT_INPUT_PATH}" >&2
   exit 1
 fi
 

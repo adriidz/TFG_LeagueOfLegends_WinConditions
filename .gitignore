@@ -9,4 +9,6 @@ Models/
 ProgresoActual/data/
 ProgresoActual/models/
 ProgresoActual/analysis/
+ProgresoActual/experiments/
 ProgresoActual/cluster_run_metadata/
+logs/
