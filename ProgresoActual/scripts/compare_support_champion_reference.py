@@ -71,6 +71,52 @@ def save_top_delta(df: pd.DataFrame, out_path: str) -> None:
     plt.close()
 
 
+def save_expert_histogram(reference: pd.DataFrame, out_path: str) -> None:
+    expert = pd.to_numeric(reference["expert_support_roam_score"], errors="coerce").dropna()
+    if expert.empty:
+        return
+    plt.figure(figsize=(8, 5))
+    plt.hist(expert, bins=12, range=(0.0, 1.0), color="#5b8c5a", alpha=0.85, edgecolor="white")
+    plt.xlabel("Expert support roam score")
+    plt.ylabel("Champions")
+    plt.title("Expert support roam score distribution")
+    plt.grid(axis="y", alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=160)
+    plt.close()
+
+
+def save_expert_observed_distribution(df: pd.DataFrame, out_path: str) -> None:
+    compared = df.dropna(subset=["expert_support_roam_score", "generated_mean"]).copy()
+    if compared.empty:
+        return
+    plt.figure(figsize=(8, 5))
+    plt.hist(
+        compared["expert_support_roam_score"],
+        bins=12,
+        range=(0.0, 1.0),
+        alpha=0.55,
+        label="Expert prior",
+        edgecolor="white",
+    )
+    plt.hist(
+        compared["generated_mean"],
+        bins=12,
+        range=(0.0, 1.0),
+        alpha=0.55,
+        label="Observed champion mean",
+        edgecolor="white",
+    )
+    plt.xlabel("Support roam score")
+    plt.ylabel("Champions")
+    plt.title("Expert prior vs observed champion means")
+    plt.legend()
+    plt.grid(axis="y", alpha=0.25)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=160)
+    plt.close()
+
+
 def compute_correlations(df: pd.DataFrame) -> Dict[str, float]:
     valid = df[["expert_support_roam_score", "generated_mean"]].dropna()
     if len(valid) < 2:
@@ -123,6 +169,16 @@ def main() -> None:
 
     comparison_path = os.path.join(args.outdir, "support_champion_reference_comparison.csv")
     merged.to_csv(comparison_path, index=False)
+    head_cols = [
+        "champion_name",
+        "expert_archetype",
+        "expert_support_roam_score",
+        "expert_confidence",
+        "notes",
+    ]
+    reference_head = reference.dropna(subset=["expert_support_roam_score"]).copy()
+    reference_head = reference_head[[c for c in head_cols if c in reference_head.columns]].head(3)
+    reference_head.to_csv(os.path.join(args.outdir, "expert_reference_head3.csv"), index=False)
 
     metrics = compute_correlations(merged)
     metrics.update({
@@ -137,9 +193,11 @@ def main() -> None:
         json.dump(metrics, f, indent=2, ensure_ascii=False)
 
     compared = merged.dropna(subset=["expert_support_roam_score", "generated_mean"])
+    save_expert_histogram(reference, os.path.join(args.outdir, "expert_support_score_histogram.png"))
     if not compared.empty:
         save_scatter(compared, os.path.join(args.outdir, "generated_vs_expert_scatter.png"))
         save_top_delta(compared, os.path.join(args.outdir, "largest_deviations.png"))
+        save_expert_observed_distribution(compared, os.path.join(args.outdir, "expert_vs_observed_distribution.png"))
 
     print(f"Saved comparison: {os.path.abspath(comparison_path)}")
     print(json.dumps(metrics, indent=2, ensure_ascii=False))

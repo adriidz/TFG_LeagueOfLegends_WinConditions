@@ -44,6 +44,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--bins", type=int, default=40)
     p.add_argument("--top-champions", type=int, default=25)
     p.add_argument("--min-champion-count", type=int, default=20)
+    p.add_argument(
+        "--boxplot-min-count",
+        type=int,
+        default=None,
+        help=(
+            "Optional minimum count used only for the champion boxplot. "
+            "If omitted, --min-champion-count is used."
+        ),
+    )
     return p.parse_args()
 
 
@@ -238,14 +247,28 @@ def main() -> None:
     champ_summary = champion_summary(df, args.score_col, args.champion_col, args.min_champion_count)
     if champ_summary is not None:
         champ_summary.to_csv(os.path.join(args.outdir, "support_label_by_champion_summary.csv"), index=False)
+        boxplot_min_count = args.boxplot_min_count or args.min_champion_count
+        boxplot_summary = champion_summary(df, args.score_col, args.champion_col, boxplot_min_count)
         save_champion_boxplot(
             df=df,
             score_col=args.score_col,
             champion_col=args.champion_col,
-            summary=champ_summary,
+            summary=boxplot_summary,
             out_path=os.path.join(args.outdir, "support_label_top_champion_boxplot.png"),
             top_champions=args.top_champions,
         )
+        if boxplot_min_count != args.min_champion_count and boxplot_summary is not None:
+            save_champion_boxplot(
+                df=df,
+                score_col=args.score_col,
+                champion_col=args.champion_col,
+                summary=boxplot_summary,
+                out_path=os.path.join(
+                    args.outdir,
+                    f"support_label_top_champion_boxplot_min{boxplot_min_count}.png",
+                ),
+                top_champions=args.top_champions,
+            )
 
     print(f"Saved support label distribution analysis: {os.path.abspath(args.outdir)}")
     print(json.dumps(summary, indent=2, ensure_ascii=False))

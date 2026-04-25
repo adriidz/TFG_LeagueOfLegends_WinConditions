@@ -257,3 +257,58 @@ trabajo sobre el reinicio del TFG.
 - Se blindo `train_cluster_support_mlp.sh` para usar explicitamente ese path
   cuando `SAMPLE_TAG=full` y para avisar si recibe el nombre antiguo mediante
   `INPUT_PATH`.
+
+## Iteracion 20 - Primera MLP full m12
+
+- Se analizaron los resultados del entrenamiento `support_mlp_full_m12` traido
+  del cluster.
+- La MLP usa `337094` filas, split por partida con `269674` filas de train y
+  `67420` de validacion, `OneHotEncoder` de dimension `1796`, capas `256 -> 128`
+  y `MSELoss`.
+- Resultado en validacion: `MSE=0.02543`, `RMSE=0.15947`, `MAE=0.12721`,
+  `R2=0.13068`, `Pearson=0.3633`, `Spearman=0.3568`.
+- Frente a predecir la media de validacion (`MSE=0.02925`, `MAE=0.13791`), la
+  MLP mejora aproximadamente `13.1%` en MSE y `7.8%` en MAE. Por tanto aprende
+  senal real, pero todavia limitada.
+- La mejor epoca fue la `6`. A partir de ahi el train loss sigue bajando y el
+  validation loss sube, senal clara de sobreajuste temprano.
+- Las predicciones quedan comprimidas: target de validacion `std=0.1710`, pero
+  predicciones `std=0.0681`, con maximo predicho `0.7191`. El modelo captura
+  priors de campeon/composicion, pero tiende a regresar hacia la media y falla
+  especialmente en scores altos.
+- Por bins, el error absoluto medio es bajo en scores medios (`0.2-0.4`) y crece
+  mucho en extremos, especialmente por encima de `0.6`. Esto sugiere que la MLP
+  tabular predice bien el perfil promedio, pero no la intensidad concreta de
+  roaming de una partida.
+
+## Iteracion 21 - Informe de progreso completo
+
+- Se creo `ProgresoActual/docs/informe_progreso_completo.md` como version amplia
+  del informe de progreso para la entrega del `27/04/2026`.
+- El informe ratifica el objetivo inicial del TFG, pero justifica el cambio de
+  clasificacion a regresion continua porque la regresion penaliza los errores
+  segun distancia al target.
+- Se incorporaron resultados completos del snapshot full, salud de etiqueta
+  `m12`, comparacion observada vs experta y primera MLP full.
+- Se enlazaron las figuras generadas: distribucion de etiqueta, CDF,
+  distribucion por lado, boxplot por campeon, comparacion experta, curvas de
+  entrenamiento, scatter true-vs-pred, residuos y error por bins.
+- El planning final incluye entregables esperados, criterios de exito,
+  dependencias y estado, manteniendo como objetivo final el prototipo terminal
+  interpretable.
+
+## Iteracion 22 - Pulido visual y metodologico del informe
+
+- Se ampliaron las figuras del informe con distribucion experta, comparacion
+  experta vs observada y un esquema propio de mapa para contextualizar la
+  asimetria blue/red en objetivos neutrales.
+- Se ajusto el boxplot por campeon para filtrar picks raros usando
+  `n >= 500`.
+- Se explicaron con mas detalle la CDF, los residuos y el error por bins, y se
+  aclaro que no se busca una distribucion artificialmente plana del score.
+- Se actualizo el planning para compactar el tuning OAT de MLP y etiqueta en la
+  misma semana, adelantando embeddings/feature enrichment antes del Informe de
+  Progreso II.
+- Se anadieron salidas auxiliares en la comparacion experta:
+  `expert_reference_head3.csv`, `expert_support_score_histogram.png` y
+  `expert_vs_observed_distribution.png`.
