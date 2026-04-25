@@ -24,31 +24,36 @@ collector/raw
   -> support_scores continuos
   -> label distribution analysis
   -> model_input support-only
+  -> sync de artefactos al cluster
   -> train MLP regression
   -> champion/reference analysis + reportes
 ```
 
-## Ejecucion recomendada en cluster
+## Ejecucion recomendada
 
-El flujo normal del reinicio se ejecuta en dos jobs Slurm. El primero no reserva
-GPU y deja preparado el parquet de entrenamiento; el segundo reserva GPU y
-entrena el MLP.
+El raw vive y se actualiza en local. Por eso el flujo oficial prepara los datos
+en local, copia solo los artefactos necesarios al cluster y usa el cluster solo
+para entrenamiento GPU.
+
+En local:
+
+```powershell
+.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05
+.\ProgresoActual\scripts\sync_support_artifacts_to_cluster.ps1
+```
+
+En el cluster:
 
 ```bash
-sbatch ProgresoActual/scripts/prepare_cluster_support_data.sh
 sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh
 ```
 
-Si quieres encadenarlos para que el entrenamiento espere a que la preparacion
-termine correctamente:
-
-```bash
-jid=$(sbatch --parsable ProgresoActual/scripts/prepare_cluster_support_data.sh)
-sbatch --dependency=afterok:$jid ProgresoActual/scripts/train_cluster_support_mlp.sh
-```
+`git pull` en el cluster no debe tocar `.venv_cluster/`: ese entorno esta
+ignorado por git y los scripts solo lo activan. Si no existe, el job de
+entrenamiento falla con un mensaje explicito.
 
 Los defaults actuales son `sample5` y ventana `m12`, por lo que las salidas
-principales esperadas son:
+principales esperadas tras preparar en local son:
 
 ```text
 ProgresoActual/data/clean/frame_state/support_frame_state_sample5.parquet
@@ -56,16 +61,15 @@ ProgresoActual/data/clean/features/draft_features_sample5.parquet
 ProgresoActual/data/clean/scores/support_scores_sample5_m12.parquet
 ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet
 ProgresoActual/analysis/support_label_distribution/sample5_m12/
-ProgresoActual/models/support_mlp_sample5_m12/
 ```
 
-## Ejecucion local opcional
+El sync copia al cluster solo:
 
-El PowerShell local queda como preparacion/smoke test hasta justo antes del
-entrenamiento:
-
-```powershell
-.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05
+```text
+ProgresoActual/data/clean/scores/support_scores_sample5_m12.parquet
+ProgresoActual/data/clean/scores/selected_support_score_config.json
+ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet
+ProgresoActual/analysis/support_label_distribution/sample5_m12/
 ```
 
 Para una prueba rapida de preparacion:
@@ -122,13 +126,19 @@ python ProgresoActual\scripts\plot_support_label_distribution.py `
   --outdir ProgresoActual\analysis\support_label_distribution\sample5_m12
 ```
 
-6. Entrenar el MLP support-only en cluster:
+6. Copiar artefactos al cluster:
+
+```powershell
+.\ProgresoActual\scripts\sync_support_artifacts_to_cluster.ps1
+```
+
+7. Entrenar el MLP support-only en cluster:
 
 ```bash
 sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh
 ```
 
-7. Construir referencia de campeones y comparar:
+8. Construir referencia de campeones y comparar:
 
 ```powershell
 python ProgresoActual\scripts\build_champion_support_reference.py --manual-only
@@ -148,6 +158,10 @@ python ProgresoActual\scripts\compare_support_champion_reference.py `
 - `ProgresoActual/models/support_mlp_regression*`: modelos, metricas e historiales.
 - `ProgresoActual/analysis/champion_reference/*`: comparacion por campeon.
 - `ProgresoActual/docs/informe_progreso_reinicio.md`: informe editable.
+
+No se copia ni se espera `data/raw/` en el cluster. Si algun dia se quiere
+preparar datos en remoto, hara falta definir un raw remoto estable antes de
+crear un nuevo pipeline de preparacion para cluster.
 
 ## Diario de iteraciones
 

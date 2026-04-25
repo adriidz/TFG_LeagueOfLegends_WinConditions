@@ -3,6 +3,7 @@ __pycache__/
 */__pycache__/
 *.pyc
 .venv/
+.venv_cluster/
 data/
 Models/
 ProgresoActual/data/

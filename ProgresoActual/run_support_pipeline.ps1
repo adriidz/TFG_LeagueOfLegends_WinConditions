@@ -18,12 +18,12 @@ $ErrorActionPreference = "Stop"
 function Invoke-Step {
     param(
         [string]$Name,
-        [string[]]$Args
+        [string[]]$StepArgs
     )
     Write-Host ""
     Write-Host "==== $Name ===="
-    Write-Host ($Args -join " ")
-    & $Python @Args
+    Write-Host ($StepArgs -join " ")
+    & $Python @StepArgs
     if ($LASTEXITCODE -ne 0) {
         throw "Step failed: $Name"
     }
@@ -35,6 +35,7 @@ if ($SampleFrac -gt 0 -and $SampleFrac -lt 1) {
     $sampleArgs = @("--sample-frac", "$SampleFrac")
     $sampleSuffix = "_sample$([int][Math]::Round($SampleFrac * 100))"
 }
+$sampleTag = if ($sampleSuffix) { $sampleSuffix.TrimStart("_") } else { "full" }
 
 $maxMatchArgs = @()
 if ($MaxMatches -gt 0) {
@@ -49,22 +50,24 @@ $frameStatePath = "ProgresoActual\data\clean\frame_state\support_frame_state$sam
 $draftPath = "ProgresoActual\data\clean\features\draft_features$sampleSuffix.parquet"
 $supportScoresPath = "ProgresoActual\data\clean\scores\support_scores$sampleSuffix`_$windowTag.parquet"
 $modelInputPath = "ProgresoActual\data\training\model_input_support_regression$sampleSuffix`_$windowTag.parquet"
-$labelDistributionDir = "ProgresoActual\analysis\support_label_distribution$sampleSuffix`_$windowTag"
+$labelDistributionDir = "ProgresoActual\analysis\support_label_distribution\$sampleTag`_$windowTag"
 
 if (-not $SkipFrameState) {
-    Invoke-Step "Extract support frame state" @(
+    $extractArgs = @(
         "ProgresoActual\src\02_data_processing\new_02a_extract_support_frame_state.py",
         "--raw-root", $RawRoot,
         "--region", $Region
     ) + $sampleArgs + $maxMatchArgs
+    Invoke-Step "Extract support frame state" $extractArgs
 }
 
 if (-not $SkipDraftFeatures) {
-    Invoke-Step "Build draft features" @(
+    $draftArgs = @(
         "ProgresoActual\src\02_data_processing\build_draft_features.py",
         "--raw-root", $RawRoot,
         "--region", $Region
     ) + $sampleArgs + $maxMatchArgs
+    Invoke-Step "Build draft features" $draftArgs
 }
 
 $gridArgs = @(
@@ -86,22 +89,24 @@ $gridArgs = @(
 ) + $sampleArgs
 Invoke-Step "Grid/export support scores" $gridArgs
 
-Invoke-Step "Build support model input" @(
+$modelInputArgs = @(
     "ProgresoActual\src\02_data_processing\build_support_model_input.py",
     "--draft-path", $draftPath,
     "--support-scores-path", $supportScoresPath,
     "--out-path", $modelInputPath
 )
+Invoke-Step "Build support model input" $modelInputArgs
 
-Invoke-Step "Plot support label distribution" @(
+$labelPlotArgs = @(
     "ProgresoActual\scripts\plot_support_label_distribution.py",
     "--support-scores-path", $supportScoresPath,
     "--outdir", $labelDistributionDir
 )
+Invoke-Step "Plot support label distribution" $labelPlotArgs
 
 Write-Host ""
 Write-Host "Preparation pipeline finished. Training is intentionally not run here."
 Write-Host "Support scores: $supportScoresPath"
 Write-Host "Model input:    $modelInputPath"
 Write-Host "Label plots:    $labelDistributionDir"
-Write-Host "Next step on cluster: sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh"
+Write-Host "Next step locally: .\ProgresoActual\scripts\sync_support_artifacts_to_cluster.ps1"

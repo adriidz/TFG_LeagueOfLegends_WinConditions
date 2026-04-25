@@ -122,3 +122,19 @@ trabajo sobre el reinicio del TFG.
   `support_scores` y construir el `model_input`.
 - Se integro tambien en `run_support_pipeline.ps1` para que los smoke tests
   locales de preparacion dejen las mismas figuras dentro de `ProgresoActual/`.
+
+## Iteracion 11 - Pipeline local real y cluster solo entrenamiento
+
+- Se decidio que el raw completo no se copia al cluster porque pesa mucho y se
+  actualiza constantemente durante la recoleccion.
+- `run_support_pipeline.ps1` queda como pipeline local oficial de preparacion:
+  raw local -> caches/features -> scores -> model input -> graficas.
+- Se creo `sync_support_artifacts_to_cluster.ps1` para copiar al cluster solo el
+  `model_input`, los `support_scores`, la config de etiqueta y las graficas de
+  distribucion.
+- `train_cluster_support_mlp.sh` queda como unico pipeline cluster oficial y
+  solo entrena en GPU sobre artefactos ya sincronizados.
+- Se retiro `prepare_cluster_support_data.sh` porque dependia de tener raw en
+  cluster e inducia a un flujo que no encaja con el entorno real.
+- Se anadio `.venv_cluster/` a `.gitignore`; el job de entrenamiento solo activa
+  ese entorno y falla si no existe, sin crearlo ni sobreescribirlo.

@@ -21,7 +21,14 @@ nvidia-smi || true
 
 cd "${PROJECT_DIR}"
 
-source "${PROJECT_DIR}/.venv_cluster/bin/activate"
+VENV_ACTIVATE="${PROJECT_DIR}/.venv_cluster/bin/activate"
+if [[ ! -f "${VENV_ACTIVATE}" ]]; then
+  echo "ERROR: no existe el entorno del cluster: ${VENV_ACTIVATE}" >&2
+  echo "Crea o repara .venv_cluster manualmente en el cluster; este job no instala dependencias ni modifica entornos." >&2
+  exit 1
+fi
+
+source "${VENV_ACTIVATE}"
 # Alternativa con conda:
 # source "${HOME}/miniconda3/etc/profile.d/conda.sh" && conda activate tfg
 
@@ -33,7 +40,7 @@ python3 --version || true
 
 mkdir -p logs ProgresoActual/models ProgresoActual/cluster_run_metadata
 
-# Defaults aligned with ProgresoActual/scripts/prepare_cluster_support_data.sh.
+# Defaults aligned with the local preparation + sync flow.
 # Override any of these when submitting, e.g.:
 #   SAMPLE_TAG=sample5 WINDOW_TAG=m12 EPOCHS=80 sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh
 SAMPLE_TAG="${SAMPLE_TAG:-sample5}"
@@ -82,8 +89,10 @@ RUN_METADATA="ProgresoActual/cluster_run_metadata/${RUN_NAME}_${SLURM_JOB_ID:-no
 
 if [[ ! -f "${INPUT_PATH}" ]]; then
   echo "ERROR: INPUT_PATH no existe: ${INPUT_PATH}" >&2
-  echo "Generalo antes en el cluster con:" >&2
-  echo "  sbatch ProgresoActual/scripts/prepare_cluster_support_data.sh" >&2
+  echo "Generalo primero en local con:" >&2
+  echo "  .\\ProgresoActual\\run_support_pipeline.ps1 -SampleFrac 0.05" >&2
+  echo "y copialo al cluster con:" >&2
+  echo "  .\\ProgresoActual\\scripts\\sync_support_artifacts_to_cluster.ps1" >&2
   echo "Default esperado para este job: ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet" >&2
   exit 1
 fi
