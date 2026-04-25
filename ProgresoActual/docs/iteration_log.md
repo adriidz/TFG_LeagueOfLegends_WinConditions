@@ -80,3 +80,45 @@ trabajo sobre el reinicio del TFG.
 - Se creo `ProgresoActual/run_support_pipeline.ps1` como orquestador del flujo:
   frame-state, draft-features, support-scores, model-input, training y analisis
   de campeones.
+
+## Iteracion 8 - Separacion local/cluster
+
+- Se ajusto `ProgresoActual/run_support_pipeline.ps1` para que solo prepare
+  datos hasta `model_input_support_regression`.
+- El entrenamiento queda fuera del PowerShell local y pasa al script Slurm
+  `ProgresoActual/scripts/train_cluster_support_mlp.sh`.
+- Se adapto el `.sh` del cluster para usar:
+  `ProgresoActual/scripts/train_support_mlp_regression.py` y
+  `ProgresoActual/data/training/model_input_support_regression_sample5_m11.parquet`.
+- El `.sh` guarda resultados en `ProgresoActual/models/` y metadatos de run en
+  `ProgresoActual/cluster_run_metadata/`.
+
+## Iteracion 9 - Dos jobs Slurm y ventana m12
+
+- Se separo el flujo del cluster en dos trabajos:
+  `prepare_cluster_support_data.sh` para preparar datos sin GPU y
+  `train_cluster_support_mlp.sh` para entrenar con GPU.
+- El job de preparacion ejecuta, dentro de `ProgresoActual/`, la construccion de
+  `draft_features`, la extraccion de `support_frame_state`, el grid/export de
+  `support_scores` y el `model_input` support-only.
+- Se cambio el default de ventana a `m12`, manteniendo `sample5` como benchmark
+  inicial.
+- Las salidas por defecto del flujo cluster quedan:
+  - `ProgresoActual/data/clean/frame_state/support_frame_state_sample5.parquet`
+  - `ProgresoActual/data/clean/features/draft_features_sample5.parquet`
+  - `ProgresoActual/data/clean/scores/support_scores_sample5_m12.parquet`
+  - `ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet`
+- El PowerShell local sigue existiendo como preparacion o smoke test, tambien con
+  `m12` por defecto.
+
+## Iteracion 10 - Graficas de distribucion de etiquetas
+
+- Se creo `ProgresoActual/scripts/plot_support_label_distribution.py` para
+  resumir y visualizar la etiqueta continua de support antes de entrenar.
+- El script genera resumen global CSV/JSON, histograma, CDF empirica,
+  comparacion por componentes heuristicas, distribucion por side y resumen/boxplot
+  por campeon cuando hay suficientes muestras.
+- Se integro esta fase en `prepare_cluster_support_data.sh`, despues de exportar
+  `support_scores` y construir el `model_input`.
+- Se integro tambien en `run_support_pipeline.ps1` para que los smoke tests
+  locales de preparacion dejen las mismas figuras dentro de `ProgresoActual/`.

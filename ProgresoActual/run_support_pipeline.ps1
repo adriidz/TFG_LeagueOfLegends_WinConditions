@@ -5,19 +5,12 @@ param(
     [double]$SampleFrac = 0.05,
     [int]$MaxMatches = 0,
     [double[]]$StartMinutes = @(5),
-    [double[]]$MaxMinutes = @(11),
+    [double[]]$MaxMinutes = @(12),
     [double[]]$FarAdcThresholds = @(2500),
     [string[]]$WeightTriplets = @("0.45,0.35,0.20"),
     [string]$ExportBest = "coverage",
-    [int]$Epochs = 40,
-    [int]$BatchSize = 512,
-    [string]$FeatureGroups = "standard",
     [switch]$SkipFrameState,
-    [switch]$SkipDraftFeatures,
-    [switch]$SkipTraining,
-    [switch]$SkipChampionAnalysis,
-    [switch]$Wandb,
-    [string]$WandbMode = "offline"
+    [switch]$SkipDraftFeatures
 )
 
 $ErrorActionPreference = "Stop"
@@ -55,9 +48,8 @@ $windowTag = "m{0:D2}" -f $scoreMinuteInt
 $frameStatePath = "ProgresoActual\data\clean\frame_state\support_frame_state$sampleSuffix.parquet"
 $draftPath = "ProgresoActual\data\clean\features\draft_features$sampleSuffix.parquet"
 $supportScoresPath = "ProgresoActual\data\clean\scores\support_scores$sampleSuffix`_$windowTag.parquet"
-$supportConfigPath = "ProgresoActual\data\clean\scores\selected_support_score_config.json"
 $modelInputPath = "ProgresoActual\data\training\model_input_support_regression$sampleSuffix`_$windowTag.parquet"
-$modelOutDir = "ProgresoActual\models\support_mlp_regression$sampleSuffix`_$windowTag"
+$labelDistributionDir = "ProgresoActual\analysis\support_label_distribution$sampleSuffix`_$windowTag"
 
 if (-not $SkipFrameState) {
     Invoke-Step "Extract support frame state" @(
@@ -101,37 +93,15 @@ Invoke-Step "Build support model input" @(
     "--out-path", $modelInputPath
 )
 
-if (-not $SkipTraining) {
-    $trainArgs = @(
-        "ProgresoActual\scripts\train_support_mlp_regression.py",
-        "--input", $modelInputPath,
-        "--outdir", $modelOutDir,
-        "--feature-groups", $FeatureGroups,
-        "--epochs", "$Epochs",
-        "--batch-size", "$BatchSize",
-        "--support-config-json", $supportConfigPath
-    )
-    if ($Wandb) {
-        $trainArgs += @("--wandb", "--wandb-mode", $WandbMode)
-    }
-    Invoke-Step "Train support MLP" $trainArgs
-}
-
-if (-not $SkipChampionAnalysis) {
-    Invoke-Step "Build champion reference" @(
-        "ProgresoActual\scripts\build_champion_support_reference.py",
-        "--manual-only"
-    )
-    Invoke-Step "Compare champion reference" @(
-        "ProgresoActual\scripts\compare_support_champion_reference.py",
-        "--support-scores-path", $supportScoresPath,
-        "--reference-path", "ProgresoActual\references\champion_support_reference.csv",
-        "--outdir", "ProgresoActual\analysis\champion_reference"
-    )
-}
+Invoke-Step "Plot support label distribution" @(
+    "ProgresoActual\scripts\plot_support_label_distribution.py",
+    "--support-scores-path", $supportScoresPath,
+    "--outdir", $labelDistributionDir
+)
 
 Write-Host ""
-Write-Host "Pipeline finished."
+Write-Host "Preparation pipeline finished. Training is intentionally not run here."
 Write-Host "Support scores: $supportScoresPath"
 Write-Host "Model input:    $modelInputPath"
-Write-Host "Model outdir:   $modelOutDir"
+Write-Host "Label plots:    $labelDistributionDir"
+Write-Host "Next step on cluster: sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh"

@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-DEFAULT_SUPPORT_SCORES = os.path.join("ProgresoActual", "data", "clean", "scores", "support_scores_sample5_m11.parquet")
+DEFAULT_SUPPORT_SCORES = os.path.join("ProgresoActual", "data", "clean", "scores", "support_scores_sample5_m12.parquet")
 DEFAULT_REFERENCE = os.path.join("ProgresoActual", "references", "champion_support_reference.csv")
 DEFAULT_OUTDIR = os.path.join("ProgresoActual", "analysis", "champion_reference")
 

@@ -22,23 +22,56 @@ Orden conceptual del pipeline nuevo:
 collector/raw
   -> support_frame_state + draft_features
   -> support_scores continuos
+  -> label distribution analysis
   -> model_input support-only
   -> train MLP regression
   -> champion/reference analysis + reportes
 ```
 
-## Ejecucion recomendada
+## Ejecucion recomendada en cluster
 
-Para ejecutar el pipeline limpio support-only con rutas aisladas:
+El flujo normal del reinicio se ejecuta en dos jobs Slurm. El primero no reserva
+GPU y deja preparado el parquet de entrenamiento; el segundo reserva GPU y
+entrena el MLP.
 
-```powershell
-.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05 -Epochs 40
+```bash
+sbatch ProgresoActual/scripts/prepare_cluster_support_data.sh
+sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh
 ```
 
-Para una prueba rapida sin entrenamiento largo:
+Si quieres encadenarlos para que el entrenamiento espere a que la preparacion
+termine correctamente:
+
+```bash
+jid=$(sbatch --parsable ProgresoActual/scripts/prepare_cluster_support_data.sh)
+sbatch --dependency=afterok:$jid ProgresoActual/scripts/train_cluster_support_mlp.sh
+```
+
+Los defaults actuales son `sample5` y ventana `m12`, por lo que las salidas
+principales esperadas son:
+
+```text
+ProgresoActual/data/clean/frame_state/support_frame_state_sample5.parquet
+ProgresoActual/data/clean/features/draft_features_sample5.parquet
+ProgresoActual/data/clean/scores/support_scores_sample5_m12.parquet
+ProgresoActual/data/training/model_input_support_regression_sample5_m12.parquet
+ProgresoActual/analysis/support_label_distribution/sample5_m12/
+ProgresoActual/models/support_mlp_sample5_m12/
+```
+
+## Ejecucion local opcional
+
+El PowerShell local queda como preparacion/smoke test hasta justo antes del
+entrenamiento:
 
 ```powershell
-.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05 -MaxMatches 200 -Epochs 2
+.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05
+```
+
+Para una prueba rapida de preparacion:
+
+```powershell
+.\ProgresoActual\run_support_pipeline.ps1 -SampleFrac 0.05 -MaxMatches 200
 ```
 
 ## Pasos manuales equivalentes
@@ -77,29 +110,31 @@ python ProgresoActual\src\02_data_processing\new_02b_grid_support_scores.py `
 ```powershell
 python ProgresoActual\src\02_data_processing\build_support_model_input.py `
   --draft-path ProgresoActual\data\clean\features\draft_features_sample5.parquet `
-  --support-scores-path ProgresoActual\data\clean\scores\support_scores_sample5_m11.parquet `
-  --out-path ProgresoActual\data\training\model_input_support_regression_sample5_m11.parquet
+  --support-scores-path ProgresoActual\data\clean\scores\support_scores_sample5_m12.parquet `
+  --out-path ProgresoActual\data\training\model_input_support_regression_sample5_m12.parquet
 ```
 
-5. Entrenar el MLP support-only:
+5. Generar graficas de distribucion de la etiqueta:
 
 ```powershell
-python ProgresoActual\scripts\train_support_mlp_regression.py `
-  --input ProgresoActual\data\training\model_input_support_regression_sample5_m11.parquet `
-  --feature-groups standard `
-  --epochs 40 `
-  --wandb `
-  --wandb-mode offline `
-  --support-config-json ProgresoActual\data\clean\scores\selected_support_score_config.json
+python ProgresoActual\scripts\plot_support_label_distribution.py `
+  --support-scores-path ProgresoActual\data\clean\scores\support_scores_sample5_m12.parquet `
+  --outdir ProgresoActual\analysis\support_label_distribution\sample5_m12
 ```
 
-6. Construir referencia de campeones y comparar:
+6. Entrenar el MLP support-only en cluster:
+
+```bash
+sbatch ProgresoActual/scripts/train_cluster_support_mlp.sh
+```
+
+7. Construir referencia de campeones y comparar:
 
 ```powershell
 python ProgresoActual\scripts\build_champion_support_reference.py --manual-only
 
 python ProgresoActual\scripts\compare_support_champion_reference.py `
-  --support-scores-path ProgresoActual\data\clean\scores\support_scores_sample5_m11.parquet `
+  --support-scores-path ProgresoActual\data\clean\scores\support_scores_sample5_m12.parquet `
   --reference-path ProgresoActual\references\champion_support_reference.csv
 ```
 
@@ -109,6 +144,7 @@ python ProgresoActual\scripts\compare_support_champion_reference.py `
 - `ProgresoActual/analysis/support_grid/*`: grid de heuristicas de support.
 - `ProgresoActual/data/clean/scores/support_scores*_mXX.parquet`: score seleccionado.
 - `ProgresoActual/data/training/model_input_support_regression*.parquet`: entrada de entrenamiento aislada.
+- `ProgresoActual/analysis/support_label_distribution/*`: resumenes y graficas de distribucion de etiquetas.
 - `ProgresoActual/models/support_mlp_regression*`: modelos, metricas e historiales.
 - `ProgresoActual/analysis/champion_reference/*`: comparacion por campeon.
 - `ProgresoActual/docs/informe_progreso_reinicio.md`: informe editable.

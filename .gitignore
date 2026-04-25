@@ -5,3 +5,7 @@ __pycache__/
 .venv/
 data/
 Models/
+ProgresoActual/data/
+ProgresoActual/models/
+ProgresoActual/analysis/
+ProgresoActual/cluster_run_metadata/
