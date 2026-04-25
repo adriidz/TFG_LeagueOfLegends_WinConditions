@@ -34,11 +34,11 @@ JUNGLE_SCORE_COL = "jungle_presence_score"
 SUPPORT_SCORE_COL = "support_roam_score"   # nombre canónico en model_input
 TEAM_SCORE_COL = "team_side_focus_score"
 
-DEFAULT_DRAFT_PATH = os.path.join("data_new", "clean", "features", "draft_features.parquet")
+DEFAULT_DRAFT_PATH = os.path.join("ProgresoActual", "data", "clean", "features", "draft_features.parquet")
 DEFAULT_JUNGLE_SCORES_PATH = os.path.join("data_new", "clean", "scores", "jungle_scores.parquet")
-DEFAULT_SUPPORT_SCORES_PATH = os.path.join("data_new", "clean", "scores", "support_scores.parquet")
+DEFAULT_SUPPORT_SCORES_PATH = os.path.join("ProgresoActual", "data", "clean", "scores", "support_scores.parquet")
 DEFAULT_TEAM_SCORES_PATH = os.path.join("data_new", "clean", "scores", "team_tendency_scores.parquet")
-DEFAULT_OUT_PATH = os.path.join("data_new", "training", "model_input_multioutput_regression.parquet")
+DEFAULT_OUT_PATH = os.path.join("ProgresoActual", "data", "training", "model_input_multioutput_regression.parquet")
 DEFAULT_SUMMARY_DIR = None
 
 

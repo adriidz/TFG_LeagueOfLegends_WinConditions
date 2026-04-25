@@ -1,0 +1,11 @@
+{
+  "pearson_corr": 0.8315124803897442,
+  "spearman_corr": 0.8266192672955127,
+  "n_compared": 30,
+  "support_scores_path": "C:\\Users\\adria\\Desktop\\TFG\\Progreso_I\\analysis\\support_grid_smoke\\support_scores_sample5_m11_smoke.parquet",
+  "reference_path": "C:\\Users\\adria\\Desktop\\TFG\\Progreso_I\\references\\champion_support_reference.csv",
+  "score_col": "support_roam_score_v2",
+  "min_count": 10,
+  "champions_in_score_table": 56,
+  "champions_with_expert_reference": 30
+}

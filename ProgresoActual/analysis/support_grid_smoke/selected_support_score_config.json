@@ -1,0 +1,19 @@
+{
+  "config_id": "cfg_001_s5p0_m11_far2500_w0p45-0p35-0p2",
+  "start_minute": 5.0,
+  "max_minute": 11.0,
+  "far_adc_threshold": 2500.0,
+  "w_outside": 0.45,
+  "w_far": 0.35,
+  "w_xp": 0.2,
+  "rows": 16278,
+  "coverage": 0.9996315401621223,
+  "score_mean": 0.2704969814170901,
+  "score_std": 0.17572566023612737,
+  "score_p25": 0.13333333333333333,
+  "score_median": 0.24915671385944055,
+  "score_p75": 0.38395332497742346,
+  "score_iqr": 0.2506199916440901,
+  "exported_rows": 16278,
+  "exported_path": "C:\\Users\\adria\\Desktop\\TFG\\Progreso_I\\analysis\\support_grid_smoke\\support_scores_sample5_m11_smoke.parquet"
+}

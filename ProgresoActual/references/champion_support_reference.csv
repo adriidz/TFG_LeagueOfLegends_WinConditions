@@ -1,0 +1,32 @@
+reference_source,champion_name,expert_archetype,expert_support_roam_score,expert_confidence,notes
+manual_only,Alistar,engage_roamer,0.82,0.9,Strong engage and roam identity after lane setup.
+manual_only,Bard,roaming_specialist,0.95,0.95,Design explicitly rewards leaving lane and impacting map.
+manual_only,Blitzcrank,pick_roamer,0.78,0.85,Hook pressure translates well to river and mid roams.
+manual_only,Brand,lane_mage,0.35,0.75,Usually values lane poke and damage more than repeated roaming.
+manual_only,Braum,protective_warden,0.48,0.75,Can move with jungler but often anchors around marksman.
+manual_only,Janna,enchanter_roamer,0.58,0.7,"Can roam, but tends to preserve ADC and lane safety."
+manual_only,Karma,lane_enchanter,0.42,0.7,Lane pressure and poke are central to the champion identity.
+manual_only,Leona,engage_roamer,0.8,0.9,Reliable CC and early skirmish pressure support roams.
+manual_only,Lulu,adc_enabler,0.28,0.85,Typically lane anchored and marksman oriented.
+manual_only,Lux,lane_mage,0.32,0.75,Long-range poke and pick threat mostly from lane.
+manual_only,Milio,adc_enabler,0.24,0.8,Kit is heavily tied to protecting and amplifying ADC.
+manual_only,Morgana,pick_enchanter,0.45,0.7,Can roam for binding picks but often plays lane/control.
+manual_only,Nami,lane_enchanter,0.38,0.75,Strong 2v2 lane identity and ADC synergy.
+manual_only,Nautilus,engage_roamer,0.84,0.9,Classic early roam and pick support.
+manual_only,Pyke,roaming_assassin,0.92,0.95,"Designed around roaming, picks and snowballing."
+manual_only,Rakan,engage_roamer,0.76,0.85,High mobility engage enables map movement.
+manual_only,Rell,engage_roamer,0.82,0.85,Engage kit and skirmish value support roaming.
+manual_only,Renata Glasc,adc_enabler,0.3,0.7,Often wants structured fights and ADC proximity.
+manual_only,Senna,marksman_support,0.4,0.7,"Can move, but scaling/poke lane patterns are common."
+manual_only,Seraphine,lane_enchanter,0.3,0.7,Usually grouped/lane and teamfight oriented.
+manual_only,Sona,scaling_enchanter,0.22,0.8,Weak early roam profile and scaling lane identity.
+manual_only,Soraka,adc_enabler,0.2,0.85,Very ADC/team protection oriented.
+manual_only,Swain,lane_mage,0.36,0.7,Often lane pressure and skirmish follow-up.
+manual_only,Tahm Kench,protective_warden,0.34,0.75,Protective identity usually keeps him near carries.
+manual_only,Taric,protective_warden,0.3,0.75,Low early roam identity; values linked ally play.
+manual_only,Thresh,pick_roamer,0.72,0.85,"Hook, lantern and setup make roaming plausible."
+manual_only,Vel'Koz,lane_mage,0.28,0.7,Lane poke/artillery support identity.
+manual_only,Xerath,lane_mage,0.26,0.75,Long-range lane poke more than map roaming.
+manual_only,Yuumi,adc_enabler,0.08,0.95,Attached play pattern is explicitly lane/carry anchored.
+manual_only,Zilean,utility_roamer,0.55,0.65,Can roam but often tied to scaling utility.
+manual_only,Zyra,lane_mage,0.34,0.75,Lane control and poke identity.

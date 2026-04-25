@@ -19,7 +19,7 @@ python new_02a_extract_support_frame_state.py \
   --raw-root data/raw/raw \
   --region europe \
   --sample-frac 0.05 \
-  --outdir data_new/clean/frame_state
+  --outdir ProgresoActual/data/clean/frame_state
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ from shared_utils import (
 
 DEFAULT_RAW_ROOT = os.path.join("data", "raw", "raw")
 DEFAULT_REGION = "europe"
-DEFAULT_OUT_DIR = os.path.join("data_new", "clean", "frame_state")
+DEFAULT_OUT_DIR = os.path.join("ProgresoActual", "data", "clean", "frame_state")
 DEFAULT_OUT_NAME = "support_frame_state"
 
 JOIN_KEYS = ["match_id", "team_id", "frame_idx"]

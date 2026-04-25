@@ -13,21 +13,23 @@ Outputs
 1) Long parquet: one row per (match_id, team_id, config_id)
 2) Config summary parquet/csv with coverage and distribution stats
 3) Optional per-config champion summaries
+4) Optional canonical support_scores parquet for one selected config
 """
 
 from __future__ import annotations
 
 import argparse
 import itertools
+import json
 import os
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
 
-DEFAULT_FRAME_STATE_DIR = os.path.join("data_new", "clean", "frame_state")
-DEFAULT_OUT_DIR = os.path.join("data_new", "analysis", "support_grid")
+DEFAULT_FRAME_STATE_DIR = os.path.join("ProgresoActual", "data", "clean", "frame_state")
+DEFAULT_OUT_DIR = os.path.join("ProgresoActual", "analysis", "support_grid")
 DEFAULT_FRAME_STATE_NAME = "support_frame_state"
 
 JOIN_KEYS = ["match_id", "team_id"]
@@ -82,22 +84,35 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--xp-ratio-min", type=float, default=0.60)
     p.add_argument("--xp-ratio-max", type=float, default=1.00)
     p.add_argument("--champion-summary", action="store_true")
+    p.add_argument(
+        "--export-config-id",
+        default=None,
+        help="If set, export this config_id as a canonical support_scores parquet.",
+    )
+    p.add_argument(
+        "--export-best",
+        choices=["coverage", "score_std", "score_iqr"],
+        default=None,
+        help="Export the best config according to the selected summary criterion.",
+    )
+    p.add_argument(
+        "--export-support-scores-path",
+        default=None,
+        help=(
+            "Output path for the selected canonical support_scores parquet. "
+            "Defaults to ProgresoActual/data/clean/scores/support_scores[_sampleX]_mXX.parquet."
+        ),
+    )
+    p.add_argument(
+        "--write-config-json",
+        action="store_true",
+        help="Write selected_support_score_config.json next to the exported parquet.",
+    )
     return p.parse_args()
 
 
 def build_frame_state_path(frame_state_dir: str, frame_state_name: str, sample_frac: Optional[float]) -> str:
     return os.path.join(frame_state_dir, f"{frame_state_name}{format_sample_suffix(sample_frac)}.parquet")
-
-
-def weighted_mean(parts: Iterable[tuple[Optional[float], float]]) -> Optional[float]:
-    num = 0.0
-    den = 0.0
-    for value, w in parts:
-        if value is None or pd.isna(value):
-            continue
-        num += w * float(value)
-        den += w
-    return None if den <= 0 else num / den
 
 
 def compute_one_config(df: pd.DataFrame, *, start_minute: float, max_minute: float, far_adc_threshold: float,
@@ -175,15 +190,13 @@ def compute_one_config(df: pd.DataFrame, *, start_minute: float, max_minute: flo
     out.loc[out["support_adc_xp_ratio_v2"].isna(), "xp_gap"] = np.nan
 
     w_outside, w_far, w_xp = weights
-    scores = []
-    for r in out.itertuples(index=False):
-        score = weighted_mean([
-            (getattr(r, "outside_ratio", None), w_outside),
-            (getattr(r, "far_ratio", None), w_far),
-            (getattr(r, "xp_gap", None), w_xp),
-        ])
-        scores.append(score)
-    out["support_roam_score_v2"] = scores
+    components = out[["outside_ratio", "far_ratio", "xp_gap"]].astype(float)
+    weights_arr = np.asarray([w_outside, w_far, w_xp], dtype=float)
+    valid_mask = components.notna().to_numpy(dtype=float)
+    weighted_values = components.fillna(0.0).to_numpy(dtype=float) * weights_arr
+    score_den = valid_mask * weights_arr
+    den = score_den.sum(axis=1)
+    out["support_roam_score_v2"] = np.where(den > 0, weighted_values.sum(axis=1) / den, np.nan)
     out["support_score_confidence_v2"] = np.minimum(1.0, out["valid_support_frames_v2"] / 6.0)
 
     out["config_id"] = config_id
@@ -195,6 +208,85 @@ def compute_one_config(df: pd.DataFrame, *, start_minute: float, max_minute: flo
     out["w_xp"] = float(w_xp)
     out["window_tag"] = format_window_tag(max_minute)
     return out
+
+
+def default_export_path(sample_frac: Optional[float], max_minute: float) -> str:
+    suffix = format_sample_suffix(sample_frac)
+    return os.path.join(
+        "ProgresoActual",
+        "data",
+        "clean",
+        "scores",
+        f"support_scores{suffix}_{format_window_tag(max_minute)}.parquet",
+    )
+
+
+def select_export_config(
+    summary_df: pd.DataFrame,
+    export_config_id: Optional[str],
+    export_best: Optional[str],
+) -> Optional[str]:
+    if summary_df.empty:
+        return None
+    non_empty = summary_df[summary_df["rows"] > 0].copy()
+    if non_empty.empty:
+        return None
+    if export_config_id:
+        if export_config_id not in set(non_empty["config_id"]):
+            raise SystemExit(f"--export-config-id no existe o no tiene filas: {export_config_id}")
+        return export_config_id
+    if not export_best:
+        return None
+    if export_best == "score_iqr":
+        non_empty["score_iqr"] = non_empty["score_p75"] - non_empty["score_p25"]
+    sort_cols = {
+        "coverage": ["coverage", "rows"],
+        "score_std": ["score_std", "coverage"],
+        "score_iqr": ["score_iqr", "coverage"],
+    }[export_best]
+    return str(non_empty.sort_values(sort_cols, ascending=[False] * len(sort_cols)).iloc[0]["config_id"])
+
+
+def export_canonical_support_scores(
+    long_df: pd.DataFrame,
+    summary_df: pd.DataFrame,
+    selected_config_id: str,
+    out_path: str,
+    write_config_json: bool,
+) -> None:
+    selected = long_df[long_df["config_id"] == selected_config_id].copy()
+    if selected.empty:
+        raise SystemExit(f"No hay filas para exportar config_id={selected_config_id}")
+
+    keep_cols = [
+        "match_id", "team_id", "side", "patch",
+        "support_champion_name", "adc_champion_name",
+        "valid_support_frames_v2", "valid_coop_frames_v2",
+        "outside_ratio", "far_ratio", "xp_gap",
+        "frames_out_bot_extended", "frames_far_from_adc",
+        "mean_distance_to_adc_v2", "support_adc_xp_ratio_v2",
+        "support_score_confidence_v2", "support_roam_score_v2",
+        "config_id", "start_minute", "max_minute", "far_adc_threshold",
+        "w_outside", "w_far", "w_xp", "window_tag",
+    ]
+    keep_cols = [c for c in keep_cols if c in selected.columns]
+    selected = selected[keep_cols].sort_values(["match_id", "team_id"]).reset_index(drop=True)
+    selected["support_v2_definition"] = "weighted_mean(outside_ratio, far_ratio, xp_gap)"
+    selected["support_roam_score_v2"] = selected["support_roam_score_v2"].clip(0.0, 1.0)
+
+    out = Path(out_path)
+    ensure_dir(str(out.parent))
+    selected.to_parquet(out, index=False)
+    print(f"[Saved] Canonical support scores: {os.path.abspath(out)}")
+
+    if write_config_json:
+        config = summary_df[summary_df["config_id"] == selected_config_id].iloc[0].to_dict()
+        config["exported_rows"] = int(len(selected))
+        config["exported_path"] = os.path.abspath(out)
+        config_path = out.with_name("selected_support_score_config.json")
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        print(f"[Saved] Selected config JSON: {os.path.abspath(config_path)}")
 
 
 def main() -> None:
@@ -276,6 +368,7 @@ def main() -> None:
             "score_p25": float(s.quantile(0.25)) if not s.empty else np.nan,
             "score_median": float(s.median()) if not s.empty else np.nan,
             "score_p75": float(s.quantile(0.75)) if not s.empty else np.nan,
+            "score_iqr": float(s.quantile(0.75) - s.quantile(0.25)) if not s.empty else np.nan,
         })
 
         if args.champion_summary and "support_champion_name" in scored.columns:
@@ -300,6 +393,20 @@ def main() -> None:
     if not summary_df.empty:
         print("\nTop configs by coverage then rows:")
         print(summary_df.sort_values(["coverage", "rows"], ascending=[False, False]).head(10).to_string(index=False))
+
+    selected_config_id = select_export_config(summary_df, args.export_config_id, args.export_best)
+    if selected_config_id:
+        selected_summary = summary_df[summary_df["config_id"] == selected_config_id].iloc[0]
+        export_path = args.export_support_scores_path or default_export_path(args.sample_frac, float(selected_summary["max_minute"]))
+        export_canonical_support_scores(
+            long_df=long_df,
+            summary_df=summary_df,
+            selected_config_id=selected_config_id,
+            out_path=export_path,
+            write_config_json=args.write_config_json,
+        )
+    elif args.export_support_scores_path:
+        raise SystemExit("--export-support-scores-path requiere --export-config-id o --export-best.")
 
     if champ_parts:
         champ_df = pd.concat(champ_parts, ignore_index=True)
