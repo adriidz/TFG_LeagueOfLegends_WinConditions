@@ -1,0 +1,19 @@
+{
+  "config_id": "cfg_001_s6p0_m12_far2500_w0p45-0p35-0p2",
+  "start_minute": 6.0,
+  "max_minute": 12.0,
+  "far_adc_threshold": 2500.0,
+  "w_outside": 0.45,
+  "w_far": 0.35,
+  "w_xp": 0.2,
+  "rows": 337016,
+  "coverage": 0.9996677819700529,
+  "score_mean": 0.2953280125483162,
+  "score_std": 0.1835443674305051,
+  "score_p25": 0.1524825114979018,
+  "score_median": 0.2739675089736706,
+  "score_p75": 0.4139764432759433,
+  "score_iqr": 0.2614939317780415,
+  "exported_rows": 337016,
+  "exported_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual\\OAT\\support_oat_full_m12\\scores\\time_window_start_max_s6_m12\\support_scores.parquet"
+}

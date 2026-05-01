@@ -25,6 +25,13 @@ ProgresoActual/data/clean/frame_state/support_frame_state_sample5.parquet
 ProgresoActual/data/clean/features/draft_features_sample5.parquet
 ```
 
+Para full, el frame-state puede existir como dataset parquet particionado:
+
+```text
+ProgresoActual/data/clean/frame_state/support_frame_state.parquet/
+ProgresoActual/data/clean/features/draft_features.parquet
+```
+
 Se generan con:
 
 ```powershell
@@ -55,6 +62,24 @@ ProgresoActual/data/training/oat_tuning/support_oat_sample5_m12/
 ProgresoActual/analysis/support_label_distribution/oat_tuning/support_oat_sample5_m12/
 ```
 
+## Preparacion por Git
+
+Para enviar los artefactos de entrada al cluster mediante Git, usa `-OatRoot`.
+Esto deja los modelos fuera de Git, pero versiona manifest, scores, model inputs
+y graficas auxiliares bajo `ProgresoActual/OAT`.
+
+```powershell
+.\ProgresoActual\scripts\run_support_oat_tuning.ps1 `
+  -ExperimentName support_oat_full_m12 `
+  -SampleTag full `
+  -SampleFrac 1 `
+  -OatRoot ProgresoActual/OAT
+
+git add ProgresoActual/OAT ProgresoActual/scripts ProgresoActual/docs/support_oat_tuning.md
+git commit -m "Prepare full OAT tuning artifacts"
+git push
+```
+
 ## Sync al cluster
 
 ```powershell
@@ -70,6 +95,17 @@ En el cluster, despues de `git pull` o `fetch/reset`:
 
 ```bash
 wc -l ProgresoActual/experiments/support_oat/support_oat_sample5_m12/runs_manifest.csv
+sbatch --array=1-N ProgresoActual/scripts/train_support_oat_array.sh
+```
+
+Si los artefactos se han versionado en `ProgresoActual/OAT`, usa el manifest
+versionado:
+
+```bash
+git pull
+wc -l ProgresoActual/OAT/support_oat_full_m12/experiments/runs_manifest.csv
+EXPERIMENT_NAME=support_oat_full_m12 \
+MANIFEST_PATH=ProgresoActual/OAT/support_oat_full_m12/experiments/runs_manifest.csv \
 sbatch --array=1-N ProgresoActual/scripts/train_support_oat_array.sh
 ```
 
@@ -95,6 +131,14 @@ desde el cluster:
 
 ```powershell
 python ProgresoActual\scripts\aggregate_support_oat_results.py
+```
+
+Para el flujo por Git:
+
+```powershell
+python ProgresoActual\scripts\aggregate_support_oat_results.py `
+  --experiment-name support_oat_full_m12 `
+  --manifest ProgresoActual\OAT\support_oat_full_m12\experiments\runs_manifest.csv
 ```
 
 Salidas:

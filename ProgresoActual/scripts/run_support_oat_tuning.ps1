@@ -22,6 +22,7 @@ param(
     [int]$Patience = 10,
     [double]$ValSize = 0.2,
     [int]$Seed = 42,
+    [string]$OatRoot = "",
     [switch]$Smoke
 )
 
@@ -122,10 +123,18 @@ $frameStatePath = "$FrameStateDir/$FrameStateName$sampleSuffix.parquet"
 Assert-Path $frameStatePath "Ejecuta primero .\ProgresoActual\run_support_pipeline.ps1 o genera support_frame_state."
 Assert-Path $DraftPath "Ejecuta primero .\ProgresoActual\run_support_pipeline.ps1 o genera draft_features."
 
-$experimentRoot = "ProgresoActual/experiments/support_oat/$ExperimentName"
-$scoreRoot = "ProgresoActual/data/clean/scores/oat_tuning/$ExperimentName"
-$modelInputRoot = "ProgresoActual/data/training/oat_tuning/$ExperimentName"
-$labelPlotRoot = "ProgresoActual/analysis/support_label_distribution/oat_tuning/$ExperimentName"
+if ([string]::IsNullOrWhiteSpace($OatRoot)) {
+    $experimentRoot = "ProgresoActual/experiments/support_oat/$ExperimentName"
+    $scoreRoot = "ProgresoActual/data/clean/scores/oat_tuning/$ExperimentName"
+    $modelInputRoot = "ProgresoActual/data/training/oat_tuning/$ExperimentName"
+    $labelPlotRoot = "ProgresoActual/analysis/support_label_distribution/oat_tuning/$ExperimentName"
+} else {
+    $oatExperimentRoot = "$OatRoot/$ExperimentName"
+    $experimentRoot = "$oatExperimentRoot/experiments"
+    $scoreRoot = "$oatExperimentRoot/scores"
+    $modelInputRoot = "$oatExperimentRoot/model_inputs"
+    $labelPlotRoot = "$oatExperimentRoot/label_distribution"
+}
 $gridRoot = "ProgresoActual/analysis/support_grid/oat_tuning/$ExperimentName"
 $modelRoot = "ProgresoActual/models/oat_tuning/$ExperimentName"
 
@@ -261,4 +270,9 @@ Write-Host "OAT tuning preparation finished."
 Write-Host "Experiment: $ExperimentName"
 Write-Host "Runs:       $($manifestRows.Count)"
 Write-Host "Manifest:   $manifestPath"
-Write-Host "Next step:  .\ProgresoActual\scripts\sync_support_oat_to_cluster.ps1 -ExperimentName $ExperimentName"
+if ([string]::IsNullOrWhiteSpace($OatRoot)) {
+    Write-Host "Next step:  .\ProgresoActual\scripts\sync_support_oat_to_cluster.ps1 -ExperimentName $ExperimentName"
+} else {
+    Write-Host "Next step:  git add $OatRoot ProgresoActual/scripts && git commit && git push"
+    Write-Host "Cluster:    EXPERIMENT_NAME=$ExperimentName MANIFEST_PATH=$manifestPath sbatch --array=1-$($manifestRows.Count) ProgresoActual/scripts/train_support_oat_array.sh"
+}

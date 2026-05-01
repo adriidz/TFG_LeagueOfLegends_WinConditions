@@ -1,0 +1,2 @@
+model_rows,model_unique_matches,model_unique_match_team_keys,has_support_score,support_score_source_col,window_tag,score_max_minute
+337120,168564,337120,337120,support_roam_score_v2,m14,14.0
