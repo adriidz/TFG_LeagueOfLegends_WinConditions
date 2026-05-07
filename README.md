@@ -3,9 +3,10 @@
 Estructura actual del repositorio:
 
 - `ProgresoActual/`: reinicio support-only con regresion continua, scorer rapido, trainer MLP, referencias de campeones e informe editable.
-- `PropuestaInicial/`: archivo del planteamiento anterior, fases de clasificacion, resultados, figuras y modelos historicos.
-- `data/` y `data_new/`: datos y caches reutilizables. Se mantienen en raiz para evitar duplicar archivos pesados y romper rutas.
-- `src/`: codigo historico que todavia no se ha clasificado por completo. Los scripts minimos del reinicio ya estan copiados/movidos a `ProgresoActual/src/`.
+- `ProgresoActual2/`: sandbox reciente para geometria v5 y variantes quantile de la etiqueta support.
+- `PropuestaInicial/`: archivo documental del planteamiento anterior. Los artefactos pesados historicos se mantienen fuera de Git.
+- `data/` y `data_new/`: datos y caches locales reutilizables, ignorados por Git para evitar duplicar archivos pesados.
+- `src/01_data_collection/`: colector raw heredado que sigue siendo util para actualizar datos.
 
 Punto de entrada recomendado:
 

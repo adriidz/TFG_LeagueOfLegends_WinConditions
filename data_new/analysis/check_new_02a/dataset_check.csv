@@ -1,8 +1,0 @@
-dataset,path,exists,rows,cols,duplicate_keys
-jungle_scores,data_new\clean\scores\jungle_scores_sample5_m11.parquet,True,16283,18,0
-support_scores,data_new\clean\scores\support_scores_sample5_m11.parquet,True,16284,34,0
-team_scores,data_new\clean\scores\team_tendency_scores_sample5_m11.parquet,True,16284,27,0
-jungle_labels,data_new\clean\labels\jungle_labels_sample5_m11_q20_80.parquet,True,16283,35,0
-support_labels,data_new\clean\labels\support_labels_sample5_m11_q20_80.parquet,True,16284,41,0
-team_labels,data_new\clean\labels\team_tendency_labels_sample5_m11_q20_80.parquet,True,16284,33,0
-draft_features,data_new\clean\features\draft_features_sample40.parquet,True,130542,99,0

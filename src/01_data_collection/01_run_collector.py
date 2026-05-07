@@ -47,6 +47,8 @@ MAX_WORKERS = int(os.getenv("RAW_MAX_WORKERS", "8"))
 INCLUDE_MASTER = os.getenv("RAW_INCLUDE_MASTER", "1").strip().lower() not in {"0", "false", "no"}
 MIN_PATCH_MAJOR = int(os.getenv("RAW_MIN_PATCH_MAJOR", "16"))
 MIN_PATCH_MINOR = int(os.getenv("RAW_MIN_PATCH_MINOR", "2"))
+MAX_PATCH_MAJOR = int(os.getenv("RAW_MAX_PATCH_MAJOR", "16"))
+MAX_PATCH_MINOR = int(os.getenv("RAW_MAX_PATCH_MINOR", "8"))
 # Partidas por jugador: reducido a 40 para maximizar diversidad de jugadores únicos.
 # Con 300 partidas/jugador y ~850 Challengers, los mismos jugadores se repiten constantemente
 # entre partidas → autocorrelación alta. Con 40, el pool de jugadores únicos es mucho mayor.
@@ -182,6 +184,13 @@ def is_patch_at_least(mm: Optional[Tuple[int, int]], min_major: int, min_minor: 
         return False
     major, minor = mm
     return (major > min_major) or (major == min_major and minor >= min_minor)
+
+
+def is_patch_at_most(mm: Optional[Tuple[int, int]], max_major: int, max_minor: int) -> bool:
+    if mm is None:
+        return False
+    major, minor = mm
+    return (major < max_major) or (major == max_major and minor <= max_minor)
 
 
 def parse_iso_datetime(value: Optional[str]) -> Optional[datetime]:
@@ -452,6 +461,12 @@ def fetch_one_match(match_id: str) -> Dict[str, Any]:
                 "match_id": match_id,
                 "error": f"patch<{MIN_PATCH_MAJOR}.{MIN_PATCH_MINOR}",
             }
+        if not is_patch_at_most(mm, MAX_PATCH_MAJOR, MAX_PATCH_MINOR):
+            return {
+                "status": "SKIP_PATCH",
+                "match_id": match_id,
+                "error": f"patch>{MAX_PATCH_MAJOR}.{MAX_PATCH_MINOR}",
+            }
 
         timeline = riot_call_with_retry(watcher.match.timeline_by_match, REGION, match_id)
         row = {
@@ -557,7 +572,7 @@ def run() -> None:
     conn = open_state_db(STATE_DB)
 
     print("=== INICIO COLECCIÓN RAW ===")
-    print("Parche mínimo:", f"{MIN_PATCH_MAJOR}.{MIN_PATCH_MINOR}")
+    print("Parche mínimo:", f"{MIN_PATCH_MAJOR}.{MIN_PATCH_MINOR}", "| Parche máximo:", f"{MAX_PATCH_MAJOR}.{MAX_PATCH_MINOR}")
     print("Include MASTER:", INCLUDE_MASTER)
     print("Matches por jugador:", MATCHES_PER_PLAYER)
     print("Pesos por tier:", TIER_WEIGHTS)

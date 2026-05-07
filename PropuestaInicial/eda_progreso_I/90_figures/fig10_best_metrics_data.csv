@@ -1,4 +1,0 @@
-,accuracy,balanced_accuracy,f1_macro,valid_samples,class_names,prediction_distribution
-jungle_presence_label,0.5922,0.585,0.5832,31509,"['farm_oriented', 'map_presence']","{'farm_oriented': 12191, 'map_presence': 19318}"
-support_roam_label,0.6618,0.6599,0.659,33706,"['lane_anchored', 'roamer']","{'lane_anchored': 19476, 'roamer': 14230}"
-team_tendency_label,0.5791,0.578,0.578,29215,"['botside_oriented', 'topside_oriented']","{'botside_oriented': 13626, 'topside_oriented': 15589}"

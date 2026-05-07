@@ -5,6 +5,67 @@
 **Fecha de preparacion:** 25/04/2026  
 **Entrega prevista del informe de progreso:** 27/04/2026  
 
+## Contexto minimo del juego para entender el modelo
+
+League of Legends es un videojuego competitivo por equipos. Cada partida
+enfrenta a dos equipos de cinco jugadores en un mapa fijo. El objetivo final es
+destruir la base enemiga, llamada nexo. Para llegar a ella, los equipos deben
+ganar recursos, controlar zonas del mapa, destruir estructuras y tomar objetivos
+neutrales. En este TFG no se intenta predecir directamente quien ganara la
+partida, sino inferir tendencias tempranas de comportamiento a partir de la
+composicion elegida antes de empezar.
+
+El mapa se divide de forma practica en tres lineas principales: top, mid y bot.
+Top es la linea superior, mid la linea central y bot la linea inferior. Entre
+estas lineas existe una zona intermedia llamada jungla, donde aparecen recursos
+y objetivos neutrales. Los cinco jugadores suelen repartirse en cinco roles:
+top, jungla, mid, ADC y support. El jungla no juega de forma fija en una linea,
+sino que se mueve por la jungla y puede intervenir en distintas zonas del mapa.
+El ADC y el support empiezan normalmente juntos en botlane. El support es el rol
+que acompana al ADC al inicio, pero tambien puede abandonar la linea para ayudar
+en el rio, en mid o en objetivos. A ese movimiento fuera de bot se le suele
+llamar roaming.
+
+![Mapa simplificado de League of Legends](../../images/minimapa.png)
+
+La imagen anterior resume la estructura espacial que se usara durante todo el
+informe: dos bases opuestas, tres lineas conectadas por el rio y zonas de jungla
+entre ellas. Esta estructura es importante para el modelo porque muchos de los
+targets se definen a partir de posiciones: si un jugador permanece cerca de su
+linea, si se mueve hacia el rio, si se aleja de su companero de linea o si se
+acerca a objetivos neutrales.
+
+Antes de comenzar la partida se juega la fase de draft. En esta fase ambos
+equipos seleccionan campeones y bloquean otros campeones. Esta informacion es
+clave para el proyecto porque es informacion disponible antes del minuto cero.
+Por tanto, puede usarse como input del modelo sin introducir informacion futura.
+El modelo no recibe eventos de la partida como entrada; esos eventos solo se
+usan despues para construir las etiquetas observadas.
+
+Los objetivos neutrales son recursos importantes que no pertenecen inicialmente
+a ningun equipo. Entre ellos estan el dragon, situado en la parte inferior del
+rio, y las larvas del vacio, situadas en la parte superior del rio, cerca de la
+zona de baron/heraldo. Estos objetivos importan porque obligan a los jugadores a
+moverse por el mapa. Para este TFG, esa movilidad es relevante: si un support se
+aleja de botlane para ayudar en objetivos o en otras lineas, su comportamiento
+observado sera mas cercano a un perfil de roaming.
+
+La API de Riot proporciona, entre otros datos, informacion estatica del draft y
+una timeline de la partida. La timeline puede entenderse como una secuencia de
+"fotografias" del estado de la partida: posiciones, experiencia, recursos y
+eventos en distintos instantes. En el enfoque actual, esas fotografias no se
+usan como entrada del modelo, sino para construir una etiqueta continua que
+resume cuanto ha roameado el support entre los minutos 5 y 12. En fases futuras,
+si el tiempo lo permite y se acuerda con el tutor, esta naturaleza secuencial
+podria justificar explorar modelos como RNN, GRU o LSTM.
+
+Esta distincion es central para leer el resto del informe. El input del modelo
+es el draft, es decir, lo que se sabe antes de la partida. La etiqueta se calcula
+a posteriori observando el comportamiento real en los primeros minutos. Por
+tanto, el modelo aprende hasta que punto una composicion de campeones permite
+anticipar tendencias tempranas, no decisiones exactas tomadas por jugadores
+durante la partida.
+
 ## 1. Resumen ejecutivo
 
 El objetivo inicial del TFG era construir un sistema de aprendizaje automatico
@@ -200,7 +261,7 @@ las partidas.
 ### 4.3 Comparacion experta por campeon
 
 Para comprobar si la etiqueta observada tiene sentido cualitativo, se construyo
-una referencia experta manual para 30 campeones habitualmente considerados
+una referencia experta manual para 47 campeones habitualmente considerados
 supports. Esta tabla esta en
 `ProgresoActual/references/manual_support_champion_reference.csv` e incluye:
 
@@ -216,6 +277,12 @@ presentarse como validacion contra ground truth oficial, sino como validacion
 cualitativa de ranking: comprobar si los campeones que deberian aparecer como
 mas roamers, como Bard, Pyke, Nautilus o Rakan, quedan por encima de campeones
 mas anclados al ADC, como Yuumi, Soraka, Sona o Milio.
+
+Es importante aclarar que esta referencia experta no procede de internet ni de
+una fuente oficial externa. Es una primera curacion manual realizada para el
+proyecto a partir de conocimiento del dominio: identidad del campeon, rol
+habitual, kit de habilidades y patron esperado de juego. Su funcion es servir
+como contraste cualitativo inicial, no como verdad absoluta.
 
 ### 4.4 Modelo MLP
 
@@ -242,7 +309,18 @@ variable de grupo externa [12].
 
 ### 5.1 Snapshot completo del dataset
 
-El snapshot completo actual contiene:
+El primer artefacto clave del reinicio es el `frame-state`. En este proyecto se
+usa este nombre para referirse a una tabla derivada de las timelines de Riot
+que resume el estado de la partida en distintos instantes: minuto, equipo,
+campeon, rol, posicion, experiencia y variables necesarias para medir si el
+support permanece en botlane, se aleja del ADC o se desplaza hacia otras zonas
+del mapa. Es el artefacto mas caro de construir porque requiere leer las
+partidas y sus timelines originales, pero permite despues recalcular etiquetas
+con distintas heuristicas sin volver a procesar todos los JSON. En otras
+palabras, el `frame-state` no es todavia la entrada del modelo, sino la base
+observacional desde la que se calcula el target.
+
+El snapshot completo actual de `frame-state` contiene:
 
 | Metrica | Valor |
 |---|---:|
@@ -257,6 +335,15 @@ El snapshot completo actual contiene:
 La tasa de partidas validas es muy alta. La mayor parte de descartes procede de
 partidas demasiado cortas, lo que es esperable en un pipeline que intenta medir
 comportamiento temprano hasta una ventana concreta.
+
+El segundo artefacto clave son las `draft_features`. A diferencia del
+`frame-state`, estas variables si representan la informacion disponible antes
+de empezar la partida: campeones seleccionados por cada equipo, roles, side y
+otros campos derivados del draft. Son la base tabular que se combinara con la
+etiqueta de support para construir el input final de entrenamiento. Esta
+separacion es importante metodologicamente: el modelo predice desde informacion
+pregame, mientras que el `frame-state` solo se usa a posteriori para generar la
+respuesta observada que se quiere aprender.
 
 Las `draft_features` completas contienen:
 
@@ -328,19 +415,17 @@ del mapa y no un error de etiqueta.
 
 ![Distribucion por lado](../analysis/support_label_distribution/full_m12/support_label_by_side_histogram.png)
 
-El siguiente esquema resume la intuicion espacial que ayuda a interpretar esta
-asimetria. Los supports empiezan normalmente ligados a botlane junto al ADC. El
+La intuicion espacial se apoya en el contexto del mapa introducido al inicio del
+informe. Los supports empiezan normalmente ligados a botlane junto al ADC. El
 dragon esta en la zona inferior del rio, mientras que las larvas y la zona de
 baron/heraldo quedan en la parte superior. Si el equipo azul toma las primeras
 larvas en torno al `59.38%` de las partidas, es plausible que sus supports
 realicen ligeramente mas movimientos hacia zonas alejadas de botlane durante el
 early game. En el analisis antiguo, el primer dragon aparecia mas a menudo para
 red side (`RED 60.77%`), mientras que las primeras larvas aparecian mas a menudo
-para blue side (`BLUE 59.38%`). Esta lectura no demuestra causalidad, pero ofrece un
-contexto de mapa razonable para no interpretar automaticamente la diferencia
-blue/red como ruido.
-
-![Contexto de mapa y objetivos neutrales](../analysis/map_context/support_objective_context.png)
+para blue side (`BLUE 59.38%`). Esta lectura no demuestra causalidad, pero
+ofrece un contexto de mapa razonable para no interpretar automaticamente la
+diferencia blue/red como ruido.
 
 La distribucion por campeon tambien es interpretable. Los campeones con mayor
 media observada incluyen perfiles de roaming o engage, mientras que los
@@ -353,14 +438,14 @@ con `n >= 500` observaciones.
 ### 5.3 Comparacion observada vs experta
 
 La comparacion contra la tabla experta manual se ejecuto con `min_count=100`.
-Antes de comparar, se construyo una tabla de referencia con 30 campeones
+Antes de comparar, se construyo una tabla de referencia con 47 campeones
 habitualmente usados como support. Un ejemplo de las tres primeras filas es:
 
 | Campeon | Arquetipo experto | Score experto | Confianza | Nota |
 |---|---|---:|---:|---|
 | Alistar | engage_roamer | 0.82 | 0.90 | Strong engage and roam identity after lane setup. |
-| Bard | roaming_specialist | 0.95 | 0.95 | Design explicitly rewards leaving lane and impacting map. |
-| Blitzcrank | pick_roamer | 0.78 | 0.85 | Hook pressure translates well to river and mid roams. |
+| Amumu | engage_roamer | 0.62 | 0.70 | Engage and crowd control can support roams and river skirmishes. |
+| Anivia | control_mage | 0.25 | 0.45 | Usually lane/control oriented when played support; low confidence because it is not a canonical support. |
 
 Cada campo tiene una funcion concreta. `champion_name` identifica el campeon;
 `expert_archetype` resume su identidad funcional; `expert_support_roam_score`
@@ -382,17 +467,31 @@ El resultado de la comparacion fue:
 | Metrica | Valor |
 |---|---:|
 | Campeones en score table con `min_count>=100` | 75 |
-| Campeones con referencia experta | 30 |
-| Pearson | 0.8951 |
-| Spearman | 0.8751 |
+| Campeones con referencia experta | 47 |
+| Pearson | 0.7947 |
+| Spearman | 0.8251 |
 
-La correlacion alta indica que el ranking agregado por campeon se parece mucho
-al ranking experto. Esta es una evidencia importante de que la etiqueta no es
-arbitraria. Sin embargo, la escala observada es mas comprimida que la experta:
+La correlacion sigue siendo alta tras ampliar la cobertura experta de 30 a 47
+campeones. Es normal que baje respecto a la primera tabla mas pequena, porque
+ahora entran picks menos canonicos y casos con menor confianza experta. Aun asi,
+el ranking agregado por campeon se parece claramente al ranking experto, lo que
+es una evidencia importante de que la etiqueta no es arbitraria. Sin embargo,
+la escala observada es mas comprimida que la experta:
 por ejemplo, Bard y Pyke tienen scores expertos cercanos a `1`, pero su media
 observada ronda `0.38`. Esto no invalida la etiqueta; simplemente muestra la
 diferencia entre identidad teorica de campeon y comportamiento medio observado
 en partidas reales.
+
+En el scatter, la linea discontinua es una referencia visual escalada al rango
+observado: el eje experto llega a `1`, pero la media observada por campeon no
+llega a `0.45`. Por eso la linea apunta al limite superior util del eje Y y no
+al antiguo `1`. El color introduce una tercera variable: la confianza asignada
+durante el etiquetaje experto. Los puntos mas verdes corresponden a campeones
+cuya identidad de support/roaming se considero mas clara; los puntos mas rojos
+o amarillos indican casos mas discutibles, nicho o dependientes de parche. Esto
+permite comprobar visualmente si las mayores desviaciones se concentran en
+etiquetas de menor confianza o si, por el contrario, aparecen tambien en
+campeones canonicos.
 
 ![Comparacion observada vs experta](../analysis/champion_reference/full_m12/generated_vs_expert_scatter.png)
 
@@ -513,6 +612,19 @@ o contexto estrategico, mientras que el timeline refleja una ejecucion concreta
 afectada por muchos factores. Esta dificultad explica por que una baseline
 tabular puede aprender senal promedio, pero no todos los extremos.
 
+Para reducir esta distancia se han tomado varias decisiones de diseno. En
+primer lugar, el dataset procede de jugadores de alto nivel, por lo que se
+asume que la ejecucion observada se aproxima mejor a la intencion estrategica
+del draft que en partidas de menor nivel. En segundo lugar, la etiqueta de
+support prioriza metricas espaciales, como salir de botlane, alejarse del ADC o
+moverse por zonas relevantes del mapa, en lugar de usar directamente
+diferencias de oro, experiencia o recursos entre equipos. Esta decision intenta
+evitar que el target mida simplemente que un equipo va ganando o perdiendo. En
+tercer lugar, se analiza una ventana temprana acotada, entre los minutos 5 y 12,
+para capturar patrones iniciales antes de que la partida quede demasiado
+condicionada por ventajas acumuladas. Aun asi, la limitacion no desaparece: la
+etiqueta sigue midiendo ejecucion real, no intencion pura.
+
 ### 6.2 Problemas de discretizacion
 
 La clasificacion obligaba a convertir scores continuos en clases. Esta decision
@@ -548,29 +660,7 @@ Esto indica que el modelo tiende a la media. La siguiente fase debe comprobar si
 esto mejora con tuning, regularizacion, embeddings, feature enrichment o una
 representacion secuencial del timeline.
 
-## 7. Planning hasta final de proyecto
-
-El informe de progreso se entrega el 27/04/2026, con retraso respecto a la
-fecha inicial del 19/04. El calendario siguiente usa las fechas formales
-extraidas de la propuesta inicial: Informe de Progreso II el 24/05, propuesta de
-informe final el 14/06, propuesta de presentacion el 21/06 y entrega final el
-28/06. Si se incorpora `TFG/fechas.pdf`, este planning debera ajustarse a sus
-horarios exactos.
-
-| Periodo | Objetivo | Tareas | Entregable esperado | Criterio de exito | Riesgo/dependencia | Estado |
-|---|---|---|---|---|---|---|
-| 25/04-27/04 | Entregar Informe de Progreso I retrasado | Pulir recapitulacion, resultados, figuras nuevas y planning | `informe_progreso_completo.md` corregido | Informe entregable y coherente con evidencia generada | Tiempo corto | En curso |
-| 28/04-03/05 | Consolidar baseline MLP | Revisar metricas, figuras, conclusiones y baseline media | Seccion de resultados MLP cerrada | Conclusion clara sobre que aprende y que no aprende | Predicciones comprimidas | Pendiente |
-| 04/05-10/05 | Tuning OAT conjunto: MLP + etiqueta support | Probar regularizacion, capacidad, dropout, LR, batch size, pesos, ventana, start minute y umbral distancia ADC | Tabla comparativa por `val_mse`, curvas, ranking de heuristicas y etiqueta candidata | Mejorar o justificar configuracion base y seleccionar etiqueta candidata | Coste cluster y tradeoff distribucion/metrica | Pendiente |
-| 11/05-17/05 | Embeddings y feature enrichment | Disenar features semanticas de campeones, runas, spells, arquetipos y tags | Comparacion OneHot vs enriched/embeddings | Mejora medible o descarte justificado | Diseno de features y disponibilidad de metadatos | Pendiente |
-| 18/05-24/05 | Informe de Progreso II | Integrar tuning, embeddings preliminares, decisiones y figuras finales parciales | Informe II revisado | Documento listo para entrega del 24/05 | Depende de tuning y primeras pruebas de enrichment | Pendiente |
-| 25/05-31/05 | Profundizar embeddings/feature enrichment y preparar expansion multi-tarea | Refinar features enriquecidas, analizar importancia, preparar contrato para nuevas etiquetas | Feature set candidato y diseno de reintroduccion jungle/team | Representacion de entrada mas informativa y plan multi-task definido | Puede no superar OneHot | Pendiente |
-| 01/06-07/06 | Reintroducir jungle/team labels | Definir nuevas versiones continuas de jungle/team y generar smoke | Propuesta de etiquetas + smoke de generacion | Labels coherentes y compatibles con pipeline | Complejidad multi-task | Pendiente |
-| 08/06-14/06 | Decidir RNN/GRU/LSTM con tutor y consolidar modelo candidato | Reunion, diseno secuencial si procede, smoke minimo o descarte documentado | Decision documentada, modelo candidato y estructura de memoria | Siguiente paso aprobado o descartado por alcance | Reunion tutor/tiempo | Pendiente |
-| 15/06-21/06 | Prototipo terminal e interpretacion | CLI de entrada manual y traduccion score-texto | CLI minimo usable + frases interpretables | Usuario introduce draft y recibe lectura clara | Integracion features | Pendiente |
-| 22/06-28/06 | Cierre final | Conclusiones, limitaciones, memoria, presentacion | Dossier final + informe + presentacion | Entrega final revisada | Tiempo de redaccion | Pendiente |
-
-## 8. Proximos pasos tecnicos
+## 7. Proximos pasos tecnicos
 
 El siguiente paso inmediato es ejecutar el tuning OAT conjunto. La idea es
 probar, de forma controlada y una variable cada vez, tanto hiperparametros de la
@@ -598,6 +688,28 @@ Finalmente, tras estabilizar support, se reintroduciran nuevas versiones
 continuas de las etiquetas de jungla y equipo. La experiencia obtenida con
 support debe servir para evitar repetir los problemas de discretizacion,
 ambiguedad y targets poco estables.
+
+## 8. Planning hasta final de proyecto
+
+El informe de progreso se entrega el 27/04/2026, con retraso respecto a la
+fecha inicial del 19/04. El calendario siguiente usa las fechas formales
+extraidas de la propuesta inicial: Informe de Progreso II el 24/05, propuesta de
+informe final el 14/06, propuesta de presentacion el 21/06 y entrega final el
+28/06. Si se incorpora `TFG/fechas.pdf`, este planning debera ajustarse a sus
+horarios exactos.
+
+| Periodo | Objetivo | Tareas | Entregable esperado | Criterio de exito | Riesgo/dependencia | Estado |
+|---|---|---|---|---|---|---|
+| 25/04-27/04 | Entregar Informe de Progreso I retrasado | Pulir recapitulacion, resultados, figuras nuevas y planning | `informe_progreso_completo.md` corregido | Informe entregable y coherente con evidencia generada | Tiempo corto | En curso |
+| 28/04-03/05 | Tuning OAT conjunto: MLP + etiqueta support | Probar regularizacion, capacidad, dropout, LR, batch size, pesos, ventana, start minute y umbral distancia ADC | Tabla comparativa por `val_mse`, curvas, ranking de heuristicas y etiqueta candidata | Mejorar o justificar configuracion base y seleccionar etiqueta support candidata | Coste cluster y tradeoff distribucion/metrica | Pendiente |
+| 04/05-10/05 | Embeddings y feature enrichment inicial | Disenar features semanticas de campeones, runas, spells, arquetipos y tags | Comparacion OneHot vs enriched/embeddings | Mejora medible o descarte justificado | Diseno de features y disponibilidad de metadatos | Pendiente |
+| 11/05-17/05 | Refinar representacion y cerrar soporte | Analizar importancia de features, ajustar representacion enriched/embedding y consolidar etiqueta support candidata | Feature set candidato + decision sobre representacion de entrada | Representacion mas informativa o descarte razonado frente a OneHot | Puede no superar OneHot | Pendiente |
+| 18/05-24/05 | Informe de Progreso II | Integrar tuning, embeddings, etiqueta support candidata, decisiones y figuras finales parciales | Informe II revisado | Documento listo para entrega del 24/05 | Depende de tuning y primeras pruebas de enrichment | Pendiente |
+| 25/05-31/05 | Redefinir etiqueta de jungla | Disenar version continua de jungla, generar smoke y revisar distribucion | Propuesta de etiqueta jungle + plots de salud | Label coherente, no degenerada y compatible con pipeline | Complejidad de eventos y objetivos de jungla | Pendiente |
+| 01/06-07/06 | Redefinir etiqueta de equipo | Disenar version continua de equipo, generar smoke y revisar distribucion | Propuesta de etiqueta team + plots de salud | Label coherente, interpretable y compatible con pipeline multi-output | Agregacion de comportamientos de cinco jugadores | Pendiente |
+| 08/06-14/06 | Integracion multi-output y decision RNN/GRU/LSTM con tutor | Integrar support/jungle/team si procede, reunirse con tutor y decidir si explorar modelo secuencial | Modelo candidato, decision secuencial documentada y estructura de memoria | Siguiente paso aprobado o descartado por alcance | Reunion tutor/tiempo | Pendiente |
+| 15/06-21/06 | Prototipo terminal e interpretacion | CLI de entrada manual y traduccion score-texto | CLI minimo usable + frases interpretables | Usuario introduce draft y recibe lectura clara | Integracion features | Pendiente |
+| 22/06-28/06 | Cierre final | Conclusiones, limitaciones, memoria, presentacion | Dossier final + informe + presentacion | Entrega final revisada | Tiempo de redaccion | Pendiente |
 
 ## 9. Bibliografia
 

@@ -1,3 +1,0 @@
-group,labeling_mode,label_schema,strategy,lower,upper,split_threshold
-blue,by_side,binary_clean,quantile,-0.47368421052631576,-0.375,-0.42434210526315785
-red,by_side,binary_clean,quantile,-0.5,-0.4117647058823529,-0.45588235294117646

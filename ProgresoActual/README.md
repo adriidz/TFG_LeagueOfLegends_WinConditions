@@ -183,6 +183,26 @@ Tras traer modelos de vuelta:
 python ProgresoActual\scripts\aggregate_support_oat_results.py
 ```
 
+## Prototipo terminal
+
+Mientras el tuning OAT depende del cluster, se puede avanzar el entregable
+aplicado con el CLI de inferencia documentado en
+`ProgresoActual/docs/terminal_prototype.md`.
+
+Uso interactivo:
+
+```powershell
+.\.venv\Scripts\python.exe ProgresoActual\scripts\predict_support_roam_cli.py
+```
+
+Smoke con una fila real ya etiquetada:
+
+```powershell
+.\.venv\Scripts\python.exe ProgresoActual\scripts\predict_support_roam_cli.py `
+  --from-match-id EUN1_3915259648 `
+  --team-id 100
+```
+
 ## Diseno experimental 170k
 
 El protocolo para pasar de `sample5` al dataset completo actual esta en

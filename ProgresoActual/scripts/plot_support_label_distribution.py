@@ -31,6 +31,21 @@ DEFAULT_SUPPORT_SCORES = os.path.join(
 DEFAULT_OUTDIR = os.path.join("ProgresoActual", "analysis", "support_label_distribution")
 
 
+def configure_plot_style() -> None:
+    """Use larger typography so figures remain readable in two-column reports."""
+    plt.rcParams.update({
+        "font.size": 18,
+        "axes.titlesize": 22,
+        "axes.labelsize": 20,
+        "xtick.labelsize": 17,
+        "ytick.labelsize": 17,
+        "legend.fontsize": 17,
+        "figure.titlesize": 23,
+        "lines.linewidth": 3,
+        "axes.linewidth": 1.4,
+    })
+
+
 def ensure_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -87,28 +102,28 @@ def numeric_summary(scores: pd.Series) -> dict:
 
 
 def save_histogram(scores: pd.Series, out_path: str, bins: int, title_suffix: str) -> None:
-    plt.figure(figsize=(9, 5.5))
+    plt.figure(figsize=(8.2, 6.0))
     plt.hist(scores, bins=bins, range=(0.0, 1.0), color="#276fbf", alpha=0.85, edgecolor="white")
     plt.xlabel("Support roam score")
     plt.ylabel("Match-team rows")
     plt.title(f"Support label distribution{title_suffix}")
     plt.grid(axis="y", alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
 def save_cdf(scores: pd.Series, out_path: str, title_suffix: str) -> None:
     sorted_scores = np.sort(scores.to_numpy(dtype=float))
     y = np.arange(1, len(sorted_scores) + 1) / len(sorted_scores)
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(8.2, 6.0))
     plt.plot(sorted_scores, y, color="#2a9d8f", linewidth=2)
     plt.xlabel("Support roam score")
     plt.ylabel("Cumulative share")
     plt.title(f"Support label empirical CDF{title_suffix}")
     plt.grid(alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
@@ -116,20 +131,20 @@ def save_component_scatter(df: pd.DataFrame, score_col: str, out_path: str) -> N
     component_cols = [c for c in ["outside_ratio", "far_ratio", "xp_gap"] if c in df.columns]
     if not component_cols:
         return
-    fig, axes = plt.subplots(1, len(component_cols), figsize=(5 * len(component_cols), 4.5), sharey=True)
+    fig, axes = plt.subplots(1, len(component_cols), figsize=(6.2 * len(component_cols), 5.8), sharey=True)
     if len(component_cols) == 1:
         axes = [axes]
     sample = df.dropna(subset=[score_col] + component_cols).copy()
     if len(sample) > 5000:
         sample = sample.sample(5000, random_state=42)
     for ax, col in zip(axes, component_cols):
-        ax.scatter(sample[col], sample[score_col], s=10, alpha=0.25, color="#276fbf")
+        ax.scatter(sample[col], sample[score_col], s=18, alpha=0.25, color="#276fbf")
         ax.set_xlabel(col)
         ax.grid(alpha=0.2)
     axes[0].set_ylabel(score_col)
     fig.suptitle("Support label vs heuristic components")
     fig.tight_layout()
-    fig.savefig(out_path, dpi=160)
+    fig.savefig(out_path, dpi=220)
     plt.close(fig)
 
 
@@ -139,7 +154,7 @@ def save_side_histograms(df: pd.DataFrame, score_col: str, out_path: str, bins: 
     work = df.dropna(subset=[score_col, "side"]).copy()
     if work.empty:
         return
-    plt.figure(figsize=(9, 5.5))
+    plt.figure(figsize=(8.2, 6.0))
     for side, group in work.groupby("side"):
         plt.hist(
             group[score_col],
@@ -155,7 +170,7 @@ def save_side_histograms(df: pd.DataFrame, score_col: str, out_path: str, bins: 
     plt.legend()
     plt.grid(axis="y", alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
@@ -188,18 +203,19 @@ def save_champion_boxplot(
     if work.empty:
         return
     data = [work.loc[work[champion_col].astype(str) == champ, score_col].to_numpy(dtype=float) for champ in champs]
-    plt.figure(figsize=(max(10, top_champions * 0.42), 6))
+    plt.figure(figsize=(max(13, top_champions * 0.68), 8.0))
     plt.boxplot(data, labels=champs, showfliers=False)
     plt.xticks(rotation=60, ha="right")
     plt.ylabel("Support roam score")
     plt.title(f"Top {len(champs)} champions by generated mean support roam score")
     plt.grid(axis="y", alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=180)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
 def main() -> None:
+    configure_plot_style()
     args = parse_args()
     if not os.path.exists(args.support_scores_path):
         raise SystemExit(f"Missing support scores parquet: {args.support_scores_path}")

@@ -1,2 +1,0 @@
-windows,reference_window,sample_frac,labels_dir,outdir,quantile_or_threshold_tag
-"6,8,10,12,14",10,,C:\Users\adria\Desktop\TFG\eda_progreso_I\01_window_study\labels,C:\Users\adria\Desktop\TFG\eda_progreso_I\01_window_study\stability,q20_80

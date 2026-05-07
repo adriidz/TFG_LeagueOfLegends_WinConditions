@@ -23,6 +23,21 @@ DEFAULT_REFERENCE = os.path.join("ProgresoActual", "references", "champion_suppo
 DEFAULT_OUTDIR = os.path.join("ProgresoActual", "analysis", "champion_reference")
 
 
+def configure_plot_style() -> None:
+    """Use larger typography so figures remain readable in two-column reports."""
+    plt.rcParams.update({
+        "font.size": 18,
+        "axes.titlesize": 22,
+        "axes.labelsize": 20,
+        "xtick.labelsize": 17,
+        "ytick.labelsize": 17,
+        "legend.fontsize": 17,
+        "figure.titlesize": 23,
+        "lines.linewidth": 3,
+        "axes.linewidth": 1.4,
+    })
+
+
 def ensure_dir(path: str) -> None:
     Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -42,24 +57,92 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def select_scatter_label_rows(df: pd.DataFrame, max_labels: int = 8) -> pd.DataFrame:
+    """Label only extreme points so the scatter remains readable."""
+    candidates = []
+    for col in ["expert_support_roam_score", "generated_mean"]:
+        candidates.append(df.nsmallest(2, col))
+        candidates.append(df.nlargest(2, col))
+    candidates.append(df.reindex(df["delta_mean_vs_expert"].abs().sort_values(ascending=False).index).head(3))
+    labels = pd.concat(candidates, ignore_index=False)
+    labels = labels[~labels.index.duplicated(keep="first")].copy()
+    labels["_label_priority"] = labels["delta_mean_vs_expert"].abs()
+    labels = labels.sort_values("_label_priority", ascending=False).head(max_labels)
+    return labels.drop(columns=["_label_priority"])
+
+
 def save_scatter(df: pd.DataFrame, out_path: str) -> None:
-    plt.figure(figsize=(8, 6))
-    plt.scatter(df["expert_support_roam_score"], df["generated_mean"], alpha=0.75)
-    for row in df.itertuples(index=False):
-        if abs(float(row.delta_mean_vs_expert)) >= 0.25:
-            plt.text(row.expert_support_roam_score, row.generated_mean, str(row.champion_name), fontsize=8)
-    plt.xlabel("Expert support roam score")
-    plt.ylabel("Generated mean support roam score")
-    plt.title("Support score: generated vs expert reference")
-    plt.grid(alpha=0.25)
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
-    plt.close()
+    fig, ax = plt.subplots(figsize=(7.4, 6.8))
+    y_max = float(df["generated_mean"].max())
+    y_limit = min(1.0, max(0.45, y_max + 0.02))
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, y_limit)
+    reference_y_end = y_limit
+    ax.plot(
+        [0.0, 1.0],
+        [0.0, reference_y_end],
+        color="#4a4a4a",
+        linestyle=(0, (6, 5)),
+        linewidth=2.0,
+        alpha=0.55,
+        zorder=1,
+    )
+    confidence = pd.to_numeric(df.get("expert_confidence"), errors="coerce")
+    scatter_kwargs = {
+        "alpha": 0.82,
+        "s": 78,
+        "edgecolor": "black",
+        "linewidth": 0.35,
+        "zorder": 3,
+    }
+    if confidence.notna().any():
+        points = ax.scatter(
+            df["expert_support_roam_score"],
+            df["generated_mean"],
+            c=confidence,
+            cmap="RdYlGn",
+            vmin=0.0,
+            vmax=1.0,
+            **scatter_kwargs,
+        )
+        cbar = fig.colorbar(points, ax=ax)
+        cbar.set_label("Expert label confidence")
+    else:
+        ax.scatter(
+            df["expert_support_roam_score"],
+            df["generated_mean"],
+            color="#276fbf",
+            **scatter_kwargs,
+        )
+
+    for row in select_scatter_label_rows(df).itertuples(index=False):
+        x = float(row.expert_support_roam_score)
+        y = float(row.generated_mean)
+        x_offset = -8 if x > 0.72 else 8
+        y_offset = -8 if y > y_limit * 0.72 else 8
+        ax.annotate(
+            str(row.champion_name),
+            xy=(x, y),
+            xytext=(x_offset, y_offset),
+            textcoords="offset points",
+            fontsize=13,
+            ha="right" if x_offset < 0 else "left",
+            va="top" if y_offset < 0 else "bottom",
+            bbox={"facecolor": "white", "edgecolor": "#d0d0d0", "alpha": 0.82, "pad": 1.5},
+            zorder=5,
+        )
+    ax.set_xlabel("Expert support roam score")
+    ax.set_ylabel("Generated mean support roam score")
+    ax.set_title("Support score: generated vs expert reference")
+    ax.grid(alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=220)
+    plt.close(fig)
 
 
 def save_top_delta(df: pd.DataFrame, out_path: str) -> None:
     work = df.reindex(df["delta_mean_vs_expert"].abs().sort_values(ascending=False).index).head(20)
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(13, 8))
     colors = np.where(work["delta_mean_vs_expert"] >= 0, "#276fbf", "#c44536")
     plt.bar(work["champion_name"].astype(str), work["delta_mean_vs_expert"], color=colors)
     plt.axhline(0, color="black", linewidth=0.8)
@@ -67,7 +150,7 @@ def save_top_delta(df: pd.DataFrame, out_path: str) -> None:
     plt.ylabel("Generated mean - expert score")
     plt.title("Largest champion-level deviations")
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
@@ -75,14 +158,14 @@ def save_expert_histogram(reference: pd.DataFrame, out_path: str) -> None:
     expert = pd.to_numeric(reference["expert_support_roam_score"], errors="coerce").dropna()
     if expert.empty:
         return
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(8.2, 6.0))
     plt.hist(expert, bins=12, range=(0.0, 1.0), color="#5b8c5a", alpha=0.85, edgecolor="white")
     plt.xlabel("Expert support roam score")
     plt.ylabel("Champions")
     plt.title("Expert support roam score distribution")
     plt.grid(axis="y", alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
@@ -90,7 +173,7 @@ def save_expert_observed_distribution(df: pd.DataFrame, out_path: str) -> None:
     compared = df.dropna(subset=["expert_support_roam_score", "generated_mean"]).copy()
     if compared.empty:
         return
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(8.2, 6.0))
     plt.hist(
         compared["expert_support_roam_score"],
         bins=12,
@@ -113,7 +196,7 @@ def save_expert_observed_distribution(df: pd.DataFrame, out_path: str) -> None:
     plt.legend()
     plt.grid(axis="y", alpha=0.25)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=160)
+    plt.savefig(out_path, dpi=220)
     plt.close()
 
 
@@ -131,6 +214,7 @@ def compute_correlations(df: pd.DataFrame) -> Dict[str, float]:
 
 
 def main() -> None:
+    configure_plot_style()
     args = parse_args()
     if not os.path.exists(args.support_scores_path):
         raise SystemExit(f"Missing support scores parquet: {args.support_scores_path}")

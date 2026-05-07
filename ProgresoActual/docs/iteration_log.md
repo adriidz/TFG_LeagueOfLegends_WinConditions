@@ -312,3 +312,207 @@ trabajo sobre el reinicio del TFG.
 - Se anadieron salidas auxiliares en la comparacion experta:
   `expert_reference_head3.csv`, `expert_support_score_histogram.png` y
   `expert_vs_observed_distribution.png`.
+
+## Iteracion 23 - Contexto minimo de League of Legends
+
+- Se anadio al inicio de `informe_progreso_completo.md` una seccion breve de
+  contexto del juego antes del resumen ejecutivo.
+- La seccion explica solo los conceptos necesarios para entender el modelo:
+  objetivo de la partida, mapa, lineas, roles, draft, jungla, botlane, support,
+  roaming, objetivos neutrales y timeline.
+- La explicacion se vincula explicitamente con el pipeline de deep learning:
+  draft como input pregame y timeline como fuente para construir etiquetas, no
+  como entrada del modelo actual.
+
+## Iteracion 24 - Imagen de mapa y origen de referencia experta
+
+- Se inserto `images/minimapa.png` en la seccion inicial de contexto del juego
+  para explicar visualmente mapa, bases, lineas, rio y jungla antes de entrar en
+  resultados.
+- Se retiro del cuerpo de asimetria por side la figura esquematica generada de
+  objetivos neutrales, dejando alli solo la interpretacion textual.
+- Se aclaro en el informe que la referencia experta de campeones no procede de
+  internet ni de Riot: es una curacion manual inicial basada en conocimiento del
+  dominio, usada como contraste cualitativo y no como ground truth oficial.
+
+## Iteracion 25 - Ampliacion de referencia experta de supports
+
+- Se amplio `ProgresoActual/references/manual_support_champion_reference.csv`
+  de 30 a 47 campeones con presencia habitual o plausible en support.
+- Se anadieron arquetipos, score esperado de roaming, confianza y notas para
+  picks adicionales como Amumu, Maokai, Poppy, Shaco, Zilean, Mel o Zoe.
+- Se normalizo `Renata Glasc` a `Renata` para que coincida con los nombres
+  observados en los datos.
+- Se regenero `champion_support_reference.csv` en modo manual y la comparacion
+  contra `support_scores_m12.parquet`.
+- La nueva comparacion mantiene una correlacion alta pese a mayor cobertura:
+  `Pearson=0.7947`, `Spearman=0.8251`, `n=47`. La caida frente a la tabla de 30
+  campeones es esperable al incluir picks menos canonicos y con menor confianza.
+- Se actualizo `informe_progreso_completo.md` para que el texto, la tabla
+  `head(3)` y las metricas reflejen la referencia ampliada.
+
+## Iteracion 26 - Aclaracion de frame-state y draft features
+
+- Se amplio la seccion de snapshot del informe para explicar que el
+  `frame-state` es una tabla observacional derivada de las timelines, usada para
+  calcular etiquetas y no como entrada directa del modelo actual.
+- Se anadio una aclaracion previa a la tabla de `draft_features`, explicando que
+  estas variables representan la informacion pregame que si se usa como base de
+  entrada del modelo.
+- La redaccion refuerza la separacion metodologica entre datos usados para
+  construir el target y datos disponibles antes de la partida para entrenar y
+  evaluar predicciones.
+
+## Iteracion 27 - Figuras legibles en formato de dos columnas
+
+- Se ajustaron los scripts de visualizacion para generar figuras con tipografia
+  mas grande, leyendas mas legibles, ticks de mayor tamano y mayor resolucion.
+- Los cambios afectan a:
+  `plot_support_label_distribution.py`,
+  `compare_support_champion_reference.py` y
+  `plot_training_run_diagnostics.py`.
+- Se regeneraron las figuras principales del informe: distribuciones de
+  etiqueta, CDF, distribucion por lado, boxplot por campeon, comparacion experta
+  y diagnosticos de entrenamiento de la MLP full `m12`.
+- El objetivo es que los ejes, numeros y leyendas sigan siendo legibles si las
+  imagenes se insertan en una memoria o informe con maquetacion a dos columnas.
+
+## Iteracion 28 - Aumento adicional de tipografia en figuras
+
+- Se incremento de nuevo el tamano de fuentes en los plots para soportar mejor
+  una insercion reducida en formato de dos columnas.
+- Se subieron titulos, etiquetas de ejes, ticks, leyendas, grosor de lineas y
+  tamano de puntos en scatter plots.
+- Se regeneraron las mismas figuras principales de distribucion, comparacion
+  experta y diagnosticos de entrenamiento manteniendo `220 dpi`.
+
+## Iteracion 29 - Confianza experta en scatter observado vs experto
+
+- Se modifico `compare_support_champion_reference.py` para que el scatter
+  `generated_vs_expert_scatter.png` use color como tercera variable.
+- El gradiente rojo-verde representa `expert_confidence`: rojo para etiquetas
+  menos seguras y verde para etiquetas mas seguras.
+- Se anadio una diagonal discontinua `y=x` para leer rapidamente la desviacion
+  entre media observada y score experto.
+- Se regenero la comparativa full `m12` y se amplio la explicacion del informe
+  para interpretar confianza, diagonal y desviaciones.
+
+## Iteracion 30 - Rango util en scatter observado vs experto
+
+- Se ajusto el eje Y del scatter observado vs experto para mantener el rango
+  util de la media observada, que no alcanza valores cercanos a `1`.
+- La diagonal se dibuja solo dentro del rango visible, evitando que el grafico
+  aplaste la nube de puntos por reservar espacio vertical no informativo.
+- Se regenero `generated_vs_expert_scatter.png` con el color de confianza
+  experto y el eje Y adaptado al maximo observado.
+
+## Iteracion 31 - Scatter experto vs observado mas limpio
+
+- Se ajusto visualmente la diagonal `y=x` para que sea una referencia gris,
+  discontinua y menos dominante que los puntos.
+- Se anadio una etiqueta pequena `y=x` dentro del rango visible para dejar claro
+  que la diagonal representa coincidencia perfecta entre experto y observado.
+- Se cambio la anotacion de campeones: ahora solo se etiquetan puntos extremos
+  por score experto, media observada o desviacion absoluta, evitando saturar el
+  scatter con texto.
+- Se regenero `generated_vs_expert_scatter.png` manteniendo el gradiente de
+  confianza experta.
+
+## Iteracion 32 - Referencia escalada del scatter experto vs observado
+
+- Se corrigio la linea discontinua del scatter para que apunte al limite util
+  del eje observado (`0.45`) y no al antiguo rango completo `[0,1]`.
+- La linea deja de etiquetarse como `y=x`, porque ahora es una referencia visual
+  escalada desde `(0,0)` hasta `(1,0.45)`.
+- Se actualizo la explicacion del informe para aclarar que el experto usa escala
+  `[0,1]`, mientras que las medias observadas por campeon quedan comprimidas por
+  debajo de `0.45`.
+
+## Iteracion 33 - Limpieza de etiqueta en scatter escalado
+
+- Se elimino la etiqueta textual `scaled ref.` del scatter observado vs experto.
+- La linea discontinua queda como referencia visual sin texto superpuesto, para
+  reducir ruido en la figura final del informe.
+
+## Iteracion 34 - Reordenacion de proximos pasos y planning
+
+- Se reordeno `informe_progreso_completo.md` para que `Proximos pasos tecnicos`
+  sea el apartado 7.
+- El `Planning hasta final de proyecto` pasa a ser el apartado 8, manteniendo el
+  mismo contenido y funcionando como concrecion temporal de los pasos tecnicos.
+- La bibliografia se mantiene como apartado 9.
+
+## Iteracion 35 - Mitigaciones de la distancia draft-comportamiento
+
+- Se amplio la seccion 6.1 del informe para no limitarse a describir la
+  dificultad entre intencion de draft y comportamiento observado.
+- Se corrigio la redaccion para centrar las mitigaciones en la reduccion de la
+  distancia entre intencion y observacion: uso de partidas de jugadores de alto
+  nivel, metricas espaciales y ventana temprana acotada.
+- Se explico que evitar diferencias directas de oro, experiencia o recursos
+  entre equipos ayuda a que la etiqueta no mida simplemente ventaja de partida.
+- La redaccion refuerza que el proyecto no ignora el ruido entre predisposicion
+  estrategica y ejecucion real, sino que lo trata como una limitacion central
+  del diseno experimental.
+
+## Iteracion 36 - Reajuste del planning final
+
+- Se elimino la semana dedicada exclusivamente a consolidar la baseline MLP,
+  porque los resultados ya estan analizados y documentados en el informe.
+- El tuning OAT conjunto de MLP y etiqueta support pasa a empezar el
+  `28/04-03/05`.
+- Embeddings y feature enrichment se adelantan una semana, dejando tambien una
+  semana adicional para refinar representacion y cerrar la etiqueta support
+  candidata antes del Informe de Progreso II.
+- La parte final del planning se reestructura para dar mas tiempo a nuevas
+  etiquetas: jungla ocupa `25/05-31/05` y equipo ocupa `01/06-07/06`.
+- La semana `08/06-14/06` queda para integrar etiquetas, decidir con el tutor la
+  via RNN/GRU/LSTM y consolidar el modelo candidato.
+
+## Iteracion 37 - Figura conceptual del pipeline
+
+- Se creo `ProgresoActual/scripts/plot_report_pipeline_overview.py` para generar
+  una figura conceptual reproducible del pipeline actual.
+- La figura separa explicitamente la rama de entrada pre-partida
+  (`draft -> features -> MLP -> score predicho`) de la rama observada
+  (`timeline -> frame-state -> etiqueta real`).
+- Se genero
+  `ProgresoActual/analysis/report_figures/fig2_pipeline_draft_timeline.png`,
+  pensada para insertarse como figura 2 del informe y reforzar que la timeline
+  no se usa como input del modelo, sino para construir el valor objetivo.
+
+## Iteracion 38 - Rediseño de la figura conceptual del pipeline
+
+- Se rediseño `fig2_pipeline_draft_timeline.png` con una composicion en dos
+  carriles: datos antes de la partida y datos observados despues.
+- La nueva version muestra con mas claridad que el flujo superior alimenta el
+  modelo y el flujo inferior genera la etiqueta real usada para evaluar.
+- Se mantuvo la generacion por codigo en `plot_report_pipeline_overview.py`, sin
+  usar ningun motor de imagenes generativo.
+
+## Iteracion 39 - Nueva version diferenciada de figura 2
+
+- Se genero una version alternativa con nombre nuevo:
+  `fig2_pipeline_draft_timeline_v2.png`, para evitar problemas de cache visual.
+- La composicion se cambio a un flujo en forma de convergencia: la rama
+  predictiva produce el score estimado y la rama observada produce la etiqueta
+  real; ambas se juntan solo en la comparacion de entrenamiento.
+- La figura sigue generandose con Matplotlib desde
+  `plot_report_pipeline_overview.py`.
+
+## Iteracion 40 - Primer prototipo terminal de champ select
+
+- Se creo `ProgresoActual/scripts/predict_support_roam_cli.py` como primer
+  prototipo por terminal del entregable final.
+- El CLI carga la baseline `support_mlp_full_m12` ya entrenada mediante
+  `model_config.json`, `preprocess.joblib` y `best_model.pt`, reutilizando el
+  mismo `OneHotEncoder` que se uso en entrenamiento.
+- El usuario puede introducir side, campeones aliados/enemigos y hechizos de
+  invocador por rol de forma interactiva o por argumentos.
+- La salida muestra score estimado, percentil frente a las predicciones de
+  validacion, lectura textual y contraste con la referencia experta para el
+  support aliado y para el support enemigo.
+- La prediccion enemiga se obtiene invirtiendo la perspectiva `ally/enemy` y el
+  side, de forma equivalente a ejecutar el mismo modelo para el otro equipo.
+- Se documento el uso en `ProgresoActual/docs/terminal_prototype.md` y se
+  anadio un acceso rapido desde `ProgresoActual/README.md`.

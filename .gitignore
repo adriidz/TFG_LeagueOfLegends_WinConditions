@@ -5,10 +5,14 @@ __pycache__/
 .venv/
 .venv_cluster/
 data/
+data_new/
 Models/
 ProgresoActual/data/
 ProgresoActual/models/
 ProgresoActual/analysis/
 ProgresoActual/experiments/
 ProgresoActual/cluster_run_metadata/
+ProgresoActual2/data/
+ProgresoActual2/models/
+ProgresoActual2/analysis/
 logs/

@@ -1,2 +1,0 @@
-task,rows,fully_observed_rows,fully_stable_rows,rows_with_any_change,pct_fully_stable,mean_n_label_changes,median_n_label_changes,rows_with_extreme_flip_ignore_ambiguous,pct_rows_with_extreme_flip_ignore_ambiguous
-team,16120,16120,4275,11845,0.2651985111662531,1.2535359801488835,1.0,221,0.013709677419354839

@@ -1,2 +1,0 @@
-label_schema,quantile_or_threshold_tag,lower_quantile,upper_quantile,lower_threshold,upper_threshold,analysis_windows,sample_frac
-binary_clean,q40_60,0.4,0.6,,,10.0,
