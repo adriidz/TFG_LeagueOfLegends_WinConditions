@@ -1,0 +1,16 @@
+{
+  "variant_id": "events_tiny_90_07_03",
+  "score_col": "support_roam_score_events_tiny_90_07_03",
+  "rows": {
+    "train": 268423,
+    "val": 57335,
+    "test": 57489
+  },
+  "matches": {
+    "train": 134221,
+    "val": 28669,
+    "test": 28746
+  },
+  "target_train_mean": 0.43970903952230267,
+  "target_train_std": 0.17481740572568208
+}

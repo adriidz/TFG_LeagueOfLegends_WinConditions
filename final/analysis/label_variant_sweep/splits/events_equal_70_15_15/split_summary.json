@@ -1,0 +1,16 @@
+{
+  "variant_id": "events_equal_70_15_15",
+  "score_col": "support_roam_score_events_equal_70_15_15",
+  "rows": {
+    "train": 268423,
+    "val": 57335,
+    "test": 57489
+  },
+  "matches": {
+    "train": 134221,
+    "val": 28669,
+    "test": 28746
+  },
+  "target_train_mean": 0.5430721768621359,
+  "target_train_std": 0.1496387306162688
+}

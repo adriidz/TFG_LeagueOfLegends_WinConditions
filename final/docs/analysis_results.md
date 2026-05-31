@@ -35,7 +35,7 @@ Esto fue absolutamente correcto. La argumentación es sólida: los scores nacen 
 La arquitectura conceptual (draft como input, timeline como target builder) es limpia y evita data leakage. Esto está bien pensado y bien implementado.
 
 ### ✅ Split por `match_id` con `GroupShuffleSplit`
-Correcto. Evita que las dos observaciones de la misma partida caigan en train y validation.
+Correcto. Evita que las dos observaciones de la misma partida caigan en train y validation. En la fase final se amplía a train/val/test (70/15/15) para evitar sobreajuste implícito al iterar sobre val.
 
 ### ✅ Validación cualitativa con referencia experta
 El Spearman 0.82 contra tu referencia manual es una señal positiva de que la etiqueta captura algo real. La honestidad de presentarla como "validación cualitativa de ranking, no ground truth" es acertada.
@@ -107,8 +107,8 @@ Esto significa que tus mejoras de geometría apenas cambiaron la etiqueta. El pr
 ```python
 # Calcula en train
 champion_means = df_train.groupby('ally_utility_champion_id')['support_roam_score'].mean()
-# Predice en validation
-y_pred_baseline = df_val['ally_utility_champion_id'].map(champion_means).fillna(y_train.mean())
+# Predice en val (desarrollo) o test (evaluación final)
+y_pred_baseline = df_eval['ally_utility_champion_id'].map(champion_means).fillna(y_train.mean())
 # Compara métricas
 ```
 
@@ -120,13 +120,13 @@ Si esto da R²=0.10-0.12, tu MLP solo aporta un 1-3% marginal, lo que revela que
 from sklearn.ensemble import GradientBoostingRegressor, HistGradientBoostingRegressor
 ```
 
-Un GBT sobre features ordinally-encoded (no One-Hot) suele capturar interacciones automáticamente. Si un GBT da R²=0.18 donde tu MLP da 0.13, la narrativa cambia radicalmente: "GBT captura interacciones de draft mejor que la MLP tabular".
+Un GBT sobre features codificadas con `OrdinalEncoder` + `categorical_features=True` captura interacciones automáticamente sin One-Hot. Si un GBT da R²=0.18 donde tu MLP da 0.13, la narrativa cambia: "GBT captura interacciones de draft mejor que la MLP tabular".
 
-**Esto es un paper-quality result** y cuesta muy poco. `HistGradientBoostingRegressor` de sklearn maneja categorías nativamente y es rápido.
+`HistGradientBoostingRegressor` de sklearn es rápido y adecuado para este volumen de datos.
 
 ### 🏆 Win 3: Importancia de features (1-2 horas)
 
-Con un GBT entrenado, extraes `feature_importances_` y descubres qué variables del draft realmente predicen roaming. Esto da contenido para el TFG sin necesidad de cluster.
+Con un GBT entrenado, usas `sklearn.inspection.permutation_importance` sobre val para descubrir qué variables del draft realmente predicen roaming. Esto da contenido para el TFG sin necesidad de cluster.
 
 ### 🏆 Win 4: Tabla de "techo predictivo" (2-3 horas)
 
@@ -182,9 +182,9 @@ Esta tabla es **mucho más defendible** que 5 variantes de la misma MLP con 5 va
 
 ## 6. Problemas menores pero importantes
 
-### ⚠️ Transformación quantile: nota de precaución
+### ⚠️ Transformación quantile: precaución y oportunidad
 
-La transformación quantile global (fitteada sobre todo el dataset) introduce data leakage si no se refittea solo en train. Ya lo notas en la documentación, pero si la usas en resultados finales, **debes fitear solo en train**. Si no lo haces, el tribunal lo puede señalar.
+La transformación quantile debe fittearse SOLO en train (ya recogido en `decisions.md` y `technical_spec.md`). Bien hecha, no es solo una precaución sino un **eje experimental legítimo**: comparar modelos con target raw vs quantile demuestra si la distribución del target condiciona el aprendizaje. Para comparar métricas entre ambas escalas, usar Spearman (invariante a transformaciones monótonas) o inverse-transform las predicciones quantile a escala raw.
 
 ### ⚠️ Referencia experta manual: riesgo de circularidad
 
@@ -203,18 +203,88 @@ Tienes 171k partidas. Si la señal es débil con 171k, no será mucho mejor con 
 
 ---
 
-## 7. Planning Sugerido hasta Entrega Final (28/06)
+## 7. Planning: original vs realidad vs plan revisado
 
-| Periodo | Objetivo | Entregable |
-|---------|----------|------------|
-| **09-11/05** | Baselines críticas | Media-por-campeón baseline, GBT comparativo, tabla de techo predictivo |
-| **12-18/05** | Feature engineering + modelos | Matchup features, arquetipos, comparación MLP vs GBT vs enriched |
-| **19-24/05** | Informe Progreso II | Narrativa: señal limitada pero real, comparación de modelos, decisiones |
-| **25/05-01/06** | Embeddings de campeón | Embedding layer aprendido, comparar contra One-Hot |
-| **02-08/06** | Consolidación de resultados | Mejor modelo final, prototipo terminal actualizado |
-| **09-14/06** | Propuesta de informe final | Estructura completa de la memoria |
-| **15-21/06** | Redacción de memoria | Texto final con figuras y tablas |
-| **22-28/06** | Presentación + revisión | Slides, ensayo de presentación, entrega |
+### 7.1 Qué planteaba el Informe de Progreso I (27/04)
+
+| Periodo | Objetivo previsto | Criterio de éxito |
+|---------|-------------------|-------------------|
+| 28/04-03/05 | Tuning OAT conjunto: MLP + etiqueta support | Tabla comparativa por `val_mse`, ranking de heurísticas |
+| 04/05-10/05 | Embeddings y feature enrichment inicial | Comparación OneHot vs enriched/embeddings |
+| 11/05-17/05 | Refinar representación y cerrar soporte | Feature set candidato + decisión sobre representación |
+| 18/05-24/05 | Informe de Progreso II | Documento listo con tuning + embeddings |
+| 25/05-31/05 | Redefinir etiqueta de jungla | Label continua de jungla + plots de salud |
+| 01/06-07/06 | Redefinir etiqueta de equipo | Label continua de equipo + plots de salud |
+| 08/06-14/06 | Integración multi-output y decisión RNN/GRU/LSTM | Modelo candidato, decisión secuencial |
+| 15/06-21/06 | Prototipo terminal e interpretación | CLI usable con lectura interpretable |
+| 22/06-28/06 | Cierre final | Memoria + presentación |
+
+### 7.2 Qué pasó realmente (28/04 → 09/05)
+
+| Previsto | Hecho | Veredicto |
+|----------|-------|-----------|
+| Tuning OAT ejecutado | OAT **preparado** (manifest de 20 runs) pero **no ejecutado** — cluster no disponible | ❌ Resultado no obtenido, infraestructura lista |
+| Embeddings / feature enrichment | **No se hizo**. Se sustituyó por refinamiento de geometría (v5 manual) y exploración de etiqueta quantile | ❌ Desvío; la geometría v5 correlaciona 0.94 con v3 → impacto mínimo |
+| — (no previsto) | **Prototipo terminal** adelantado desde junio | ✅ Ganancia real: entregable aplicado disponible antes de tiempo |
+| — (no previsto) | **Limpieza del repositorio**: eliminación de artefactos viejos, separación ProgresoActual / ProgresoActual2 | ⚠️ Útil pero no produce resultados experimentales |
+| — (no previsto) | **Transformación quantile zero-preserved** explorada | ✅ Buena idea; faltaba entrenar con ella para evaluar impacto |
+
+**Diagnóstico**: se avanzó en infraestructura y calidad del target, pero no se
+produjeron resultados experimentales nuevos (ni OAT, ni modelos alternativos,
+ni baselines triviales). El TFG tiene hoy los mismos resultados que el
+27/04: una MLP con R²=0.13.
+
+### 7.3 Qué sigue en pie y qué no
+
+| Bloque del Informe I | ¿Sigue en pie? | Razón |
+|----------------------|:--------------:|-------|
+| Tuning OAT de MLP + etiqueta | ⚠️ **Parcialmente** | Los 20 runs preparados pueden ejecutarse en local (no necesitan cluster para ~337k filas). Pero el OAT ya no es la prioridad: primero hay que tener baselines triviales y GBT para contextualizar. Sin esos datos, el OAT no aporta narrativa |
+| Embeddings / feature enrichment | ✅ **Sí, pero más tarde** | Sigue siendo relevante como paso 4-5, no como paso 1. Primero hay que demostrar que la MLP One-Hot supera (o no) una baseline trivial |
+| Refinar representación y cerrar support | ✅ **Sí, redefinido** | "Cerrar support" ahora incluye: baselines, GBT, techo empírico, feature importance. No solo elegir una etiqueta |
+| Informe de Progreso II | ✅ **Sí** | Fecha: 24/05. El contenido cambia: en vez de "tuning completado", será "comparación de modelos y cuantificación de señal" |
+| Redefinir etiqueta de jungla | ❌ **No** | No hay tiempo para hacer dos etiquetas nuevas bien. Profundizar en support produce un TFG más fuerte que tres tareas superficiales |
+| Redefinir etiqueta de equipo | ❌ **No** | Misma razón. Quedan como trabajo futuro |
+| Integración multi-output | ❌ **No** | Sin jungla/equipo no hay multi-output. Se presenta como trabajo futuro con framework ya validado |
+| Decisión RNN/GRU/LSTM con tutor | ⚠️ **Depende** | Si hay tiempo después de embeddings (semana 25/05-01/06), puede explorarse como experimento adicional. No es prioritario |
+| Prototipo terminal | ✅ **Ya hecho** | Adelantado. Solo necesita actualizarse con el mejor modelo final |
+| Cierre final | ✅ **Sí** | Se mantiene la fecha del 28/06 |
+
+### 7.4 Planning revisado (desde hoy, 09/05)
+
+| Periodo | Objetivo | Entregable | Relación con plan original |
+|---------|----------|------------|---------------------------|
+| **09-11/05** | Esperar 200k + preparar dataset final | `final/data/training/{train,val,test}.parquet` con split persistido y columnas quantile | **Nuevo**: paso inexistente en el plan original |
+| **12-14/05** | Baselines críticas | Baseline media-por-campeón + HistGBT + techo empírico + feature importance | **Nuevo**: el plan original no preveía baselines triviales ni GBT |
+| **15-18/05** | MLP OneHot reproducida + comparación raw vs quantile | MLP entrenada en `final/`, tabla comparativa parcial con 3+ modelos | **Fusiona**: tuning OAT + refinar representación → ahora es comparación de modelos |
+| **19-24/05** | Informe de Progreso II | Narrativa: señal del draft cuantificada, comparación de modelos, decisiones | **Se mantiene**: misma fecha, contenido más rico |
+| **25/05-01/06** | Feature engineering + embeddings | Matchup features, arquetipos, embedding layer aprendido | **Se mantiene con delay**: era 04/05-17/05, ahora 25/05-01/06 |
+| **02-08/06** | Consolidación de resultados | Tabla final de modelos en test, prototipo terminal actualizado | **Fusiona**: lo que antes era "integración multi-output" ahora es "consolidación support-only" |
+| **09-14/06** | Propuesta de informe final | Estructura completa de la memoria con todas las figuras | **Se mantiene**: misma fecha |
+| **15-21/06** | Redacción de memoria | Texto final | **Se mantiene**: misma fecha |
+| **22-28/06** | Presentación + revisión | Slides, ensayo, entrega | **Se mantiene**: misma fecha |
+
+### 7.5 Cambios clave respecto al plan original
+
+1. **Se eliminan 3 semanas** dedicadas a jungla (25/05-31/05), equipo
+   (01/06-07/06) e integración multi-output (08/06-14/06). Ese tiempo se
+   reasigna a baselines, diversificación de modelos y consolidación.
+
+2. **Se añaden baselines triviales y GBT** como paso previo a cualquier otra
+   cosa. Esto no existía en el plan original y es el cambio más importante:
+   sin contexto sobre qué aporta la MLP sobre un lookup por campeón, los
+   resultados actuales no son defendibles.
+
+3. **Se adelanta el prototipo terminal** (ya hecho) y se retrasan los
+   embeddings (de semana 2 a semana 4). Priorizar baselines y comparación de
+   modelos es más urgente que enriquecer el input.
+
+4. **Se reencuadra el TFG** de "sistema multi-output de predicción de early
+   game" a "cuantificación de la señal predictiva del draft sobre roaming de
+   support". Esto cambia la narrativa del Informe II y de la memoria final.
+
+5. **El OAT pasa de ser un bloque independiente a ser absorbido** por la
+   comparación de modelos. Los hiperparámetros se prueban como parte natural
+   de entrenar cada modelo, no como framework separado.
 
 ---
 
@@ -241,6 +311,84 @@ Tu TFG tiene una **base sólida**: buen pipeline, buena documentación, etiqueta
 | "La MLP predice la media" | "Demostré empíricamente que la mejora sobre una baseline trivial de lookup por campeón es limitada, sugiriendo que el draft impone predisposiciones a nivel de campeón más que interacciones complejas" |
 
 ---
+
+---
+
+## 9. Explicabilidad y auditoria cualitativa
+
+La comparacion de modelos debe presentar la MLP con el mismo peso narrativo que
+los modelos tabulares: fue la primera hipotesis acordada con el tutor y sirve
+como referencia neural del proyecto. La lectura final no es "la MLP no importa",
+sino "la MLP, los baselines y el HistGBT cuantifican juntos cuanta senal
+pre-game hay en el draft".
+
+Para explicabilidad se usa el `HistGBT` base en escala raw porque es mas
+interpretable: usa solo draft pre-game codificado con las 31 features canonicas.
+
+### SHAP como explicabilidad asociativa
+
+`final/scripts/08_shap_analysis.py` genera importancia global SHAP, summary
+plots, dependencias categoricas para support/ADC aliado y waterfalls locales.
+El script intenta `TreeExplainer`, pero valida aditividad y cae a
+`PermutationExplainer` si la combinacion SHAP/sklearn no conserva
+`prediccion = base + suma(SHAP)`.
+La interpretacion correcta es: el modelo aprende predisposiciones de draft,
+especialmente identidad del support, ADC aliado/enemigo y contexto de botlane.
+No debe presentarse como causalidad del campeon ni como orden semantico entre
+IDs, porque las categorias se codifican ordinalmente para el estimador.
+
+### Auditoria cualitativa consolidada
+
+`final/scripts/09_qualitative_case_audit.py` sustituye los analisis separados de
+errores, diagnostico de etiqueta y contexto raw. El script exporta 20 mayores
+errores y 20 menores errores, estos ultimos estratificados por score real. Para
+cada partida une prediccion, etiqueta, draft completo, componentes de score,
+frames minuto 5-12, eventos reales minuto 0-12 y mapas cronologicos support/ADC.
+
+El run completo genero 40 casos, 1475 eventos de timeline, 280 frames de
+etiqueta y 40 mapas + 40 timelines. La reconstruccion de etiqueta coincide
+exactamente con los scores guardados (`max_score_reconstruction_delta = 0.0` y
+`max_raw_score_reconstruction_delta = 0.0`).
+
+El hallazgo principal es que 17/20 top errores estan marcados como
+`chaotic_early_game`: muchas muertes o eventos tempranos en bot generan
+separacion support-ADC que el draft no puede anticipar. En contraste, los bottom
+errores muestran casos donde el modelo acierta scores bajos, medios y altos.
+
+### Uso recomendado en el informe
+
+1. Incluir `shap_summary_bar.png` como figura de interpretabilidad global.
+2. Incluir una dependencia categorica de support o ADC aliado para mostrar
+   lectura de dominio sin tratar IDs como continuos.
+3. Elegir 2-3 casos de `case_notes.md` y abrir sus mapas en `case_plots/` para
+   comprobar visualmente posiciones, zonas y orden temporal.
+
+### Lectura para la memoria
+
+No conviene llamar al target "roam real" en todos los casos. La lectura mas
+precisa es `roam-like displacement` o separacion support-ADC: el score captura
+presencia fuera de contexto bot, distancia al ADC y gap de XP. Eso incluye roams
+limpios, pero tambien colapsos de botlane, muertes y resets que separan a los
+jugadores.
+
+Ejemplos defendibles:
+
+- `EUW1_7831489390`: Yuumi + Smolder vs Pyke + Velkoz. Predicho 0.209, real
+  1.000. Antes del minuto 12, Yuumi muere 4 veces y Smolder 7; el timeline
+  muestra kills repetidas de Velkoz/Pyke sobre la botlane aliada y separacion
+  sostenida support-ADC. Es un outlier real de snowball/caos temprano.
+- `EUW1_7706461344`: Yuumi + Zeri vs Sona + Lucian. Predicho 0.174, real 0.930.
+  Zeri muere 6 veces y Yuumi 3 antes de minuto 12; la KDA final de la botlane
+  aliada es 0/5/0 y 0/9/0. La etiqueta alta refleja colapso de botlane, no una
+  predisposicion de draft capturable pre-game.
+- `EUW1_7708715292`: Senna + Caitlyn vs Blitzcrank + Tristana. Predicho 0.310,
+  real 1.000. Senna muere 6 veces antes de minuto 12 pero tambien asiste kills;
+  es una partida de fights constantes que separan al support de la posicion
+  esperada junto al ADC.
+
+Lectura para la memoria: el modelo aprende predisposiciones del draft, pero los
+errores extremos demuestran varianza no observable pre-game. Esto refuerza, no
+debilita, la conclusion central: el draft predispone, pero no determina.
 
 > [!TIP]
 > **Próximos 3 días**: Implementa las 5 small wins listadas en la sección 4. Son todas ejecutables en local, no requieren cluster, y transforman la calidad del análisis. Especialmente Win 1 (media por campeón) y Win 2 (GBT). Si esos resultados son mejores que la MLP, tienes una narrativa mucho más interesante.

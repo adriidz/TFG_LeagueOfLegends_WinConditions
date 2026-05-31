@@ -538,6 +538,7 @@ def process_completed_future(
     status = result.get("status")
     if status == "SKIP_PATCH":
         state_set(conn, match_id, REGION, "SKIP_PATCH", result.get("error"))
+        print(f"  SKIP {match_id} -> SKIP_PATCH ({result.get('error')})")
         return 0
     if status == FAIL_STATUS:
         mark_fail(conn, match_id, str(result.get("error")))

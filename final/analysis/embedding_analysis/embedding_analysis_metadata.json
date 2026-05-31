@@ -1,0 +1,31 @@
+{
+  "embeddings_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\mlp_embed\\embeddings_raw.json",
+  "n_champions": 172,
+  "n_support_labeled_champions": 40,
+  "embedding_dim": 16,
+  "normalization": "l2",
+  "distance_metric": "cosine",
+  "tsne_perplexities": [
+    15,
+    30
+  ],
+  "umap_n_neighbors": [
+    10,
+    15
+  ],
+  "support_archetype_silhouette": -0.14596538245677948,
+  "support_archetype_silhouette_n": 39,
+  "support_archetype_silhouette_groups": 6,
+  "primary_class_silhouette": -0.07408836483955383,
+  "primary_class_silhouette_n": 172,
+  "primary_class_silhouette_groups": 7,
+  "top5_support_neighbor_rate": 0.22,
+  "top5_same_support_archetype_rate": 0.04,
+  "top5_same_primary_class_rate": 0.15,
+  "roam_correlation_n_pairs": 780,
+  "roam_correlation_n_champions": 40,
+  "roam_pearson_r": 0.16591911141015336,
+  "roam_pearson_p": 3.1811244560685446e-06,
+  "roam_spearman_r": 0.17596407822953233,
+  "roam_spearman_p": 7.608010374059468e-07
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "model": "MLP Per-Role + Interactions HP Best",
+    "trained_target": "raw",
+    "evaluation_scale": "raw",
+    "eval_split": "test",
+    "n_train": 268322,
+    "n_eval": 57468,
+    "run_id": "020_h128-64_d0p4_lr1em03_wd5em04",
+    "mse": 0.03068662927722651,
+    "rmse": 0.17517599515123786,
+    "mae": 0.14134647841409592,
+    "r2": 0.15467744443526332,
+    "pearson_corr": 0.39585699708779937,
+    "spearman_corr": 0.38365387291547776,
+    "pred_std": 0.06815647333860397,
+    "target_std": 0.19052999878163798,
+    "compression_ratio": 0.3577204312939535
+  }
+]

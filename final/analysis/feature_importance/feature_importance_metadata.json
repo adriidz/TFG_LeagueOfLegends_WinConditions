@@ -1,0 +1,8 @@
+{
+  "model_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\gbt_model_raw.joblib",
+  "n_repeats": 10,
+  "seed": 42,
+  "scoring": "r2",
+  "n_features": 31,
+  "n_val": 57335
+}

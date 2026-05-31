@@ -65,15 +65,19 @@ Columnas: `champion_name`, `expert_archetype`, `expert_support_roam_score`,
 2. Join inner por `(match_id, team_id)`.
 3. Renombrar `support_roam_score_v5_geometry` → `support_roam_score` (target canónico).
 4. Conservar también `raw_support_roam_score_v5_geometry` para referencia.
-5. Split por `match_id` con `GroupShuffleSplit(test_size=0.2, random_state=42)`.
+5. Split a tres niveles por `match_id`:
+   - Primer `GroupShuffleSplit(test_size=0.15, random_state=42)` → separa test.
+   - Segundo `GroupShuffleSplit(test_size=0.176, random_state=42)` sobre el resto
+     → separa val (~15% del total). Resultado: ~70/15/15.
 6. Fittear `QuantileTransformer(output_distribution='uniform', n_quantiles=1000)`
-   SOLO sobre los targets del split de train.
-7. Crear columna `support_roam_score_quantile` en train (fit_transform) y val
-   (transform). Para la variante zero-preserved: fittear solo sobre rows con
+   SOLO sobre los targets de train.
+7. Crear columna `support_roam_score_quantile` en train (fit_transform), val y
+   test (transform). Para la variante zero-preserved: fittear solo sobre rows con
    score > 0 en train, dejar score=0 como 0.
-8. Guardar como dos parquets separados:
+8. Guardar como tres parquets separados:
    - `final/data/training/train.parquet`
    - `final/data/training/val.parquet`
+   - `final/data/training/test.parquet`
 9. Guardar `final/data/training/quantile_transformer.joblib` para reproducibilidad.
 10. Guardar `final/data/training/split_summary.json` con recuentos y estadísticas.
 
@@ -106,11 +110,13 @@ Columnas: `champion_name`, `expert_archetype`, `expert_support_roam_score`,
 **Operación**:
 
 1. Usar las mismas feature columns que la MLP (ver abajo).
-2. HistGBT maneja categorías nativamente → pasar columnas como categorías
-   ordinales, no One-Hot.
-3. Entrenar con defaults razonables + un mini grid si hay tiempo.
-4. Feature importance.
-5. Calcular métricas.
+2. Codificar con `OrdinalEncoder(handle_unknown='use_encoded_value',
+   unknown_value=-1)` fitteado SOLO en train.
+3. Declarar `categorical_features=True` (o lista de índices) al construir
+   `HistGradientBoostingRegressor` para que el modelo trate cada columna como
+   categórica y no imponga orden artificial entre IDs.
+4. Entrenar con defaults razonables + un mini grid si hay tiempo.
+5. Calcular métricas en val.
 6. Repetir con target quantile.
 
 **Output**: `final/models/gbt/` con modelo, métricas, feature importance.
@@ -163,7 +169,9 @@ Columnas: `champion_name`, `expert_archetype`, `expert_support_roam_score`,
 
 **Operación**:
 
-1. Extraer `feature_importances_` del GBT.
+1. Usar `sklearn.inspection.permutation_importance` sobre el GBT y el set de
+   val. Esto mide el impacto real de cada feature en la métrica, sin depender
+   de la implementación interna del modelo.
 2. Agrupar importancias por tipo: campeones aliados, campeones enemigos,
    summoner spells, keystones, rune styles, bans, side.
 3. Top-20 features individuales + importancia por grupo.
@@ -179,13 +187,20 @@ Columnas: `champion_name`, `expert_archetype`, `expert_support_roam_score`,
 
 **Operación**:
 
-1. Tabla comparativa con columnas:
+1. Dos tablas separadas:
+   - **Tabla A**: modelos evaluados en escala raw.
+   - **Tabla B**: modelos evaluados en escala quantile.
+   Para modelos entrenados con target quantile, inverse-transform las
+   predicciones a escala raw con el `QuantileTransformer` guardado y añadir
+   sus métricas también a la Tabla A. Esto permite comparación directa.
+2. Columnas de cada tabla:
    - Modelo
-   - Target (raw / quantile)
    - MSE, RMSE, MAE, R², Pearson, Spearman
    - std(predicciones) / std(target) — ratio de compresión
-2. Tabla en CSV, JSON y Markdown.
-3. Plot de barras comparativo.
+3. Métrica común para ranking final: **Spearman** (invariante a transformaciones
+   monótonas).
+4. Evaluación final en **test** (no val). Val solo se usa durante desarrollo.
+5. Tabla en CSV, JSON y Markdown + plot de barras comparativo.
 
 **Output**: `final/analysis/model_comparison/`
 
@@ -205,9 +220,91 @@ Columnas: `champion_name`, `expert_archetype`, `expert_support_roam_score`,
     "target_std": ...,        # std del target real
     "compression_ratio": ..., # pred_std / target_std
     "n_train": ...,
-    "n_val": ...,
+    "n_eval": ...,             # filas del split evaluado (val o test)
+    "eval_split": ...,         # "val" durante desarrollo, "test" en evaluación final
 }
 ```
+
+---
+
+## Script 08 - SHAP analysis
+
+**Input**: `final/models/gbt/gbt_model_raw.joblib`,
+`final/models/gbt/preprocess.joblib`, `train.parquet`, `test.parquet`.
+
+**Operacion**:
+
+1. Cargar el HistGBT base entrenado sobre `support_roam_score`.
+2. Reutilizar exactamente el `OrdinalEncoder` y las `feature_columns` guardadas.
+3. Muestrear train como background (`--background-size`, default 200) y test
+   como muestra explicada (`--sample-size`, default 2000).
+4. Intentar `shap.TreeExplainer`; si la version de SHAP/sklearn no soporta el
+   estimador o produce valores no aditivos para este HistGBT categorico, usar
+   `shap.PermutationExplainer` como fallback reproducible.
+5. Exportar importancia global SHAP, summary plots, dependencia categorica por
+   support/ADC aliado y waterfalls locales.
+
+**Output**: `final/analysis/shap/`
+
+- `shap_global_importance.csv`
+- `shap_summary_bar.png`
+- `shap_summary_beeswarm.png`
+- `shap_dependence_ally_utility_champion_id.png`
+- `shap_dependence_ally_bottom_champion_id.png`
+- `shap_local_top_cases.csv`
+- `shap_waterfall_case_*.png`
+- `shap_metadata.json`
+
+**Limitacion de lectura**: las features categoricas estan codificadas con
+ordinales internos del modelo. Los SHAP values deben interpretarse como
+contribuciones asociativas del modelo, no como efectos causales ni como orden
+real entre campeones.
+
+---
+
+## Script 09 - Auditoria cualitativa consolidada
+
+**Input**: `test.parquet`, `gbt_model_raw.joblib`, `preprocess.joblib`,
+`support_scores_v5_geometry_m12.parquet`, `support_frame_state.parquet`,
+geometria v5 y JSON raw de Riot (`match.json`, `timeline.json`).
+
+**Operacion**:
+
+1. Evaluar el HistGBT base sobre test y calcular `prediction`, `actual`,
+   `signed_error` y `abs_error`.
+2. Seleccionar 20 mayores errores y 20 menores errores. Los menores errores se
+   estratifican por score real: very-low, low-mid, high-mid y very-high.
+3. Unir componentes de etiqueta (`outside_ratio_v5`, `far_ratio_v5`,
+   `xp_gap_v5`, frames validos y confidence).
+4. Recuperar frames minuto 5-12 con posiciones `support_x/y` y `adc_x/y`,
+   zonas v5, distancia support-ADC y flags `out_bot_context_v5` /
+   `far_from_adc_v5`.
+5. Reconstruir la etiqueta desde frames para verificar que coincide con el score
+   guardado.
+6. Extraer eventos reales del timeline entre minuto 0 y 12: kills, assists,
+   muertes, objetivos, placas y estructuras.
+7. Generar mapas cronologicos por caso con trayectoria de support y ADC sobre la
+   geometria v5, mas una figura temporal de distancia/flags/XP.
+
+**Output**: `final/analysis/qualitative_case_audit/`
+
+- `case_index.csv`
+- `case_event_timeline.csv`
+- `case_frame_timeline.csv`
+- `case_notes.md`
+- `case_plots/*_map.png`
+- `case_plots/*_timeline.png`
+- `metadata.json`
+
+**Criterio de calidad**: `max_score_reconstruction_delta` y
+`max_raw_score_reconstruction_delta` deben ser 0 o numericamente despreciables.
+Los tags de evidencia (`chaotic_early_game`, `clean_roam_like_candidate`,
+`label_quality_caution`, `accurate_low/mid/high`) son ayudas conservadoras para
+revision, no etiquetas causales.
+
+**Nota de limpieza**: `09_error_analysis.py`, `10_label_error_diagnostics.py` y
+`11_qualitative_match_context.py` quedan como legado hasta que se archive la
+iteracion anterior; el informe final debe citar el consolidado.
 
 ## Feature groups (referencia)
 

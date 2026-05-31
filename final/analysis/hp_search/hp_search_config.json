@@ -1,0 +1,52 @@
+{
+  "script": "C:\\Users\\adria\\Desktop\\TFG\\final\\scripts\\18_mlp_hp_search.py",
+  "architecture": "mlp_per_role_interactions",
+  "target": "raw",
+  "train": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\train.parquet",
+  "val": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\val.parquet",
+  "test": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\test.parquet",
+  "grid_size": 108,
+  "grid": {
+    "hidden_dims": [
+      [
+        128,
+        64
+      ],
+      [
+        192,
+        96
+      ],
+      [
+        256,
+        128
+      ],
+      [
+        256,
+        128,
+        64
+      ]
+    ],
+    "dropout": [
+      0.2,
+      0.3,
+      0.4
+    ],
+    "lr": [
+      0.001,
+      0.0005,
+      0.0002
+    ],
+    "weight_decay": [
+      0.0001,
+      0.0005,
+      0.001
+    ]
+  },
+  "embed_dim": 16,
+  "batch_size": 512,
+  "epochs": 100,
+  "patience": 15,
+  "seed": 42,
+  "default_validation_spearman": 0.3722259716734182,
+  "improvement_threshold": 0.005
+}

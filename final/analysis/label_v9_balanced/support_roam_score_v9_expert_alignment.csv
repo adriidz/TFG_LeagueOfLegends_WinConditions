@@ -1,0 +1,46 @@
+champion_name,rows,v5_mean,v9_mean,backbone_mean,productive_mean,expert_archetype,expert_support_roam_score,expert_confidence,notes
+Alistar,13953,0.44976581560309126,0.2895626572254385,0.20620868357376634,1.3165985809503333,engage_roamer,0.82,0.9,Strong engage and roam identity after lane setup.
+Amumu,735,0.410077522446097,0.25580508278830416,0.17855685131195334,1.2726530612244897,engage_roamer,0.62,0.7,Engage and crowd control can support roams and river skirmishes.
+Anivia,1592,0.36895101816428216,0.22849928862331922,0.1626689997607083,1.0111180904522614,control_mage,0.25,0.45,Usually lane/control oriented when played support; low confidence because it is not a canonical support.
+Bard,22623,0.5061715449920616,0.32096602912950867,0.23839171260600778,1.7744596207399548,roaming_specialist,0.95,0.95,Design explicitly rewards leaving lane and impacting map.
+Blitzcrank,8649,0.4348205857701826,0.2778341755920316,0.19569933766083608,1.2986472424557753,pick_roamer,0.78,0.85,Hook pressure translates well to river and mid roams.
+Brand,1171,0.37611689009297805,0.22678712932083464,0.15613029157008662,1.0350128095644748,lane_mage,0.35,0.75,Usually values lane poke and damage more than repeated roaming.
+Braum,14668,0.3591134453520027,0.21917929288998722,0.146081930863428,0.9390100899918189,protective_warden,0.48,0.75,Can move with jungler but often anchors around marksman.
+Elise,5078,0.5341652830250864,0.3814074389603882,0.2996056752752302,2.1824340291453326,pick_roamer,0.72,0.55,Off-meta support profile with pick pressure and skirmish threat; confidence limited by non-standard role usage.
+FiddleSticks,1395,0.40524715898064223,0.25065067946194036,0.17480628093531317,1.2180645161290322,ambush_roamer,0.58,0.55,"Ambush and vision denial can create roam pressure, but support usage is meta-dependent."
+Galio,874,0.4348220880656466,0.2778124136628215,0.1989498202026806,1.3695652173913044,utility_roamer,0.6,0.65,Global/semi-global utility and engage identity support river and mid rotations.
+Janna,14180,0.43375721336491035,0.2796370820492195,0.20179595674659145,1.441410437235543,enchanter_roamer,0.58,0.7,"Can roam, but tends to preserve ADC and lane safety."
+Karma,27136,0.3872413347731952,0.24396342336506832,0.16751977692610062,1.1212448408018867,lane_enchanter,0.42,0.7,Lane pressure and poke are central to the champion identity.
+Leblanc,829,0.5187767974531614,0.35659693453882507,0.27818226204836577,2.01664656212304,roam_mage,0.62,0.45,High mobility and pick threat can translate to roaming; low confidence because support usage is non-standard.
+Leona,12027,0.41426731404073,0.2595970126498962,0.18104671235751305,1.2042155150910452,engage_roamer,0.8,0.9,Reliable CC and early skirmish pressure support roams.
+Lulu,22250,0.3220609947644693,0.18835854650208245,0.12265082932049223,0.853447191011236,adc_enabler,0.28,0.85,Typically lane anchored and marksman oriented.
+Lux,3027,0.356235730341071,0.22063982189181883,0.14926022936429278,1.0584737363726462,lane_mage,0.32,0.75,Long-range poke and pick threat mostly from lane.
+Maokai,2561,0.421003424724084,0.25995286227821063,0.1798162919990331,1.188481062085123,engage_warden,0.56,0.7,"Can leave lane for engage, vision and objective control while still offering peel."
+Mel,800,0.33964759793331495,0.2057439748597944,0.1380922619047619,0.918125,lane_mage,0.28,0.45,Expected to value lane pressure and spell trading more than repeated roams; low confidence due to limited support convention.
+Milio,7935,0.2924578179495655,0.16664488508516556,0.10217316290095117,0.6939130434782609,adc_enabler,0.24,0.8,Kit is heavily tied to protecting and amplifying ADC.
+Morgana,2078,0.3590784735412301,0.21955876878097091,0.149293620239241,1.0008662175168432,pick_enchanter,0.45,0.7,Can roam for binding picks but often plays lane/control.
+Nami,35437,0.34617523496966535,0.20317630742659926,0.13131865806118703,0.9482151423653244,lane_enchanter,0.38,0.75,Strong 2v2 lane identity and ADC synergy.
+Nautilus,28879,0.4161522916633062,0.25955534166221694,0.18010393118083826,1.163402472384778,engage_roamer,0.84,0.9,Classic early roam and pick support.
+Neeko,9380,0.41035881376516287,0.2613960260556364,0.19060412224591328,1.1708955223880597,pick_roamer,0.52,0.65,"Disguise and crowd control enable picks away from lane, though support often keeps lane pressure."
+Nidalee,977,0.45680756610575013,0.30902591786016465,0.23340400643368914,1.4619242579324463,poke_roamer,0.5,0.4,"Can create pressure through poke and mobility, but support identity is highly non-standard."
+Pantheon,3907,0.48255392700672933,0.3170345194944624,0.23938413348446622,1.7895572050166368,engage_roamer,0.78,0.8,Point-and-click engage and early skirmish power make roaming natural.
+Poppy,3414,0.48814069837721186,0.32035421103487915,0.23642703713002483,1.5449912126537786,anti_dash_roamer,0.7,0.75,Durable engage and anti-dash tools are valuable in river fights and rotations.
+Pyke,11462,0.4919837306692401,0.33698102362695614,0.2568667896403021,1.869394521025999,roaming_assassin,0.92,0.95,"Designed around roaming, picks and snowballing."
+Rakan,15160,0.4187952524345345,0.26667354432973633,0.1885969499937178,1.2372625329815305,engage_roamer,0.76,0.85,High mobility engage enables map movement.
+Rell,12474,0.4373914077290479,0.27826984231508317,0.19647829389892882,1.4247394580727915,engage_roamer,0.82,0.85,Engage kit and skirmish value support roaming.
+Renata,2483,0.3450582948867364,0.20299159611304116,0.13461922022131445,0.9225130890052355,adc_enabler,0.3,0.7,Renata Glasc usually wants structured fights and ADC proximity.
+Senna,10154,0.3087440928364943,0.1806221455492739,0.12003409400001876,0.9760685444159937,marksman_support,0.4,0.7,"Can move, but scaling/poke lane patterns are common."
+Seraphine,7739,0.31412041245586053,0.17952846105651116,0.11407020102264966,0.8050910970409614,lane_enchanter,0.3,0.7,Usually grouped/lane and teamfight oriented.
+Shaco,1445,0.5404283634733934,0.3734479025742608,0.2878950403690888,2.4208996539792387,ambush_roamer,0.74,0.65,"Trap and ambush patterns can create strong map pressure, but support usage is non-standard."
+Shen,976,0.3665246756514032,0.23744695949564293,0.1654030054644809,1.343545081967213,protective_roamer,0.62,0.65,Global protection and taunt setup can support roams despite a protective identity.
+Sona,11424,0.3335971472202456,0.19583762850509623,0.12973793684140322,0.8878063725490195,scaling_enchanter,0.22,0.8,Weak early roam profile and scaling lane identity.
+Soraka,7211,0.322337698829907,0.18884429563854196,0.1150555368451638,1.042185549854389,adc_enabler,0.2,0.85,Very ADC/team protection oriented.
+Swain,1274,0.3265352773337573,0.19215191769801396,0.12653995664199744,0.9055729984301413,lane_mage,0.36,0.7,Often lane pressure and skirmish follow-up.
+Sylas,1353,0.49083352579112466,0.33178289072175804,0.2590724316334072,1.9415373244641538,skirmish_roamer,0.58,0.45,"Mobility and skirmish tools can enable roaming, but support usage is non-standard."
+Taric,4608,0.3223018566844765,0.19946839133270286,0.133974041005291,0.9383463541666666,protective_warden,0.3,0.75,Low early roam identity; values linked ally play.
+Thresh,19852,0.37826721529802937,0.23647650674066964,0.1562087423121576,1.0724813620793876,pick_roamer,0.72,0.85,"Hook, lantern and setup make roaming plausible."
+Xerath,864,0.29398963908165204,0.16815271024966127,0.1056699184303351,0.7460648148148148,lane_mage,0.26,0.75,Long-range lane poke more than map roaming.
+Yuumi,4689,0.14909535543748414,0.10355797954588744,0.07233012420152535,0.46468330134357005,adc_enabler,0.08,0.95,Attached play pattern is explicitly lane/carry anchored.
+Zilean,5960,0.3632546960152771,0.22463635238543336,0.1602161233620965,1.0458389261744967,utility_roamer,0.55,0.65,Can roam but often tied to scaling utility.
+Zoe,1964,0.4219998615809678,0.27935549702604,0.2019560420909708,1.3718940936863544,pick_mage,0.44,0.45,"Pick threat can create roam value, but support usage is niche and confidence is limited."
+Zyra,1605,0.30587259064348576,0.18206650763443613,0.11718736092567869,0.7314641744548287,lane_mage,0.34,0.75,Lane control and poke identity.

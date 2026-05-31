@@ -1,0 +1,56 @@
+{
+  "score_col": "support_roam_score_v5_geometry",
+  "raw_score_col": "raw_support_roam_score_v5_geometry",
+  "recipe": {
+    "start_minute": 5.0,
+    "max_minute": 12.0,
+    "far_adc_threshold": 2500.0,
+    "w_outside": 0.45,
+    "w_far": 0.35,
+    "w_xp": 0.2,
+    "gamma": 0.75,
+    "xp_ratio_min": 0.6,
+    "xp_ratio_max": 1.0,
+    "min_support_frames": 2,
+    "bot_context_zones": [
+      "BOT_LANE_CORE",
+      "BOT_SIDE_NEAR",
+      "DRAGON_AREA",
+      "RIVER_BOT"
+    ],
+    "base_zones": [
+      "BLUE_BASE",
+      "RED_BASE"
+    ]
+  },
+  "config_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\geometry\\manual_geometry_v5_config.json",
+  "config_version": "geometry_v5_manual_redraw_from_annotation_2",
+  "summary": {
+    "rows": 383247,
+    "total_match_team_keys_in_window": 383272,
+    "coverage": 0.9999347721722432,
+    "config_version": "geometry_v5_manual_redraw_from_annotation_2",
+    "source_frame_state_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\frame_state\\support_frame_state.parquet",
+    "baseline_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\clean\\scores\\support_scores_v3_m12.parquet",
+    "score_n": 383247,
+    "score_missing": 0,
+    "score_mean": 0.39158242108952,
+    "score_std": 0.1898690748813945,
+    "score_min": 0.0,
+    "score_q01": 0.0,
+    "score_q05": 0.08976816637529397,
+    "score_q25": 0.25298221281347033,
+    "score_median": 0.38814630096443625,
+    "score_q75": 0.5231463423947196,
+    "score_q95": 0.7113450175924957,
+    "score_q99": 0.8392797978785536,
+    "score_max": 1.0,
+    "share_eq_0": 0.01881032336848038,
+    "share_eq_1": 0.0007697385759053561,
+    "row_corr_vs_v3": 0.9406354606434904,
+    "mean_delta_v5_minus_v3": 0.0200200408129282,
+    "median_delta_v5_minus_v3": 0.0,
+    "q05_delta_v5_minus_v3": -0.08519167148906667,
+    "q95_delta_v5_minus_v3": 0.13337293039312784
+  }
+}

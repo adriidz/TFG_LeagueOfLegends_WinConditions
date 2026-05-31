@@ -1,0 +1,85 @@
+{
+  "labels": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\scores\\support_scores_v6_event_variants_m12.parquet",
+  "training_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training",
+  "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\label_variant_sweep",
+  "model_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\label_variant_sweep",
+  "models": [
+    "histgbr"
+  ],
+  "variants": [
+    {
+      "variant_id": "v5_geometry",
+      "score_col": "support_roam_score_v5_geometry"
+    },
+    {
+      "variant_id": "events_balanced_65_20_15",
+      "score_col": "support_roam_score_events_balanced_65_20_15"
+    },
+    {
+      "variant_id": "events_combat_only_80_20",
+      "score_col": "support_roam_score_events_combat_only_80_20"
+    },
+    {
+      "variant_id": "events_combat_strong_65_35",
+      "score_col": "support_roam_score_events_combat_strong_65_35"
+    },
+    {
+      "variant_id": "events_equal_70_15_15",
+      "score_col": "support_roam_score_events_equal_70_15_15"
+    },
+    {
+      "variant_id": "events_heavy_50_30_20",
+      "score_col": "support_roam_score_events_heavy_50_30_20"
+    },
+    {
+      "variant_id": "events_light_85_10_05",
+      "score_col": "support_roam_score_events_light_85_10_05"
+    },
+    {
+      "variant_id": "events_only_60_40",
+      "score_col": "support_roam_score_events_only_60_40"
+    },
+    {
+      "variant_id": "events_selected_75_15_10",
+      "score_col": "support_roam_score_events_selected_75_15_10"
+    },
+    {
+      "variant_id": "events_tiny_90_07_03",
+      "score_col": "support_roam_score_events_tiny_90_07_03"
+    },
+    {
+      "variant_id": "events_vision_only_80_20",
+      "score_col": "support_roam_score_events_vision_only_80_20"
+    },
+    {
+      "variant_id": "events_vision_strong_70_30",
+      "score_col": "support_roam_score_events_vision_strong_70_30"
+    },
+    {
+      "variant_id": "frame_no_far",
+      "score_col": "support_roam_score_frame_no_far"
+    },
+    {
+      "variant_id": "frame_no_outside",
+      "score_col": "support_roam_score_frame_no_outside"
+    },
+    {
+      "variant_id": "frame_no_xp",
+      "score_col": "support_roam_score_frame_no_xp"
+    },
+    {
+      "variant_id": "v5_frame_rebuild",
+      "score_col": "support_roam_score_v5_frame_rebuild"
+    }
+  ],
+  "feature_ablations": [
+    "all",
+    "no_spells",
+    "no_side",
+    "champions_only"
+  ],
+  "mlp_feature_ablations": [
+    "champions_side"
+  ],
+  "target_mode": "both"
+}

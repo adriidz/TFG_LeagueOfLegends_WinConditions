@@ -1,0 +1,2 @@
+model,trained_target,evaluation_scale,eval_split,n_train,n_eval,run_id,mse,rmse,mae,r2,pearson_corr,spearman_corr,pred_std,target_std,compression_ratio
+MLP Per-Role + Interactions HP Best,raw,raw,test,268322,57468,020_h128-64_d0p4_lr1em03_wd5em04,0.03068662927722651,0.17517599515123786,0.14134647841409592,0.15467744443526332,0.39585699708779937,0.38365387291547776,0.06815647333860397,0.19052999878163798,0.3577204312939535

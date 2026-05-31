@@ -1,0 +1,39 @@
+{
+  "top_errors_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\error_analysis\\top_abs_errors.csv",
+  "frame_state_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\frame_state\\support_frame_state.parquet",
+  "scores_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\scores\\support_scores_v5_geometry_m12.parquet",
+  "config_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\geometry\\manual_geometry_v5_config.json",
+  "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\label_error_diagnostics",
+  "top_n": 20,
+  "cases": 20,
+  "frame_rows": 140,
+  "start_minute": 5.0,
+  "max_minute": 12.0,
+  "formula": {
+    "outside_weight": 0.45,
+    "far_weight": 0.35,
+    "xp_weight": 0.2,
+    "gamma": 0.75,
+    "far_adc_threshold": 2500.0,
+    "bot_context_zones": [
+      "BOT_LANE_CORE",
+      "BOT_SIDE_NEAR",
+      "DRAGON_AREA",
+      "RIVER_BOT"
+    ],
+    "base_zones": [
+      "BLUE_BASE",
+      "RED_BASE"
+    ]
+  },
+  "diagnostic_counts": {
+    "consistent_full_roam_label": 12,
+    "mostly_outside_bot_context": 3,
+    "low_valid_coop_frames": 2,
+    "mostly_far_from_adc": 1,
+    "low_valid_support_frames": 1,
+    "possible_adc_death_base_coop_artifact": 1
+  },
+  "max_score_reconstruction_delta": 0.0,
+  "max_raw_score_reconstruction_delta": 0.0
+}

@@ -1,0 +1,52 @@
+{
+  "model_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\gbt_model_raw.joblib",
+  "preprocess_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\preprocess.joblib",
+  "test_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\test.parquet",
+  "comparison_table_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\model_comparison\\comparison_table_raw.csv",
+  "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\error_analysis",
+  "target": "support_roam_score",
+  "top_n": 20,
+  "n_eval": 57489,
+  "n_top_errors": 20,
+  "metrics": {
+    "mse": 0.03045759192959777,
+    "rmse": 0.17452103577963823,
+    "mae": 0.14088296287566082,
+    "r2": 0.16126949781514366,
+    "pearson_corr": 0.4019147852992605,
+    "spearman_corr": 0.388131231258859,
+    "pred_std": 0.07371280246560129,
+    "target_std": 0.19056211451740296,
+    "compression_ratio": 0.3868177190008537
+  },
+  "reference_metrics": {
+    "rmse": 0.1745210357796382,
+    "mae": 0.1408829628756608,
+    "r2": 0.1612694978151436,
+    "pearson_corr": 0.4019147852992605,
+    "spearman_corr": 0.388131231258859
+  },
+  "metric_deltas_vs_reference": {
+    "rmse": 2.7755575615628914e-17,
+    "mae": 2.7755575615628914e-17,
+    "r2": 5.551115123125783e-17,
+    "pearson_corr": 0.0,
+    "spearman_corr": 0.0
+  },
+  "metrics_match_reference": true,
+  "top_abs_errors_descending": true,
+  "score_bins": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "score_bin_labels": [
+    "very_low",
+    "low_mid",
+    "high_mid",
+    "very_high"
+  ],
+  "note": "qualitative_note is intentionally blank. This output supports manual case analysis; it does not infer in-game causes from draft features."
+}

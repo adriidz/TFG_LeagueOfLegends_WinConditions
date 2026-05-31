@@ -1,0 +1,348 @@
+[
+  {
+    "icc": 0.07183909705952947,
+    "n_groups": 144,
+    "n_rows": 268390,
+    "mean_group_size": 1863.8194444444443,
+    "var_between": 9.629853748514233,
+    "var_within": 0.06629459408345656,
+    "total_var": 0.07139014181113393,
+    "grouping": "support_champion",
+    "columns": [
+      "ally_utility_champion_id"
+    ],
+    "r2_group_mean": 0.07195200408211788
+  },
+  {
+    "icc": 0.07295980466196249,
+    "n_groups": 255,
+    "n_rows": 268300,
+    "mean_group_size": 1052.1568627450981,
+    "var_between": 5.547720941099664,
+    "var_within": 0.06619661106640358,
+    "total_var": 0.07138599745930274,
+    "grouping": "support_champion+side",
+    "columns": [
+      "ally_utility_champion_id",
+      "side"
+    ],
+    "r2_group_mean": 0.07381113819215113
+  },
+  {
+    "icc": 0.07841576753714864,
+    "n_groups": 2518,
+    "n_rows": 262674,
+    "mean_group_size": 104.31850675138999,
+    "var_between": 0.648014529348299,
+    "var_within": 0.06561339209264679,
+    "total_var": 0.07119410903908771,
+    "grouping": "botlane_champions",
+    "columns": [
+      "ally_utility_champion_id",
+      "ally_bottom_champion_id"
+    ],
+    "r2_group_mean": 0.10048908765505149
+  },
+  {
+    "icc": 0.07943115350076381,
+    "n_groups": 3846,
+    "n_rows": 259263,
+    "mean_group_size": 67.41107644305772,
+    "var_between": 0.4462497783165837,
+    "var_within": 0.06546558513804572,
+    "total_var": 0.07111282701217876,
+    "grouping": "botlane_champions+side",
+    "columns": [
+      "ally_utility_champion_id",
+      "ally_bottom_champion_id",
+      "side"
+    ],
+    "r2_group_mean": 0.1142190217458815
+  },
+  {
+    "icc": 0.07640541839102848,
+    "n_groups": 2722,
+    "n_rows": 262063,
+    "mean_group_size": 96.27590007347538,
+    "var_between": 0.5898092876051033,
+    "var_within": 0.0657936362477141,
+    "total_var": 0.07123451125951838,
+    "grouping": "sup_vs_enemy_sup_champion",
+    "columns": [
+      "ally_utility_champion_id",
+      "enemy_utility_champion_id"
+    ],
+    "r2_group_mean": 0.09985134615924085
+  },
+  {
+    "icc": 0.011945148104504755,
+    "n_groups": 7,
+    "n_rows": 268423,
+    "mean_group_size": 38346.142857142855,
+    "var_between": 32.8268104151413,
+    "var_within": 0.0706578982495307,
+    "total_var": 0.07139009201569496,
+    "grouping": "support_riot_class",
+    "columns": [
+      "ally_utility_class"
+    ],
+    "r2_group_mean": 0.010278361488479382
+  },
+  {
+    "icc": 0.014665156795181423,
+    "n_groups": 47,
+    "n_rows": 268420,
+    "mean_group_size": 5711.063829787234,
+    "var_between": 6.051423665484272,
+    "var_within": 0.07036523795650178,
+    "total_var": 0.07139023502327527,
+    "grouping": "botlane_riot_classes",
+    "columns": [
+      "ally_utility_class",
+      "ally_bottom_class"
+    ],
+    "r2_group_mean": 0.01453436099579819
+  },
+  {
+    "icc": 0.008753696801582375,
+    "n_groups": 7229,
+    "n_rows": 88547,
+    "mean_group_size": 12.248858763314429,
+    "var_between": 0.07690766600800034,
+    "var_within": 0.06940062282041878,
+    "total_var": 0.07001342190970389,
+    "grouping": "all_10_riot_classes",
+    "columns": [
+      "ally_top_class",
+      "ally_jungle_class",
+      "ally_middle_class",
+      "ally_bottom_class",
+      "ally_utility_class",
+      "enemy_top_class",
+      "enemy_jungle_class",
+      "enemy_middle_class",
+      "enemy_bottom_class",
+      "enemy_utility_class"
+    ],
+    "r2_group_mean": 0.5695631242368737
+  },
+  {
+    "icc": 0.052445074278467764,
+    "n_groups": 29,
+    "n_rows": 268423,
+    "mean_group_size": 9255.965517241379,
+    "var_between": 34.785425225406144,
+    "var_within": 0.06776857669219695,
+    "total_var": 0.07139009201569496,
+    "grouping": "support_archetype",
+    "columns": [
+      "ally_utility_archetype"
+    ],
+    "r2_group_mean": 0.0508275642851983
+  },
+  {
+    "icc": 0.05285016508011655,
+    "n_groups": 58,
+    "n_rows": 268423,
+    "mean_group_size": 4627.982758620689,
+    "var_between": 17.544878601421686,
+    "var_within": 0.06767877032681549,
+    "total_var": 0.07139009201569496,
+    "grouping": "support_archetype+side",
+    "columns": [
+      "ally_utility_archetype",
+      "side"
+    ],
+    "r2_group_mean": 0.05218782213182649
+  },
+  {
+    "icc": 0.055988883406943864,
+    "n_groups": 388,
+    "n_rows": 268067,
+    "mean_group_size": 690.8943298969073,
+    "var_between": 2.828435359299327,
+    "var_within": 0.06738117851562217,
+    "total_var": 0.07136724152981752,
+    "grouping": "botlane_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype"
+    ],
+    "r2_group_mean": 0.05815035058174289
+  },
+  {
+    "icc": 0.05727302255085078,
+    "n_groups": 635,
+    "n_rows": 267669,
+    "mean_group_size": 421.5259842519685,
+    "var_between": 1.7899714313840547,
+    "var_within": 0.06727001007736937,
+    "total_var": 0.07135041080180578,
+    "grouping": "botlane_archetypes+side",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype",
+      "side"
+    ],
+    "r2_group_mean": 0.06112076343313955
+  },
+  {
+    "icc": 0.05567677125334712,
+    "n_groups": 385,
+    "n_rows": 268015,
+    "mean_group_size": 696.1428571428571,
+    "var_between": 2.834070549074427,
+    "var_within": 0.06740694067596305,
+    "total_var": 0.0713709083255075,
+    "grouping": "sup_vs_enemy_sup_archetype",
+    "columns": [
+      "ally_utility_archetype",
+      "enemy_utility_archetype"
+    ],
+    "r2_group_mean": 0.057791113830074625
+  },
+  {
+    "icc": 0.05159216899478292,
+    "n_groups": 390,
+    "n_rows": 268120,
+    "mean_group_size": 687.4871794871794,
+    "var_between": 2.5997901998030706,
+    "var_within": 0.06770565494028763,
+    "total_var": 0.07137932554159385,
+    "grouping": "sup+jungle_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype"
+    ],
+    "r2_group_mean": 0.05355686718932562
+  },
+  {
+    "icc": 0.05280486365466372,
+    "n_groups": 654,
+    "n_rows": 267752,
+    "mean_group_size": 409.40672782874617,
+    "var_between": 1.610576494961973,
+    "var_within": 0.06760345566347971,
+    "total_var": 0.07136650937630212,
+    "grouping": "sup+jungle_archetypes+side",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype",
+      "side"
+    ],
+    "r2_group_mean": 0.05643683329100713
+  },
+  {
+    "icc": 0.051264650825795476,
+    "n_groups": 2651,
+    "n_rows": 262516,
+    "mean_group_size": 99.02527348170501,
+    "var_between": 0.4292586869978294,
+    "var_within": 0.06759124456800923,
+    "total_var": 0.07124215488718726,
+    "grouping": "sup+jungle+top_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype",
+      "ally_top_archetype"
+    ],
+    "r2_group_mean": 0.07381255208937043
+  },
+  {
+    "icc": 0.058360357427658195,
+    "n_groups": 4802,
+    "n_rows": 246385,
+    "mean_group_size": 51.308829654310706,
+    "var_between": 0.27769084949924655,
+    "var_within": 0.0664334273043979,
+    "total_var": 0.0705499563158494,
+    "grouping": "botlane_vs_enemy_bot_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype",
+      "enemy_utility_archetype",
+      "enemy_bottom_archetype"
+    ],
+    "r2_group_mean": 0.13273545679911947
+  },
+  {
+    "icc": 0.04410377792202892,
+    "n_groups": 10124,
+    "n_rows": 173122,
+    "mean_group_size": 17.100158040300276,
+    "var_between": 0.11965993140470547,
+    "var_within": 0.06688729408515848,
+    "total_var": 0.06997309769988908,
+    "grouping": "ally_team_archetypes",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype"
+    ],
+    "r2_group_mean": 0.32890398166043855
+  },
+  {
+    "icc": 0.04073421515538501,
+    "n_groups": 10535,
+    "n_rows": 146178,
+    "mean_group_size": 13.87546274323683,
+    "var_between": 0.10617633220003232,
+    "var_within": 0.06681089016484525,
+    "total_var": 0.06964769463065491,
+    "grouping": "ally_team_archetypes+side",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "side"
+    ],
+    "r2_group_mean": 0.4043164739978784
+  },
+  {
+    "icc": NaN,
+    "n_groups": 0,
+    "n_rows": 0,
+    "mean_group_size": NaN,
+    "note": "insufficient data",
+    "grouping": "all_10_archetypes",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "enemy_top_archetype",
+      "enemy_jungle_archetype",
+      "enemy_middle_archetype",
+      "enemy_bottom_archetype",
+      "enemy_utility_archetype"
+    ],
+    "r2_group_mean": 0.9975050388045739
+  },
+  {
+    "icc": NaN,
+    "n_groups": 0,
+    "n_rows": 0,
+    "mean_group_size": NaN,
+    "note": "insufficient data",
+    "grouping": "all_10_archetypes+side",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "enemy_top_archetype",
+      "enemy_jungle_archetype",
+      "enemy_middle_archetype",
+      "enemy_bottom_archetype",
+      "enemy_utility_archetype",
+      "side"
+    ],
+    "r2_group_mean": 0.9986159118531416
+  }
+]

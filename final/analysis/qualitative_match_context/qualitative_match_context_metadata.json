@@ -1,0 +1,12 @@
+{
+  "top_errors_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\error_analysis\\top_abs_errors.csv",
+  "label_summary_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\label_error_diagnostics\\label_error_case_summary.csv",
+  "frame_timeline_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\label_error_diagnostics\\label_error_case_frame_timeline.csv",
+  "raw_root": "C:\\Users\\adria\\Desktop\\TFG\\data\\raw\\raw\\europe",
+  "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\qualitative_match_context",
+  "top_n": 20,
+  "cases": 20,
+  "cases_with_raw": 20,
+  "kill_event_rows": 422,
+  "objective_event_rows": 352
+}

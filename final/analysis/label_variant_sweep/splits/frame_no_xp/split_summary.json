@@ -1,0 +1,16 @@
+{
+  "variant_id": "frame_no_xp",
+  "score_col": "support_roam_score_frame_no_xp",
+  "rows": {
+    "train": 268423,
+    "val": 57335,
+    "test": 57489
+  },
+  "matches": {
+    "train": 134221,
+    "val": 28669,
+    "test": 28746
+  },
+  "target_train_mean": 0.31821375011911707,
+  "target_train_std": 0.20758588018506527
+}

@@ -1,0 +1,4 @@
+case_label,waterfall_plot,match_id,team_id,side,patch,ally_utility_champion_name,ally_bottom_champion_name,enemy_utility_champion_name,enemy_bottom_champion_name,prediction,actual,abs_error,shap_sum_prediction
+low_pred_high_actual,shap_waterfall_case_01_low_pred_high_actual.png,EUW1_7708834871,200,red,16.2,Yuumi,Tristana,Milio,Lucian,0.13051137584992503,0.7771988451075833,0.6466874692576583,0.130511375849925
+high_accuracy,shap_waterfall_case_02_high_accuracy.png,EUW1_7806188068,100,blue,16.7,Nautilus,Corki,Nami,Lucian,0.3972354618587001,0.391875871718013,0.005359590140687098,0.3972354618587001
+roam_support,shap_waterfall_case_03_roam_support.png,EUW1_7806422543,100,blue,16.7,Nautilus,Ezreal,Thresh,Kaisa,0.44124494782998824,0.0,0.44124494782998824,0.4412449478299885

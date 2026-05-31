@@ -1,0 +1,31 @@
+[
+  {
+    "model": "mlp_per_role_raw",
+    "target": "raw",
+    "mse": 0.030853962525725365,
+    "rmse": 0.17565296048095905,
+    "mae": 0.14141932129859924,
+    "r2": 0.143539624904637,
+    "pearson_corr": 0.3802156458165484,
+    "spearman_corr": 0.3667223296683812,
+    "pred_std": 0.07477565854787827,
+    "target_std": 0.18980245292186737,
+    "compression_ratio": 0.3939657122274381,
+    "n_train": 268322,
+    "n_eval": 57314,
+    "eval_split": "val",
+    "training_seconds": 328.92724609375,
+    "best_epoch": 27,
+    "hidden_dims": [
+      256,
+      128,
+      64
+    ],
+    "dropout": 0.3,
+    "lr": 0.0002,
+    "weight_decay": 0.0005,
+    "run_id": "098_h256-128-64_d0p3_lr2em04_wd5em04",
+    "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\hp_search\\runs\\098_h256-128-64_d0p3_lr2em04_wd5em04",
+    "wall_seconds": 329.7426927089691
+  }
+]

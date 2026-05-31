@@ -1,0 +1,86 @@
+{
+  "score_col": "support_roam_score_v9_balanced",
+  "raw_score_col": "raw_support_roam_score_v9_balanced",
+  "sources": {
+    "v5_scores": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\scores\\support_scores_v5_geometry_m12.parquet",
+    "frame_state": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\frame_state\\support_frame_state.parquet",
+    "event_context": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\event_context\\support_event_context_m12.parquet",
+    "event_positions": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\event_context\\support_event_positions_m12.parquet"
+  },
+  "recipe": {
+    "start_frame": 5,
+    "end_frame": 12,
+    "w_backbone": 0.75,
+    "w_xp": 0.25,
+    "productive_saturation": 3.0,
+    "objective_weight": 0.5,
+    "building_weight": 0.3,
+    "productive_boost": 0.15,
+    "no_productive_dampener": 0.8,
+    "chaos_weight": 0.2,
+    "gamma": 0.75,
+    "design_note": "Spatial backbone (alive_outside_bot_ratio) with productive events as multiplicative modulator. Productive events confirm or soften the spatial signal but do not dominate it."
+  },
+  "diagnostics": {
+    "total_rows": 383247,
+    "nan_final_score": 0,
+    "no_productive_events": 169059,
+    "no_productive_pct": 44.1,
+    "max_alive_frames_possible": 8
+  },
+  "component_spearman_with_v9": {
+    "backbone_v9": 0.9399868325123801,
+    "xp_gap_score_v9": 0.5625717571111575,
+    "productive_event_score_v9": 0.6099057379258338,
+    "modulator_v9": 0.6099057379258338,
+    "support_roam_score_v5_geometry": 0.74209437409862
+  },
+  "v5_summary": {
+    "n": 383247,
+    "mean": 0.39158242108952,
+    "std": 0.1898690748813945,
+    "min": 0.0,
+    "q05": 0.08976816637529397,
+    "q25": 0.25298221281347033,
+    "median": 0.38814630096443625,
+    "q75": 0.5231463423947196,
+    "q95": 0.7113450175924957,
+    "max": 1.0,
+    "share_eq_0": 0.01881032336848038,
+    "share_eq_1": 0.0007697385759053561
+  },
+  "v9_summary": {
+    "n": 383247,
+    "mean": 0.24463385683657024,
+    "std": 0.16430083726450317,
+    "min": 0.0,
+    "q05": 0.02556428159784711,
+    "q25": 0.10486621572686025,
+    "median": 0.22588505859649888,
+    "q75": 0.349979104553398,
+    "q95": 0.5484526793714474,
+    "max": 1.0,
+    "share_eq_0": 0.029362265066654143,
+    "share_eq_1": 2.6092833081537494e-05
+  },
+  "row_corr_v5_v9_pearson": 0.746547193041332,
+  "row_corr_v5_v9_spearman": 0.74209437409862,
+  "mean_delta_v9_minus_v5": -0.14694856425294986,
+  "event_samples": {
+    "rows": 977600,
+    "match_team_keys": 300911,
+    "by_kind": {
+      "team_objective": 565331,
+      "support_kill_assist": 403494,
+      "support_plate_destroy": 7387,
+      "support_building_kill": 1388
+    }
+  },
+  "expert_alignment": {
+    "available": true,
+    "reference_rows": 47,
+    "aligned_champions": 45,
+    "spearman_v9_vs_expert": 0.8081994268792955,
+    "spearman_v5_vs_expert": 0.8218429826910728
+  }
+}

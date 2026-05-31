@@ -1,0 +1,80 @@
+{
+  "score_col": "support_roam_score_v8_productive",
+  "raw_score_col": "raw_support_roam_score_v8_productive",
+  "source_v5_scores": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\scores\\support_scores_v5_geometry_m12.parquet",
+  "source_frame_state": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\frame_state\\support_frame_state.parquet",
+  "source_event_context": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\event_context\\support_event_context_m12.parquet",
+  "source_event_positions": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\event_context\\support_event_positions_m12.parquet",
+  "recipe": {
+    "start_frame": 5,
+    "end_frame": 12,
+    "event_max_minute": 12.0,
+    "event_window_note": "Events use the full 0-12 minute window from the source. Presence uses frame_idx 5-12 (8 frames).",
+    "objective_radius": 3500.0,
+    "far_adc_threshold": 2500.0,
+    "productive_saturation": 3.0,
+    "w_productive": 0.6,
+    "w_presence": 0.3,
+    "w_xp_gap": 0.1,
+    "objective_weight": 0.5,
+    "building_weight": 0.3,
+    "gamma": 0.75,
+    "no_productive_cap": 0.35,
+    "no_productive_cap_note": "Applied to raw score BEFORE gamma"
+  },
+  "diagnostics": {
+    "total_rows": 383247,
+    "nan_final_score": 0,
+    "nan_presence_score": 0,
+    "no_productive_events": 169059,
+    "max_alive_frames_possible": 8
+  },
+  "v5_summary": {
+    "n": 383247,
+    "mean": 0.39158242108952,
+    "std": 0.1898690748813945,
+    "min": 0.0,
+    "q05": 0.08976816637529397,
+    "q25": 0.25298221281347033,
+    "median": 0.38814630096443625,
+    "q75": 0.5231463423947196,
+    "q95": 0.7113450175924957,
+    "max": 1.0,
+    "share_eq_0": 0.01881032336848038,
+    "share_eq_1": 0.0007697385759053561
+  },
+  "v8_summary": {
+    "n": 383247,
+    "mean": 0.3502761693686349,
+    "std": 0.2672391933373853,
+    "min": 0.0,
+    "q05": 0.02242155777565928,
+    "q25": 0.09938849901934077,
+    "median": 0.3300991157613991,
+    "q75": 0.5711232084338022,
+    "q95": 0.8057672937490487,
+    "max": 0.9806673837247306,
+    "share_eq_0": 0.022432008600197784,
+    "share_eq_1": 0.0
+  },
+  "row_corr_v5_v8": 0.6061891436954667,
+  "spearman_row_corr_v5_v8": 0.6351495262760887,
+  "mean_delta_v8_minus_v5": -0.04130625172088519,
+  "productive_event_samples": {
+    "rows": 977600,
+    "match_team_keys": 300911,
+    "by_kind": {
+      "team_objective": 565331,
+      "support_kill_assist": 403494,
+      "support_plate_destroy": 7387,
+      "support_building_kill": 1388
+    }
+  },
+  "expert_alignment": {
+    "available": true,
+    "reference_rows": 47,
+    "aligned_champions": 45,
+    "spearman_v8_mean_vs_expert": 0.8060902781547695,
+    "spearman_v5_mean_vs_expert": 0.8218429826910728
+  }
+}

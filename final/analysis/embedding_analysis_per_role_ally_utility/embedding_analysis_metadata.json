@@ -1,0 +1,31 @@
+{
+  "embeddings_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\mlp_per_role\\embeddings_raw_ally_utility.json",
+  "n_champions": 172,
+  "n_support_labeled_champions": 40,
+  "embedding_dim": 16,
+  "normalization": "l2",
+  "distance_metric": "cosine",
+  "tsne_perplexities": [
+    15,
+    30
+  ],
+  "umap_n_neighbors": [
+    10,
+    15
+  ],
+  "support_archetype_silhouette": -0.13055430352687836,
+  "support_archetype_silhouette_n": 39,
+  "support_archetype_silhouette_groups": 6,
+  "primary_class_silhouette": -0.07922623306512833,
+  "primary_class_silhouette_n": 172,
+  "primary_class_silhouette_groups": 7,
+  "top5_support_neighbor_rate": 0.295,
+  "top5_same_support_archetype_rate": 0.11,
+  "top5_same_primary_class_rate": 0.18,
+  "roam_correlation_n_pairs": 780,
+  "roam_correlation_n_champions": 40,
+  "roam_pearson_r": 0.12337803091001592,
+  "roam_pearson_p": 0.0005534912242500618,
+  "roam_spearman_r": 0.11230361674533436,
+  "roam_spearman_p": 0.0016815265253358348
+}

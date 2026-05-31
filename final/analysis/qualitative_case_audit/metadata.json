@@ -1,0 +1,22 @@
+{
+  "test_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\test.parquet",
+  "model_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt",
+  "scores_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\scores\\support_scores_v5_geometry_m12.parquet",
+  "frame_state_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\frame_state\\support_frame_state.parquet",
+  "expert_reference_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual\\references\\manual_support_champion_reference.csv",
+  "raw_root": "C:\\Users\\adria\\Desktop\\TFG\\data\\raw\\raw\\europe",
+  "outdir": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\qualitative_case_audit",
+  "top_n": 20,
+  "bottom_n": 20,
+  "cases": 40,
+  "top_error_cases": 20,
+  "bottom_error_cases": 20,
+  "raw_missing_cases": 0,
+  "frame_rows": 280,
+  "event_rows": 1475,
+  "map_plots": 40,
+  "timeline_plots": 40,
+  "expert_reference_rows": 47,
+  "max_score_reconstruction_delta": 0.0,
+  "max_raw_score_reconstruction_delta": 0.0
+}

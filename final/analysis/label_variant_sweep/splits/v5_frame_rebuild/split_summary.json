@@ -1,0 +1,16 @@
+{
+  "variant_id": "v5_frame_rebuild",
+  "score_col": "support_roam_score_v5_frame_rebuild",
+  "rows": {
+    "train": 268423,
+    "val": 57335,
+    "test": 57489
+  },
+  "matches": {
+    "train": 134221,
+    "val": 28669,
+    "test": 28746
+  },
+  "target_train_mean": 0.39164433918506497,
+  "target_train_std": 0.18972915904287602
+}

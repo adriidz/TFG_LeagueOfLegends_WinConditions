@@ -1,0 +1,16 @@
+{
+  "variant_id": "events_combat_strong_65_35",
+  "score_col": "support_roam_score_events_combat_strong_65_35",
+  "rows": {
+    "train": 268423,
+    "val": 57335,
+    "test": 57489
+  },
+  "matches": {
+    "train": 134221,
+    "val": 28669,
+    "test": 28746
+  },
+  "target_train_mean": 0.5144625233052181,
+  "target_train_std": 0.20517233515916666
+}

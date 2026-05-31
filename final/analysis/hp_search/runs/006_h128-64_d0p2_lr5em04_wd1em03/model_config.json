@@ -1,0 +1,44 @@
+{
+  "model_type": "mlp_per_role_interactions",
+  "run_id": "006_h128-64_d0p2_lr5em04_wd1em03",
+  "target": "raw",
+  "champion_cols": [
+    "ally_top_champion_id",
+    "ally_jungle_champion_id",
+    "ally_middle_champion_id",
+    "ally_bottom_champion_id",
+    "ally_utility_champion_id",
+    "enemy_top_champion_id",
+    "enemy_jungle_champion_id",
+    "enemy_middle_champion_id",
+    "enemy_bottom_champion_id",
+    "enemy_utility_champion_id"
+  ],
+  "slot_names": [
+    "ally_top",
+    "ally_jungle",
+    "ally_middle",
+    "ally_bottom",
+    "ally_utility",
+    "enemy_top",
+    "enemy_jungle",
+    "enemy_middle",
+    "enemy_bottom",
+    "enemy_utility"
+  ],
+  "vocab_size": 173,
+  "embed_dim": 16,
+  "n_champion_slots": 10,
+  "input_dim": 163,
+  "hidden_dims": [
+    128,
+    64
+  ],
+  "dropout": 0.2,
+  "lr": 0.0005,
+  "weight_decay": 0.001,
+  "batch_size": 512,
+  "epochs": 100,
+  "patience": 15,
+  "seed": 42
+}
