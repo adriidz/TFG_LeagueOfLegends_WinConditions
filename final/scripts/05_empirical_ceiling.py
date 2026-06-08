@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-05_empirical_ceiling.py -- Estimate the predictive ceiling from draft composition.
+05_empirical_ceiling.py -- Estimate repeatable draft signal from composition.
 
 Quantifies how much of the roaming score variance is explained by composition
-vs match-level noise. Uses ANOVA-style variance decomposition and ICC.
+vs match-level noise. ICC is kept as an in-sample descriptive consistency
+metric on train. Group-mean R2 is computed out-of-sample: train group means are
+applied to test rows, with the train global mean as fallback for unseen groups.
 
 Three granularity levels:
   1. Exact champion IDs
@@ -25,6 +27,7 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRAIN = str(REPO_ROOT / "final" / "data" / "training" / "train.parquet")
+DEFAULT_TEST = str(REPO_ROOT / "final" / "data" / "training" / "test.parquet")
 DEFAULT_OUTDIR = str(REPO_ROOT / "final" / "analysis" / "ceiling")
 DEFAULT_CLASSES = str(REPO_ROOT / "final" / "data" / "champion_classes.json")
 DEFAULT_ARCHETYPES = str(REPO_ROOT / "final" / "data" / "champion_archetypes.json")
@@ -43,6 +46,7 @@ ROLE_TO_ARCH_KEY = {
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Empirical ceiling analysis.")
     p.add_argument("--train", default=DEFAULT_TRAIN)
+    p.add_argument("--test", default=DEFAULT_TEST)
     p.add_argument("--outdir", default=DEFAULT_OUTDIR)
     p.add_argument("--champion-classes", default=DEFAULT_CLASSES)
     p.add_argument("--champion-archetypes", default=DEFAULT_ARCHETYPES)
@@ -97,6 +101,52 @@ def grouping_key(df: pd.DataFrame, columns: List[str]) -> pd.Series:
     )
 
 
+def r2_score_manual(y_true: Any, y_pred: Any) -> float:
+    y_true_arr = np.asarray(y_true, dtype=np.float64)
+    y_pred_arr = np.asarray(y_pred, dtype=np.float64)
+    ss_res = float(np.sum((y_true_arr - y_pred_arr) ** 2))
+    ss_tot = float(np.sum((y_true_arr - np.mean(y_true_arr)) ** 2))
+    return float(1.0 - ss_res / ss_tot) if ss_tot > 0 else 0.0
+
+
+def group_mean_oos_r2(
+    train_groups: pd.Series,
+    train_values: pd.Series,
+    test_groups: pd.Series,
+    test_values: pd.Series,
+) -> Dict[str, Any]:
+    """Predict test rows with train-only group means and train global fallback."""
+    train_frame = pd.DataFrame({"group": train_groups, "value": train_values}).dropna()
+    test_frame = pd.DataFrame({"group": test_groups, "value": test_values}).dropna()
+    if train_frame.empty or test_frame.empty:
+        return {
+            "r2_group_mean_oos": float("nan"),
+            "n_train_groups": 0,
+            "n_test_groups": 0,
+            "n_test_rows": int(len(test_frame)),
+            "n_unseen_test_groups": 0,
+            "n_unseen_test_rows": 0,
+            "train_global_mean": float("nan"),
+        }
+
+    train_global_mean = float(train_frame["value"].mean())
+    train_group_means = train_frame.groupby("group")["value"].mean()
+    pred = test_frame["group"].map(train_group_means)
+    unseen_mask = pred.isna()
+    pred = pred.fillna(train_global_mean).to_numpy(dtype=np.float64)
+
+    return {
+        "r2_group_mean_oos": r2_score_manual(test_frame["value"], pred),
+        "n_train_groups": int(train_group_means.shape[0]),
+        "n_test_groups": int(test_frame["group"].nunique()),
+        "n_test_rows": int(len(test_frame)),
+        "n_unseen_test_groups": int(test_frame.loc[unseen_mask, "group"].nunique()),
+        "n_unseen_test_rows": int(unseen_mask.sum()),
+        "unseen_test_row_rate": float(unseen_mask.mean()),
+        "train_global_mean": train_global_mean,
+    }
+
+
 def add_class_columns(df: pd.DataFrame, class_map: Dict[str, str]) -> pd.DataFrame:
     out = df.copy()
     for s in SIDES:
@@ -141,8 +191,13 @@ def main() -> None:
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_parquet(args.train)
-    print(f"[Data] rows={len(df):,}  target_std={df[TARGET_COL].std():.4f}")
+    df_train = pd.read_parquet(args.train)
+    df_test = pd.read_parquet(args.test)
+    print(
+        f"[Data] train={len(df_train):,}  test={len(df_test):,}  "
+        f"train_target_std={df_train[TARGET_COL].std():.4f}  "
+        f"test_target_std={df_test[TARGET_COL].std():.4f}"
+    )
 
     # --- Load Riot classes ---
     class_map = {}
@@ -150,7 +205,8 @@ def main() -> None:
     if classes_path.exists():
         raw = json.loads(classes_path.read_text(encoding="utf-8"))
         class_map = {k: v["primary_class"] for k, v in raw.items()}
-        df = add_class_columns(df, class_map)
+        df_train = add_class_columns(df_train, class_map)
+        df_test = add_class_columns(df_test, class_map)
         print(f"[Riot Classes] {len(class_map)} champions")
 
     # --- Load community archetypes ---
@@ -159,11 +215,12 @@ def main() -> None:
     if arch_path.exists():
         arch_raw = json.loads(arch_path.read_text(encoding="utf-8"))
         arch_champs = arch_raw.get("champions", {})
-        df = add_archetype_columns(df, arch_champs, class_map)
+        df_train = add_archetype_columns(df_train, arch_champs, class_map)
+        df_test = add_archetype_columns(df_test, arch_champs, class_map)
         has_archetypes = True
         print(f"[Archetypes] {len(arch_champs)} champions mapped")
-        if "ally_utility_archetype" in df.columns:
-            dist = df["ally_utility_archetype"].value_counts().to_dict()
+        if "ally_utility_archetype" in df_train.columns:
+            dist = df_train["ally_utility_archetype"].value_counts().to_dict()
             print(f"  Support archetypes: {dist}")
 
     # =============================================
@@ -208,76 +265,177 @@ def main() -> None:
     # =============================================
     #  COMPUTE
     # =============================================
-    results = []
+    train_icc_results = []
+    oos_results = []
+    combined_results = []
     for name, cols in groupings.items():
-        missing = [c for c in cols if c not in df.columns]
+        missing = [c for c in cols if c not in df_train.columns or c not in df_test.columns]
         if missing:
             print(f"[Skip] {name}: missing {missing}")
             continue
 
-        key = grouping_key(df, cols)
-        icc_result = icc_oneway(key, df[TARGET_COL], min_size=args.min_group_size)
+        train_key = grouping_key(df_train, cols)
+        test_key = grouping_key(df_test, cols)
+        icc_result = icc_oneway(train_key, df_train[TARGET_COL], min_size=args.min_group_size)
         icc_result["grouping"] = name
         icc_result["columns"] = cols
+        icc_result["split"] = "train"
+        icc_result["metric_role"] = "descriptive_in_sample_consistency"
 
-        # R2 of predicting group mean
-        group_means = df.groupby(key)[TARGET_COL].transform("mean")
-        ss_res = float(((df[TARGET_COL] - group_means) ** 2).sum())
-        ss_tot = float(((df[TARGET_COL] - df[TARGET_COL].mean()) ** 2).sum())
-        icc_result["r2_group_mean"] = float(1 - ss_res / ss_tot) if ss_tot > 0 else 0
+        oos_result = group_mean_oos_r2(
+            train_key,
+            df_train[TARGET_COL],
+            test_key,
+            df_test[TARGET_COL],
+        )
+        oos_result["grouping"] = name
+        oos_result["columns"] = cols
+        oos_result["train_split"] = str(Path(args.train).resolve())
+        oos_result["test_split"] = str(Path(args.test).resolve())
+        oos_result["metric_role"] = "out_of_sample_group_mean_reference"
+        oos_result["group_means_fit_split"] = "train"
+        oos_result["predicted_split"] = "test"
 
-        results.append(icc_result)
+        train_icc_results.append(icc_result)
+        oos_results.append(oos_result)
+        combined_results.append(
+            {
+                "grouping": name,
+                "columns": cols,
+                "icc_train": icc_result["icc"],
+                "r2_group_mean_oos": oos_result["r2_group_mean_oos"],
+                "n_train_groups_icc_min_size": icc_result["n_groups"],
+                "n_train_groups_oos_means": oos_result["n_train_groups"],
+                "n_test_groups": oos_result["n_test_groups"],
+                "n_test_rows": oos_result["n_test_rows"],
+                "n_unseen_test_groups": oos_result["n_unseen_test_groups"],
+                "n_unseen_test_rows": oos_result["n_unseen_test_rows"],
+            }
+        )
         print(f"[{name:45s}] ICC={icc_result['icc']:.4f}  "
-              f"R2={icc_result['r2_group_mean']:.4f}  "
-              f"groups={icc_result['n_groups']:>6}  "
-              f"rows={icc_result['n_rows']:>8,}")
+              f"R2_OOS={oos_result['r2_group_mean_oos']:.4f}  "
+              f"train_groups={oos_result['n_train_groups']:>6}  "
+              f"unseen_test_rows={oos_result['n_unseen_test_rows']:>6}")
 
     # Save
     (outdir / "ceiling_analysis.json").write_text(
-        json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(combined_results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
-    summary_df = pd.DataFrame([
+    (outdir / "ceiling_train_icc.json").write_text(
+        json.dumps(train_icc_results, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    (outdir / "ceiling_oos_group_mean.json").write_text(
+        json.dumps(oos_results, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    train_icc_df = pd.DataFrame([
         {
             "grouping": r["grouping"],
             "icc": r["icc"],
-            "r2_group_mean": r.get("r2_group_mean", float("nan")),
             "n_groups": r["n_groups"],
             "n_rows": r["n_rows"],
             "mean_group_size": r["mean_group_size"],
+            "metric_role": r["metric_role"],
         }
-        for r in results
+        for r in train_icc_results
     ])
-    summary_df.to_csv(outdir / "ceiling_summary.csv", index=False)
+    oos_df = pd.DataFrame([
+        {
+            "grouping": r["grouping"],
+            "r2_group_mean_oos": r["r2_group_mean_oos"],
+            "n_train_groups": r["n_train_groups"],
+            "n_test_groups": r["n_test_groups"],
+            "n_test_rows": r["n_test_rows"],
+            "n_unseen_test_groups": r["n_unseen_test_groups"],
+            "n_unseen_test_rows": r["n_unseen_test_rows"],
+            "unseen_test_row_rate": r["unseen_test_row_rate"],
+            "train_global_mean": r["train_global_mean"],
+            "group_means_fit_split": r["group_means_fit_split"],
+            "predicted_split": r["predicted_split"],
+        }
+        for r in oos_results
+    ])
+    combined_df = pd.DataFrame(combined_results)
+
+    train_icc_df.to_csv(outdir / "ceiling_summary_train_icc.csv", index=False)
+    oos_df.to_csv(outdir / "ceiling_oos_summary.csv", index=False)
+
+    # Backward-compatible combined summary for plotting/report scripts.
+    legacy_df = combined_df.rename(
+        columns={
+            "icc_train": "icc",
+            "r2_group_mean_oos": "r2_group_mean",
+        }
+    )
+    legacy_df.to_csv(outdir / "ceiling_summary.csv", index=False)
 
     # Markdown
-    header = "| " + " | ".join(summary_df.columns) + " |"
-    sep = "| " + " | ".join(["---"] * len(summary_df.columns)) + " |"
-    rows_md = []
-    for _, row in summary_df.iterrows():
-        cells = []
-        for c in summary_df.columns:
-            v = row[c]
-            cells.append(f"{v:.4f}" if isinstance(v, float) else str(v))
-        rows_md.append("| " + " | ".join(cells) + " |")
-    md_table = "\n".join([header, sep] + rows_md)
+    def markdown_table(df: pd.DataFrame) -> str:
+        if df.empty:
+            return "_No rows._"
+        header = "| " + " | ".join(df.columns) + " |"
+        sep = "| " + " | ".join(["---"] * len(df.columns)) + " |"
+        rows_md = []
+        for _, row in df.iterrows():
+            cells = []
+            for c in df.columns:
+                v = row[c]
+                cells.append(f"{v:.4f}" if isinstance(v, float) else str(v))
+            rows_md.append("| " + " | ".join(cells) + " |")
+        return "\n".join([header, sep] + rows_md)
+
+    train_icc_md = markdown_table(train_icc_df)
+    oos_md = markdown_table(oos_df)
+    combined_md = markdown_table(combined_df)
     (outdir / "ceiling_summary.md").write_text(
-        f"# Empirical Ceiling Analysis\n\n{md_table}\n", encoding="utf-8"
+        "# Empirical Ceiling / Repeatable Draft Signal\n\n"
+        "## Methodological note\n\n"
+        "ICC and R2 are not the same metric. ICC is reported here as a descriptive "
+        "in-sample train statistic: it summarizes consistency within repeated draft "
+        "groups after filtering small groups. The group-mean R2 below is the model-like "
+        "reference: group means are fitted only on train, applied to test, and unseen "
+        "test groups fall back to the train global mean. This OOS R2 is the value that "
+        "can be compared with model test R2.\n\n"
+        "## Train ICC\n\n"
+        f"{train_icc_md}\n\n"
+        "## Out-of-Sample Group-Mean R2\n\n"
+        f"{oos_md}\n\n"
+        "## Combined View\n\n"
+        f"{combined_md}\n",
+        encoding="utf-8",
+    )
+
+    # Keep old filename with a clearer extra note.
+    (outdir / "ceiling_methodology_note.md").write_text(
+        "# ICC vs Out-of-Sample R2\n\n"
+        "- ICC: descriptive train-only consistency metric, not a test-set model score.\n"
+        "- R2 group mean OOS: train-only group means evaluated on test, with train global mean fallback for unseen groups.\n"
+        "- Compare model test R2 against `ceiling_oos_summary.csv`, not against ICC directly.\n",
+        encoding="utf-8",
     )
 
     print(f"\n[Saved] {outdir.resolve()}")
 
     # Interpretation
-    supp_champ = next((r for r in results if r["grouping"] == "support_champion"), None)
-    supp_arch = next((r for r in results if r["grouping"] == "support_archetype"), None)
-    supp_class = next((r for r in results if r["grouping"] == "support_riot_class"), None)
-    print("\n  === COMPARISON: Support grouping granularity ===")
+    supp_champ = next((r for r in train_icc_results if r["grouping"] == "support_champion"), None)
+    supp_arch = next((r for r in train_icc_results if r["grouping"] == "support_archetype"), None)
+    supp_class = next((r for r in train_icc_results if r["grouping"] == "support_riot_class"), None)
+    botlane_side_oos = next(
+        (r for r in oos_results if r["grouping"] == "botlane_champions+side"), None
+    )
+    print("\n  === COMPARISON: Support grouping granularity (train ICC) ===")
     if supp_class:
         print(f"  Riot class (6 categories):      ICC={supp_class['icc']:.4f}  groups={supp_class['n_groups']}")
     if supp_arch:
         print(f"  Community archetype (~7 types):  ICC={supp_arch['icc']:.4f}  groups={supp_arch['n_groups']}")
     if supp_champ:
         print(f"  Exact champion ID (~144 champs): ICC={supp_champ['icc']:.4f}  groups={supp_champ['n_groups']}")
-    print("  (Higher ICC = more variance explained by group membership)")
+    if botlane_side_oos:
+        print(
+            "  OOS group-mean reference "
+            f"(botlane_champions+side): R2={botlane_side_oos['r2_group_mean_oos']:.4f} "
+            f"unseen_test_rows={botlane_side_oos['n_unseen_test_rows']}"
+        )
+    print("  (ICC describes train consistency; OOS R2 is comparable with model test R2.)")
 
 
 if __name__ == "__main__":

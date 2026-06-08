@@ -1,0 +1,201 @@
+neighbor_scope,support_champion_id,support_name,support_archetype,neighbor_rank,neighbor_champion_id,neighbor_name,neighbor_support_archetype,neighbor_primary_class,neighbor_is_support,cosine_distance,cosine_similarity,same_support_archetype,same_primary_class
+support_only,1,Annie,mage_support,1,111,Nautilus,engage_tank,Tank,True,0.6043790578842163,0.3956209421157837,False,False
+support_only,1,Annie,mage_support,2,57,Maokai,engage_tank,Tank,True,0.6358343362808228,0.36416566371917725,False,False
+support_only,1,Annie,mage_support,3,888,Renata Glasc,enchanter,Support,True,0.6922171115875244,0.3077828884124756,False,False
+support_only,1,Annie,mage_support,4,143,Zyra,mage_support,Mage,True,0.7382245063781738,0.26177549362182617,True,True
+support_only,1,Annie,mage_support,5,74,Heimerdinger,mage_support,Mage,True,0.7687829732894897,0.23121702671051025,True,True
+support_only,9,Fiddlesticks,mage_support,1,427,Ivern,enchanter,Support,True,0.39896923303604126,0.6010307669639587,False,False
+support_only,9,Fiddlesticks,mage_support,2,518,Neeko,mage_support,Mage,True,0.41950005292892456,0.5804999470710754,True,True
+support_only,9,Fiddlesticks,mage_support,3,74,Heimerdinger,mage_support,Mage,True,0.5139147639274597,0.4860852360725403,True,True
+support_only,9,Fiddlesticks,mage_support,4,44,Taric,warden,Support,True,0.6992819309234619,0.3007180690765381,False,False
+support_only,9,Fiddlesticks,mage_support,5,111,Nautilus,engage_tank,Tank,True,0.7097747921943665,0.29022520780563354,False,False
+support_only,10,Kayle,enchanter,1,267,Nami,enchanter,Support,True,0.38531696796417236,0.6146830320358276,True,False
+support_only,10,Kayle,enchanter,2,43,Karma,enchanter,Mage,True,0.4070513844490051,0.5929486155509949,True,False
+support_only,10,Kayle,enchanter,3,25,Morgana,catcher,Mage,True,0.5108489990234375,0.4891510009765625,False,False
+support_only,10,Kayle,enchanter,4,526,Rell,engage_tank,Tank,True,0.5117288827896118,0.4882711172103882,False,False
+support_only,10,Kayle,enchanter,5,50,Swain,mage_support,Mage,True,0.5883710384368896,0.41162896156311035,False,False
+support_only,12,Alistar,engage_tank,1,888,Renata Glasc,enchanter,Support,True,0.3739417791366577,0.6260582208633423,False,False
+support_only,12,Alistar,engage_tank,2,89,Leona,engage_tank,Tank,True,0.5068461894989014,0.49315381050109863,True,True
+support_only,12,Alistar,engage_tank,3,427,Ivern,enchanter,Support,True,0.6072278022766113,0.39277219772338867,False,False
+support_only,12,Alistar,engage_tank,4,53,Blitzcrank,hook,Tank,True,0.6550818681716919,0.3449181318283081,False,True
+support_only,12,Alistar,engage_tank,5,74,Heimerdinger,mage_support,Mage,True,0.6632993221282959,0.3367006778717041,False,False
+support_only,16,Soraka,enchanter,1,161,Vel'Koz,mage_support,Mage,True,0.5607631802558899,0.4392368197441101,False,False
+support_only,16,Soraka,enchanter,2,427,Ivern,enchanter,Support,True,0.5714251399040222,0.4285748600959778,True,True
+support_only,16,Soraka,enchanter,3,99,Lux,mage_support,Mage,True,0.6416263580322266,0.35837364196777344,False,False
+support_only,16,Soraka,enchanter,4,37,Sona,enchanter,Support,True,0.6678520441055298,0.3321479558944702,True,True
+support_only,16,Soraka,enchanter,5,201,Braum,warden,Support,True,0.67332923412323,0.32667076587677,False,True
+support_only,25,Morgana,catcher,1,50,Swain,mage_support,Mage,True,0.4300975203514099,0.5699024796485901,False,True
+support_only,25,Morgana,catcher,2,10,Kayle,enchanter,Fighter,True,0.5108489990234375,0.4891510009765625,False,False
+support_only,25,Morgana,catcher,3,412,Thresh,hook,Support,True,0.604978084564209,0.395021915435791,False,False
+support_only,25,Morgana,catcher,4,111,Nautilus,engage_tank,Tank,True,0.696074366569519,0.30392563343048096,False,False
+support_only,25,Morgana,catcher,5,526,Rell,engage_tank,Tank,True,0.7314547896385193,0.2685452103614807,False,False
+support_only,26,Zilean,enchanter,1,147,Seraphine,enchanter,Mage,True,0.4633070230484009,0.5366929769515991,True,False
+support_only,26,Zilean,enchanter,2,161,Vel'Koz,mage_support,Mage,True,0.6229713559150696,0.3770286440849304,False,False
+support_only,26,Zilean,enchanter,3,111,Nautilus,engage_tank,Tank,True,0.7127858400344849,0.28721415996551514,False,False
+support_only,26,Zilean,enchanter,4,80,Pantheon,engage_tank,Fighter,True,0.7567514181137085,0.2432485818862915,False,False
+support_only,26,Zilean,enchanter,5,412,Thresh,hook,Support,True,0.7706455588340759,0.22935444116592407,False,True
+support_only,32,Amumu,engage_tank,1,555,Pyke,roamer,Support,True,0.5505785942077637,0.44942140579223633,False,False
+support_only,32,Amumu,engage_tank,2,44,Taric,warden,Support,True,0.5802439451217651,0.41975605487823486,False,False
+support_only,32,Amumu,engage_tank,3,101,Xerath,mage_support,Mage,True,0.5966358184814453,0.4033641815185547,False,False
+support_only,32,Amumu,engage_tank,4,143,Zyra,mage_support,Mage,True,0.6854329109191895,0.31456708908081055,False,False
+support_only,32,Amumu,engage_tank,5,74,Heimerdinger,mage_support,Mage,True,0.6962234973907471,0.30377650260925293,False,False
+support_only,37,Sona,enchanter,1,44,Taric,warden,Support,True,0.37259799242019653,0.6274020075798035,False,True
+support_only,37,Sona,enchanter,2,117,Lulu,enchanter,Support,True,0.6196216344833374,0.3803783655166626,True,True
+support_only,37,Sona,enchanter,3,16,Soraka,enchanter,Support,True,0.6678520441055298,0.3321479558944702,True,True
+support_only,37,Sona,enchanter,4,902,Milio,enchanter,Support,True,0.7100493907928467,0.2899506092071533,True,True
+support_only,37,Sona,enchanter,5,32,Amumu,engage_tank,Tank,True,0.7121788263320923,0.2878211736679077,False,False
+support_only,40,Janna,enchanter,1,427,Ivern,enchanter,Support,True,0.42740362882614136,0.5725963711738586,True,True
+support_only,40,Janna,enchanter,2,80,Pantheon,engage_tank,Fighter,True,0.5397400856018066,0.46025991439819336,False,False
+support_only,40,Janna,enchanter,3,63,Brand,mage_support,Mage,True,0.6435699462890625,0.3564300537109375,False,False
+support_only,40,Janna,enchanter,4,518,Neeko,mage_support,Mage,True,0.6779704093933105,0.32202959060668945,False,False
+support_only,40,Janna,enchanter,5,99,Lux,mage_support,Mage,True,0.7151311039924622,0.28486889600753784,False,False
+support_only,43,Karma,enchanter,1,10,Kayle,enchanter,Fighter,True,0.4070513844490051,0.5929486155509949,True,False
+support_only,43,Karma,enchanter,2,526,Rell,engage_tank,Tank,True,0.523432731628418,0.47656726837158203,False,False
+support_only,43,Karma,enchanter,3,555,Pyke,roamer,Support,True,0.5624942779541016,0.43750572204589844,False,False
+support_only,43,Karma,enchanter,4,902,Milio,enchanter,Support,True,0.6168027520179749,0.38319724798202515,True,False
+support_only,43,Karma,enchanter,5,143,Zyra,mage_support,Mage,True,0.6661874651908875,0.33381253480911255,False,True
+support_only,44,Taric,warden,1,37,Sona,enchanter,Support,True,0.37259799242019653,0.6274020075798035,False,True
+support_only,44,Taric,warden,2,101,Xerath,mage_support,Mage,True,0.5310707092285156,0.4689292907714844,False,False
+support_only,44,Taric,warden,3,32,Amumu,engage_tank,Tank,True,0.5802439451217651,0.41975605487823486,False,False
+support_only,44,Taric,warden,4,902,Milio,enchanter,Support,True,0.6579328775405884,0.3420671224594116,False,True
+support_only,44,Taric,warden,5,350,Yuumi,enchanter,Support,True,0.6887775659561157,0.3112224340438843,False,True
+support_only,50,Swain,mage_support,1,25,Morgana,catcher,Mage,True,0.4300975203514099,0.5699024796485901,False,True
+support_only,50,Swain,mage_support,2,10,Kayle,enchanter,Fighter,True,0.5883710384368896,0.41162896156311035,False,False
+support_only,50,Swain,mage_support,3,412,Thresh,hook,Support,True,0.6069819331169128,0.39301806688308716,False,False
+support_only,50,Swain,mage_support,4,526,Rell,engage_tank,Tank,True,0.6548646688461304,0.34513533115386963,False,False
+support_only,50,Swain,mage_support,5,89,Leona,engage_tank,Tank,True,0.7145439386367798,0.2854560613632202,False,False
+support_only,53,Blitzcrank,hook,1,201,Braum,warden,Support,True,0.6104869842529297,0.3895130157470703,False,False
+support_only,53,Blitzcrank,hook,2,99,Lux,mage_support,Mage,True,0.6196236610412598,0.38037633895874023,False,False
+support_only,53,Blitzcrank,hook,3,12,Alistar,engage_tank,Tank,True,0.6550818681716919,0.3449181318283081,False,True
+support_only,53,Blitzcrank,hook,4,267,Nami,enchanter,Support,True,0.682136595249176,0.317863404750824,False,False
+support_only,53,Blitzcrank,hook,5,526,Rell,engage_tank,Tank,True,0.7033164501190186,0.29668354988098145,False,True
+support_only,57,Maokai,engage_tank,1,223,Tahm Kench,warden,Support,True,0.6251188516616821,0.37488114833831787,False,False
+support_only,57,Maokai,engage_tank,2,1,Annie,mage_support,Mage,True,0.6358343362808228,0.36416566371917725,False,False
+support_only,57,Maokai,engage_tank,3,80,Pantheon,engage_tank,Fighter,True,0.6411993503570557,0.35880064964294434,True,False
+support_only,57,Maokai,engage_tank,4,432,Bard,roamer,Support,True,0.7103973627090454,0.2896026372909546,False,False
+support_only,57,Maokai,engage_tank,5,555,Pyke,roamer,Support,True,0.7616141438484192,0.2383858561515808,False,False
+support_only,63,Brand,mage_support,1,117,Lulu,enchanter,Support,True,0.6210453510284424,0.3789546489715576,False,False
+support_only,63,Brand,mage_support,2,40,Janna,enchanter,Support,True,0.6435699462890625,0.3564300537109375,False,False
+support_only,63,Brand,mage_support,3,143,Zyra,mage_support,Mage,True,0.7017010450363159,0.2982989549636841,True,True
+support_only,63,Brand,mage_support,4,350,Yuumi,enchanter,Support,True,0.7755851745605469,0.22441482543945312,False,False
+support_only,63,Brand,mage_support,5,497,Rakan,engage_tank,Support,True,0.7789438962936401,0.22105610370635986,False,False
+support_only,74,Heimerdinger,mage_support,1,9,Fiddlesticks,mage_support,Mage,True,0.5139147639274597,0.4860852360725403,True,True
+support_only,74,Heimerdinger,mage_support,2,888,Renata Glasc,enchanter,Support,True,0.5179158449172974,0.48208415508270264,False,False
+support_only,74,Heimerdinger,mage_support,3,427,Ivern,enchanter,Support,True,0.5279779434204102,0.47202205657958984,False,False
+support_only,74,Heimerdinger,mage_support,4,518,Neeko,mage_support,Mage,True,0.5573093891143799,0.4426906108856201,True,True
+support_only,74,Heimerdinger,mage_support,5,12,Alistar,engage_tank,Tank,True,0.6632993221282959,0.3367006778717041,False,False
+support_only,80,Pantheon,engage_tank,1,518,Neeko,mage_support,Mage,True,0.39248543977737427,0.6075145602226257,False,False
+support_only,80,Pantheon,engage_tank,2,111,Nautilus,engage_tank,Tank,True,0.5388309955596924,0.4611690044403076,True,False
+support_only,80,Pantheon,engage_tank,3,40,Janna,enchanter,Support,True,0.5397400856018066,0.46025991439819336,False,False
+support_only,80,Pantheon,engage_tank,4,57,Maokai,engage_tank,Tank,True,0.6411993503570557,0.35880064964294434,True,False
+support_only,80,Pantheon,engage_tank,5,427,Ivern,enchanter,Support,True,0.6639488935470581,0.3360511064529419,False,False
+support_only,89,Leona,engage_tank,1,111,Nautilus,engage_tank,Tank,True,0.36968833208084106,0.6303116679191589,True,True
+support_only,89,Leona,engage_tank,2,12,Alistar,engage_tank,Tank,True,0.5068461894989014,0.49315381050109863,True,True
+support_only,89,Leona,engage_tank,3,888,Renata Glasc,enchanter,Support,True,0.5933459997177124,0.4066540002822876,False,False
+support_only,89,Leona,engage_tank,4,497,Rakan,engage_tank,Support,True,0.6193817853927612,0.38061821460723877,True,False
+support_only,89,Leona,engage_tank,5,526,Rell,engage_tank,Tank,True,0.63069087266922,0.36930912733078003,True,True
+support_only,99,Lux,mage_support,1,143,Zyra,mage_support,Mage,True,0.5491921901702881,0.4508078098297119,True,True
+support_only,99,Lux,mage_support,2,53,Blitzcrank,hook,Tank,True,0.6196236610412598,0.38037633895874023,False,False
+support_only,99,Lux,mage_support,3,16,Soraka,enchanter,Support,True,0.6416263580322266,0.35837364196777344,False,False
+support_only,99,Lux,mage_support,4,267,Nami,enchanter,Support,True,0.649340033531189,0.35065996646881104,False,False
+support_only,99,Lux,mage_support,5,201,Braum,warden,Support,True,0.6615952253341675,0.3384047746658325,False,False
+support_only,101,Xerath,mage_support,1,350,Yuumi,enchanter,Support,True,0.39642196893692017,0.6035780310630798,False,False
+support_only,101,Xerath,mage_support,2,147,Seraphine,enchanter,Mage,True,0.48343563079833984,0.5165643692016602,False,True
+support_only,101,Xerath,mage_support,3,888,Renata Glasc,enchanter,Support,True,0.5001850128173828,0.4998149871826172,False,False
+support_only,101,Xerath,mage_support,4,44,Taric,warden,Support,True,0.5310707092285156,0.4689292907714844,False,False
+support_only,101,Xerath,mage_support,5,427,Ivern,enchanter,Support,True,0.5857666730880737,0.41423332691192627,False,False
+support_only,111,Nautilus,engage_tank,1,89,Leona,engage_tank,Tank,True,0.36968833208084106,0.6303116679191589,True,True
+support_only,111,Nautilus,engage_tank,2,80,Pantheon,engage_tank,Fighter,True,0.5388309955596924,0.4611690044403076,True,False
+support_only,111,Nautilus,engage_tank,3,518,Neeko,mage_support,Mage,True,0.577364444732666,0.422635555267334,False,False
+support_only,111,Nautilus,engage_tank,4,1,Annie,mage_support,Mage,True,0.6043790578842163,0.3956209421157837,False,False
+support_only,111,Nautilus,engage_tank,5,427,Ivern,enchanter,Support,True,0.6508603096008301,0.3491396903991699,False,False
+support_only,117,Lulu,enchanter,1,235,Senna,enchanter,Marksman,True,0.47568851709365845,0.5243114829063416,True,False
+support_only,117,Lulu,enchanter,2,223,Tahm Kench,warden,Support,True,0.5927691459655762,0.40723085403442383,False,True
+support_only,117,Lulu,enchanter,3,37,Sona,enchanter,Support,True,0.6196216344833374,0.3803783655166626,True,True
+support_only,117,Lulu,enchanter,4,63,Brand,mage_support,Mage,True,0.6210453510284424,0.3789546489715576,False,False
+support_only,117,Lulu,enchanter,5,99,Lux,mage_support,Mage,True,0.7112343311309814,0.28876566886901855,False,False
+support_only,143,Zyra,mage_support,1,99,Lux,mage_support,Mage,True,0.5491921901702881,0.4508078098297119,True,True
+support_only,143,Zyra,mage_support,2,43,Karma,enchanter,Mage,True,0.6661874651908875,0.33381253480911255,False,True
+support_only,143,Zyra,mage_support,3,16,Soraka,enchanter,Support,True,0.6774714589118958,0.32252854108810425,False,False
+support_only,143,Zyra,mage_support,4,32,Amumu,engage_tank,Tank,True,0.6854329109191895,0.31456708908081055,False,False
+support_only,143,Zyra,mage_support,5,63,Brand,mage_support,Mage,True,0.7017010450363159,0.2982989549636841,True,True
+support_only,147,Seraphine,enchanter,1,26,Zilean,enchanter,Support,True,0.4633070230484009,0.5366929769515991,True,False
+support_only,147,Seraphine,enchanter,2,101,Xerath,mage_support,Mage,True,0.48343563079833984,0.5165643692016602,False,True
+support_only,147,Seraphine,enchanter,3,350,Yuumi,enchanter,Support,True,0.5512936115264893,0.44870638847351074,True,False
+support_only,147,Seraphine,enchanter,4,412,Thresh,hook,Support,True,0.6877446174621582,0.3122553825378418,False,False
+support_only,147,Seraphine,enchanter,5,161,Vel'Koz,mage_support,Mage,True,0.7129061222076416,0.2870938777923584,False,True
+support_only,161,Vel'Koz,mage_support,1,16,Soraka,enchanter,Support,True,0.5607631802558899,0.4392368197441101,False,False
+support_only,161,Vel'Koz,mage_support,2,26,Zilean,enchanter,Support,True,0.6229713559150696,0.3770286440849304,False,False
+support_only,161,Vel'Koz,mage_support,3,518,Neeko,mage_support,Mage,True,0.638056755065918,0.36194324493408203,True,True
+support_only,161,Vel'Koz,mage_support,4,147,Seraphine,enchanter,Mage,True,0.7129061222076416,0.2870938777923584,False,True
+support_only,161,Vel'Koz,mage_support,5,267,Nami,enchanter,Support,True,0.7237955927848816,0.2762044072151184,False,False
+support_only,201,Braum,warden,1,267,Nami,enchanter,Support,True,0.45179808139801025,0.5482019186019897,False,True
+support_only,201,Braum,warden,2,497,Rakan,engage_tank,Support,True,0.545534610748291,0.454465389251709,False,True
+support_only,201,Braum,warden,3,10,Kayle,enchanter,Fighter,True,0.5967872142791748,0.4032127857208252,False,False
+support_only,201,Braum,warden,4,53,Blitzcrank,hook,Tank,True,0.6104869842529297,0.3895130157470703,False,False
+support_only,201,Braum,warden,5,99,Lux,mage_support,Mage,True,0.6615952253341675,0.3384047746658325,False,False
+support_only,223,Tahm Kench,warden,1,526,Rell,engage_tank,Tank,True,0.43318992853164673,0.5668100714683533,False,False
+support_only,223,Tahm Kench,warden,2,235,Senna,enchanter,Marksman,True,0.5637311935424805,0.43626880645751953,False,False
+support_only,223,Tahm Kench,warden,3,117,Lulu,enchanter,Support,True,0.5927691459655762,0.40723085403442383,False,True
+support_only,223,Tahm Kench,warden,4,57,Maokai,engage_tank,Tank,True,0.6251188516616821,0.37488114833831787,False,False
+support_only,223,Tahm Kench,warden,5,497,Rakan,engage_tank,Support,True,0.6390412449836731,0.3609587550163269,False,True
+support_only,235,Senna,enchanter,1,117,Lulu,enchanter,Support,True,0.47568851709365845,0.5243114829063416,True,False
+support_only,235,Senna,enchanter,2,223,Tahm Kench,warden,Support,True,0.5637311935424805,0.43626880645751953,False,False
+support_only,235,Senna,enchanter,3,99,Lux,mage_support,Mage,True,0.6821430325508118,0.31785696744918823,False,False
+support_only,235,Senna,enchanter,4,497,Rakan,engage_tank,Support,True,0.7445903420448303,0.2554096579551697,False,False
+support_only,235,Senna,enchanter,5,37,Sona,enchanter,Support,True,0.7827024459838867,0.21729755401611328,True,False
+support_only,267,Nami,enchanter,1,10,Kayle,enchanter,Fighter,True,0.38531696796417236,0.6146830320358276,True,False
+support_only,267,Nami,enchanter,2,201,Braum,warden,Support,True,0.45179808139801025,0.5482019186019897,False,True
+support_only,267,Nami,enchanter,3,497,Rakan,engage_tank,Support,True,0.5776467323303223,0.42235326766967773,False,True
+support_only,267,Nami,enchanter,4,526,Rell,engage_tank,Tank,True,0.5871489644050598,0.4128510355949402,False,False
+support_only,267,Nami,enchanter,5,888,Renata Glasc,enchanter,Support,True,0.607938826084137,0.39206117391586304,True,True
+support_only,350,Yuumi,enchanter,1,101,Xerath,mage_support,Mage,True,0.39642196893692017,0.6035780310630798,False,False
+support_only,350,Yuumi,enchanter,2,147,Seraphine,enchanter,Mage,True,0.5512936115264893,0.44870638847351074,True,False
+support_only,350,Yuumi,enchanter,3,44,Taric,warden,Support,True,0.6887775659561157,0.3112224340438843,False,True
+support_only,350,Yuumi,enchanter,4,412,Thresh,hook,Support,True,0.7169995307922363,0.28300046920776367,False,True
+support_only,350,Yuumi,enchanter,5,143,Zyra,mage_support,Mage,True,0.729598879814148,0.27040112018585205,False,False
+support_only,412,Thresh,hook,1,25,Morgana,catcher,Mage,True,0.604978084564209,0.395021915435791,False,False
+support_only,412,Thresh,hook,2,50,Swain,mage_support,Mage,True,0.6069819331169128,0.39301806688308716,False,False
+support_only,412,Thresh,hook,3,147,Seraphine,enchanter,Mage,True,0.6877446174621582,0.3122553825378418,False,False
+support_only,412,Thresh,hook,4,350,Yuumi,enchanter,Support,True,0.7169995307922363,0.28300046920776367,False,True
+support_only,412,Thresh,hook,5,26,Zilean,enchanter,Support,True,0.7706455588340759,0.22935444116592407,False,True
+support_only,427,Ivern,enchanter,1,518,Neeko,mage_support,Mage,True,0.36697959899902344,0.6330204010009766,False,False
+support_only,427,Ivern,enchanter,2,9,Fiddlesticks,mage_support,Mage,True,0.39896923303604126,0.6010307669639587,False,False
+support_only,427,Ivern,enchanter,3,40,Janna,enchanter,Support,True,0.42740362882614136,0.5725963711738586,True,True
+support_only,427,Ivern,enchanter,4,74,Heimerdinger,mage_support,Mage,True,0.5279779434204102,0.47202205657958984,False,False
+support_only,427,Ivern,enchanter,5,16,Soraka,enchanter,Support,True,0.5714251399040222,0.4285748600959778,True,True
+support_only,432,Bard,roamer,1,526,Rell,engage_tank,Tank,True,0.6090254783630371,0.3909745216369629,False,False
+support_only,432,Bard,roamer,2,57,Maokai,engage_tank,Tank,True,0.7103973627090454,0.2896026372909546,False,False
+support_only,432,Bard,roamer,3,80,Pantheon,engage_tank,Fighter,True,0.715659499168396,0.284340500831604,False,False
+support_only,432,Bard,roamer,4,902,Milio,enchanter,Support,True,0.7377471923828125,0.2622528076171875,False,True
+support_only,432,Bard,roamer,5,25,Morgana,catcher,Mage,True,0.7610055208206177,0.23899447917938232,False,False
+support_only,497,Rakan,engage_tank,1,201,Braum,warden,Support,True,0.545534610748291,0.454465389251709,False,True
+support_only,497,Rakan,engage_tank,2,267,Nami,enchanter,Support,True,0.5776467323303223,0.42235326766967773,False,True
+support_only,497,Rakan,engage_tank,3,89,Leona,engage_tank,Tank,True,0.6193817853927612,0.38061821460723877,True,False
+support_only,497,Rakan,engage_tank,4,888,Renata Glasc,enchanter,Support,True,0.6208844184875488,0.37911558151245117,False,True
+support_only,497,Rakan,engage_tank,5,223,Tahm Kench,warden,Support,True,0.6390412449836731,0.3609587550163269,False,True
+support_only,518,Neeko,mage_support,1,427,Ivern,enchanter,Support,True,0.36697959899902344,0.6330204010009766,False,False
+support_only,518,Neeko,mage_support,2,80,Pantheon,engage_tank,Fighter,True,0.39248543977737427,0.6075145602226257,False,False
+support_only,518,Neeko,mage_support,3,9,Fiddlesticks,mage_support,Mage,True,0.41950005292892456,0.5804999470710754,True,True
+support_only,518,Neeko,mage_support,4,74,Heimerdinger,mage_support,Mage,True,0.5573093891143799,0.4426906108856201,True,True
+support_only,518,Neeko,mage_support,5,111,Nautilus,engage_tank,Tank,True,0.577364444732666,0.422635555267334,False,False
+support_only,526,Rell,engage_tank,1,223,Tahm Kench,warden,Support,True,0.43318992853164673,0.5668100714683533,False,False
+support_only,526,Rell,engage_tank,2,10,Kayle,enchanter,Fighter,True,0.5117288827896118,0.4882711172103882,False,False
+support_only,526,Rell,engage_tank,3,43,Karma,enchanter,Mage,True,0.523432731628418,0.47656726837158203,False,False
+support_only,526,Rell,engage_tank,4,902,Milio,enchanter,Support,True,0.5559635162353516,0.44403648376464844,False,False
+support_only,526,Rell,engage_tank,5,267,Nami,enchanter,Support,True,0.5871489644050598,0.4128510355949402,False,False
+support_only,555,Pyke,roamer,1,32,Amumu,engage_tank,Tank,True,0.5505785942077637,0.44942140579223633,False,False
+support_only,555,Pyke,roamer,2,43,Karma,enchanter,Mage,True,0.5624942779541016,0.43750572204589844,False,False
+support_only,555,Pyke,roamer,3,53,Blitzcrank,hook,Tank,True,0.719475269317627,0.28052473068237305,False,False
+support_only,555,Pyke,roamer,4,526,Rell,engage_tank,Tank,True,0.7451239824295044,0.2548760175704956,False,False
+support_only,555,Pyke,roamer,5,57,Maokai,engage_tank,Tank,True,0.7616141438484192,0.2383858561515808,False,False
+support_only,888,Renata Glasc,enchanter,1,12,Alistar,engage_tank,Tank,True,0.3739417791366577,0.6260582208633423,False,False
+support_only,888,Renata Glasc,enchanter,2,101,Xerath,mage_support,Mage,True,0.5001850128173828,0.4998149871826172,False,False
+support_only,888,Renata Glasc,enchanter,3,74,Heimerdinger,mage_support,Mage,True,0.5179158449172974,0.48208415508270264,False,False
+support_only,888,Renata Glasc,enchanter,4,89,Leona,engage_tank,Tank,True,0.5933459997177124,0.4066540002822876,False,False
+support_only,888,Renata Glasc,enchanter,5,267,Nami,enchanter,Support,True,0.607938826084137,0.39206117391586304,True,True
+support_only,902,Milio,enchanter,1,526,Rell,engage_tank,Tank,True,0.5559635162353516,0.44403648376464844,False,False
+support_only,902,Milio,enchanter,2,43,Karma,enchanter,Mage,True,0.6168027520179749,0.38319724798202515,True,False
+support_only,902,Milio,enchanter,3,44,Taric,warden,Support,True,0.6579328775405884,0.3420671224594116,False,True
+support_only,902,Milio,enchanter,4,10,Kayle,enchanter,Fighter,True,0.6781264543533325,0.3218735456466675,True,False
+support_only,902,Milio,enchanter,5,74,Heimerdinger,mage_support,Mage,True,0.6817021369934082,0.3182978630065918,False,False

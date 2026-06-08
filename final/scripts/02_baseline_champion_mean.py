@@ -66,11 +66,24 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, label: str) -> Dict:
     }
 
 
+def weighted_mean(values: pd.Series, weights: pd.Series) -> float:
+    w_sum = float(weights.sum())
+    if w_sum <= 1e-8:
+        return float(values.mean())
+    return float((values * weights).sum() / w_sum)
+
+
 def run_baseline(df_train: pd.DataFrame, df_val: pd.DataFrame,
                  target_col: str, label: str) -> tuple[Dict, pd.DataFrame]:
-    """Compute mean per champion on train, predict on val."""
-    means = df_train.groupby(CHAMPION_COL)[target_col].mean()
-    global_mean = float(df_train[target_col].mean())
+    """Compute sample-weighted mean per champion on train, predict on val."""
+    if "sample_weight" not in df_train.columns:
+        raise SystemExit("[Weights] Missing required sample_weight column for champion mean baseline.")
+
+    weights = df_train["sample_weight"].astype(np.float64)
+    means = df_train.groupby(CHAMPION_COL).apply(
+        lambda g: weighted_mean(g[target_col].astype(np.float64), g["sample_weight"].astype(np.float64))
+    )
+    global_mean = weighted_mean(df_train[target_col].astype(np.float64), weights)
 
     y_pred = df_val[CHAMPION_COL].map(means).fillna(global_mean).to_numpy()
     y_true = df_val[target_col].to_numpy()
@@ -79,6 +92,8 @@ def run_baseline(df_train: pd.DataFrame, df_val: pd.DataFrame,
     metrics["n_train"] = int(len(df_train))
     metrics["n_champions_in_train"] = int(len(means))
     metrics["global_mean"] = global_mean
+    metrics["sample_weight_column"] = "sample_weight"
+    metrics["used_sample_weight"] = True
     metrics["n_unseen_champions_in_val"] = int((~df_val[CHAMPION_COL].isin(means.index)).sum())
 
     # Per-champion table
@@ -118,10 +133,19 @@ def main() -> None:
         if target_col not in df_val.columns:
             continue
         y_true = df_val[target_col].to_numpy()
-        y_pred = np.full_like(y_true, df_train[target_col].mean())
+        if "sample_weight" not in df_train.columns:
+            raise SystemExit("[Weights] Missing required sample_weight column for global mean baseline.")
+        global_mean = weighted_mean(
+            df_train[target_col].astype(np.float64),
+            df_train["sample_weight"].astype(np.float64),
+        )
+        y_pred = np.full_like(y_true, global_mean)
         m = compute_metrics(y_true, y_pred, label)
         m["model"] = f"global_mean_{label}"
         m["n_train"] = int(len(df_train))
+        m["global_mean"] = global_mean
+        m["sample_weight_column"] = "sample_weight"
+        m["used_sample_weight"] = True
         results.append(m)
         print(f"[Global mean {label}] R2={m['r2']:.4f}  (this should be ~0 by definition)")
 

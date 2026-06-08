@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
 """
-Polished CLI prototype for support roaming inference from draft data.
+CLI prototype for support-roaming inference from draft data.
 
-The CLI loads the final HistGradientBoosting model and predicts the expected
-support_roam_score from champion select features. It supports:
-
-  - interactive single-draft mode,
-  - non-interactive flags,
-  - batch CSV/JSON drafts,
-  - nearest champions from learned MLP embeddings,
-  - local SHAP explanations when available.
-
-The final GBT was trained with champion ids, summoner spells and side. The
-prototype asks primarily for the 10 champions + side; if summoner spells are
-not supplied it fills standard role defaults and reports that assumption.
+The client uses the final report protocol: 10 champion IDs + side. It supports
+single-draft, JSON, and batch modes, and can select any raw-scale model from
+the final main comparison table.
 """
 
 from __future__ import annotations
@@ -27,24 +18,57 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple
 
-# Avoid a noisy loky warning on Windows when joblib cannot inspect physical cores.
 os.environ.setdefault("LOKY_MAX_CPU_COUNT", "1")
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import normalize
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MODEL_DIR = REPO_ROOT / "final" / "models" / "gbt"
+DEFAULT_MODELS_ROOT = REPO_ROOT / "final" / "models"
 DEFAULT_TRAIN_PATH = REPO_ROOT / "final" / "data" / "training" / "train.parquet"
+DEFAULT_METRICS_TABLE = REPO_ROOT / "final" / "analysis" / "model_comparison" / "final_main_table_raw.csv"
 DEFAULT_CHAMPION_CLASSES = REPO_ROOT / "final" / "data" / "champion_classes.json"
 DEFAULT_CHAMPION_ARCHETYPES = REPO_ROOT / "final" / "data" / "champion_archetypes.json"
-DEFAULT_EMBEDDINGS = REPO_ROOT / "final" / "models" / "mlp_per_role" / "embeddings_raw_ally_utility.json"
 
+MODEL_KEYS = ("histgbt", "mlp_onehot", "mlp_embed", "mlp_per_role", "champion_mean", "global_mean")
+REPORT_MODEL_NAMES = {
+    "histgbt": "HistGBT",
+    "mlp_onehot": "MLP OneHot",
+    "mlp_embed": "MLP Embed Shared",
+    "mlp_per_role": "MLP Per-Role + Interactions",
+    "champion_mean": "Champion Mean",
+    "global_mean": "Global Mean",
+}
+MODEL_DIRS = {
+    "histgbt": "gbt",
+    "mlp_onehot": "mlp_onehot",
+    "mlp_embed": "mlp_embed",
+    "mlp_per_role": "mlp_per_role",
+}
+MODEL_FILES = {
+    "histgbt": "gbt_model_raw.joblib",
+    "mlp_onehot": "mlp_onehot_raw.pt",
+    "mlp_embed": "mlp_embed_raw.pt",
+    "mlp_per_role": "mlp_per_role_raw.pt",
+}
+CANONICAL_FEATURE_COLUMNS = [
+    "ally_top_champion_id",
+    "ally_jungle_champion_id",
+    "ally_middle_champion_id",
+    "ally_bottom_champion_id",
+    "ally_utility_champion_id",
+    "enemy_top_champion_id",
+    "enemy_jungle_champion_id",
+    "enemy_middle_champion_id",
+    "enemy_bottom_champion_id",
+    "enemy_utility_champion_id",
+    "side",
+]
+CHAMPION_COLS = [c for c in CANONICAL_FEATURE_COLUMNS if c.endswith("_champion_id")]
 ROLES: Tuple[Tuple[str, str], ...] = (
     ("top", "Top"),
     ("jungle", "Jungle"),
@@ -53,27 +77,6 @@ ROLES: Tuple[Tuple[str, str], ...] = (
     ("utility", "Support"),
 )
 SIDES: Tuple[str, str] = ("ally", "enemy")
-
-SPELL_IDS: Dict[str, int] = {
-    "cleanse": 1,
-    "exhaust": 3,
-    "flash": 4,
-    "ghost": 6,
-    "heal": 7,
-    "smite": 11,
-    "teleport": 12,
-    "ignite": 14,
-    "barrier": 21,
-}
-SPELL_NAMES_BY_ID: Dict[int, str] = {spell_id: name for name, spell_id in SPELL_IDS.items()}
-DEFAULT_ROLE_SPELLS: Dict[str, Tuple[int, int]] = {
-    "top": (4, 12),
-    "jungle": (4, 11),
-    "middle": (4, 12),
-    "bottom": (4, 21),
-    "utility": (4, 14),
-}
-
 PROFILE_BANDS: Tuple[Tuple[float, str], ...] = (
     (0.25, "Perfil de laning - el support tiende a quedarse en botlane"),
     (0.40, "Perfil mixto - roaming ocasional pero anclado a bot"),
@@ -98,7 +101,6 @@ class PredictionResult:
     confidence_score: float
     percentile: Optional[float]
     unknown_features: List[str]
-    similar_champions: List[Dict[str, Any]]
     top_features: List[Dict[str, Any]]
     explanation_method: str
     assumptions: List[str]
@@ -111,6 +113,20 @@ class MatchupResult:
     delta: float
     label: str
     reading: str
+
+
+class DraftPredictor(Protocol):
+    key: str
+    model_label: str
+    feature_columns: List[str]
+    no_shap: bool
+
+    def predict_score(self, row: pd.DataFrame) -> float: ...
+    def unknown_features(self, row: pd.DataFrame) -> List[str]: ...
+    def target_percentile(self, score: float) -> Optional[float]: ...
+    def confidence(self, score: float, unknown_count: int) -> Tuple[str, float]: ...
+    def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]: ...
+    def display_metrics(self) -> Dict[str, str]: ...
 
 
 def normalize_key(value: Any) -> str:
@@ -170,55 +186,24 @@ def confidence_label(value: float) -> str:
     return "baja"
 
 
-def parse_spell_pair(raw: Optional[str], role: str) -> Tuple[Tuple[int, int], bool]:
-    if raw is None or not str(raw).strip():
-        return DEFAULT_ROLE_SPELLS[role], True
-    tokens = [t for t in re.split(r"[,/|+ ]+", str(raw).strip()) if t]
-    if len(tokens) != 2:
-        raise ValueError(f"Expected two summoner spells for {role}, got: {raw}")
-    values: List[int] = []
-    for token in tokens:
-        if token.isdigit():
-            values.append(int(token))
-            continue
-        key = normalize_key(token)
-        if key not in SPELL_IDS:
-            valid = ", ".join(sorted(SPELL_IDS))
-            raise ValueError(f"Unknown summoner spell '{token}'. Valid names: {valid}")
-        values.append(SPELL_IDS[key])
-    return (values[0], values[1]), False
-
-
-def format_spell_pair(spells: Tuple[int, int]) -> str:
-    return ",".join(SPELL_NAMES_BY_ID.get(spell_id, str(spell_id)) for spell_id in spells)
-
-
 def load_champion_info(classes_path: Path, archetypes_path: Path) -> Dict[int, ChampionInfo]:
     classes_raw = read_json(classes_path) if classes_path.exists() else {}
     archetypes_raw = read_json(archetypes_path) if archetypes_path.exists() else {}
     archetype_champs = archetypes_raw.get("champions", {}) if isinstance(archetypes_raw, dict) else {}
 
     ids: set[int] = set()
-    for key in classes_raw.keys():
-        try:
-            ids.add(int(key))
-        except (TypeError, ValueError):
-            pass
-    for key in archetype_champs.keys():
-        try:
-            ids.add(int(key))
-        except (TypeError, ValueError):
-            pass
+    for source in (classes_raw, archetype_champs):
+        for key in source.keys():
+            try:
+                ids.add(int(key))
+            except (TypeError, ValueError):
+                pass
 
     info: Dict[int, ChampionInfo] = {}
     for cid in sorted(ids):
         class_entry = classes_raw.get(str(cid), {}) if isinstance(classes_raw, dict) else {}
         archetype_entry = archetype_champs.get(str(cid), {}) if isinstance(archetype_champs, dict) else {}
-        name = (
-            class_entry.get("name")
-            or archetype_entry.get("name")
-            or f"champ_{cid}"
-        )
+        name = class_entry.get("name") or archetype_entry.get("name") or f"champ_{cid}"
         info[cid] = ChampionInfo(
             champion_id=cid,
             name=str(name),
@@ -292,6 +277,13 @@ def resolve_champion(raw: Any, lookup: Mapping[str, int], info: Mapping[int, Cha
     raise ValueError(f"Unknown champion: {raw}.{hint}")
 
 
+def first_present(values: Mapping[str, Any], keys: Sequence[str]) -> Optional[Any]:
+    for key in keys:
+        if key in values and pd.notna(values[key]) and str(values[key]).strip() != "":
+            return values[key]
+    return None
+
+
 def categorical_frame(df: pd.DataFrame, columns: Sequence[str]) -> pd.DataFrame:
     out = df.loc[:, list(columns)].copy()
     for col in columns:
@@ -299,63 +291,69 @@ def categorical_frame(df: pd.DataFrame, columns: Sequence[str]) -> pd.DataFrame:
     return out
 
 
-class GbtDraftPredictor:
+def find_run_dirs(model_dir: Path, required_file: str) -> List[Path]:
+    seed_dirs = [
+        model_dir / f"seed{seed}"
+        for seed in (42, 123, 456)
+        if (model_dir / f"seed{seed}" / required_file).exists()
+    ]
+    if seed_dirs:
+        return seed_dirs
+    if (model_dir / required_file).exists():
+        return [model_dir]
+    raise FileNotFoundError(f"No model artifact '{required_file}' found under {model_dir}")
+
+
+def load_report_metrics(path: Path) -> Dict[str, Dict[str, str]]:
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path, dtype=str).fillna("")
+    return {str(row["model"]): row.to_dict() for _, row in df.iterrows()}
+
+
+def parse_metric_mean(value: str) -> Optional[float]:
+    value = str(value or "").strip()
+    if not value:
+        return None
+    try:
+        return float(value.split("+/-")[0].strip())
+    except ValueError:
+        return None
+
+
+class BasePredictor:
+    key: str
+    model_label: str
+    feature_columns: List[str]
+
     def __init__(
         self,
-        model_dir: Path,
+        key: str,
+        model_label: str,
         train_path: Path,
         champion_info: Mapping[int, ChampionInfo],
-        embeddings_path: Path,
+        report_metrics: Mapping[str, Mapping[str, str]],
         background_size: int,
         no_shap: bool,
     ) -> None:
-        self.model_dir = model_dir
+        self.key = key
+        self.model_label = model_label
         self.train_path = train_path
         self.champion_info = champion_info
-        self.embeddings_path = embeddings_path
+        self.report_metrics = dict(report_metrics.get(model_label, {}))
         self.background_size = background_size
         self.no_shap = no_shap
-
-        self.model = joblib.load(model_dir / "gbt_model_raw.joblib")
-        preprocess = joblib.load(model_dir / "preprocess.joblib")
-        self.encoder = preprocess["encoder"]
-        self.feature_columns = list(preprocess["feature_columns"])
-        self.metrics = self._load_metrics(model_dir / "metrics.json")
-        self._category_sets = [set(map(str, cats)) for cats in self.encoder.categories_]
+        self.feature_columns = list(CANONICAL_FEATURE_COLUMNS)
         self._target_values: Optional[np.ndarray] = None
-        self._background: Optional[np.ndarray] = None
-        self._background_mode: Optional[np.ndarray] = None
-        self._embedding_frame: Optional[pd.DataFrame] = None
-        self._embedding_matrix: Optional[np.ndarray] = None
 
-    @staticmethod
-    def _load_metrics(path: Path) -> Dict[str, Any]:
-        if not path.exists():
-            return {}
-        rows = read_json(path)
-        if isinstance(rows, list):
-            for row in rows:
-                if row.get("target") == "raw":
-                    return dict(row)
-        return rows if isinstance(rows, dict) else {}
-
-    def encode(self, row: pd.DataFrame) -> np.ndarray:
-        for col in self.feature_columns:
-            if col not in row.columns:
-                row[col] = "__MISSING__"
-        return self.encoder.transform(categorical_frame(row, self.feature_columns))
-
-    def predict_score(self, row: pd.DataFrame) -> float:
-        encoded = self.encode(row)
-        return float(np.clip(self.model.predict(encoded)[0], 0.0, 1.0))
-
-    def unknown_features(self, row: pd.DataFrame) -> List[str]:
-        unknown: List[str] = []
-        for idx, col in enumerate(self.feature_columns):
-            value = str(row.iloc[0].get(col, "__MISSING__"))
-            if value not in self._category_sets[idx]:
-                unknown.append(col)
-        return unknown
+    def display_metrics(self) -> Dict[str, str]:
+        return {
+            "r2": str(self.report_metrics.get("r2", "")),
+            "spearman_corr": str(self.report_metrics.get("spearman_corr", "")),
+            "mae": str(self.report_metrics.get("mae", "")),
+            "n_eval": str(self.report_metrics.get("n_eval", "")),
+            "n_seeds": str(self.report_metrics.get("n_seeds", "")),
+        }
 
     def target_percentile(self, score: float) -> Optional[float]:
         if self._target_values is None:
@@ -375,10 +373,63 @@ class GbtDraftPredictor:
         boundaries = np.asarray([0.25, 0.40, 0.55], dtype=float)
         distance = float(np.min(np.abs(boundaries - score)))
         stability = min(distance / 0.08, 1.0)
-        spearman = float(self.metrics.get("spearman_corr", 0.38) or 0.38)
+        spearman = parse_metric_mean(self.report_metrics.get("spearman_corr", "")) or 0.38
         model_quality = min(max(spearman / 0.45, 0.0), 1.0)
         value = 0.45 * coverage + 0.35 * stability + 0.20 * model_quality
         return confidence_label(value), float(value)
+
+    def unknown_features(self, row: pd.DataFrame) -> List[str]:
+        return []
+
+    def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]:
+        return [], "disabled"
+
+    def display_value(self, col: str, value: Any) -> str:
+        if col.endswith("_champion_id"):
+            try:
+                cid = int(float(value))
+                return self.champion_info.get(cid, ChampionInfo(cid, str(cid))).name
+            except (TypeError, ValueError):
+                return str(value)
+        return str(value)
+
+
+class GbtEnsemblePredictor(BasePredictor):
+    def __init__(self, model_dir: Path, *args: Any, **kwargs: Any) -> None:
+        super().__init__("histgbt", REPORT_MODEL_NAMES["histgbt"], *args, **kwargs)
+        self.run_dirs = find_run_dirs(model_dir, MODEL_FILES["histgbt"])
+        self.models = []
+        self.encoders = []
+        self.category_sets: List[set[str]] = []
+        self._background: Optional[np.ndarray] = None
+        self._background_mode: Optional[np.ndarray] = None
+        for run_dir in self.run_dirs:
+            self.models.append(joblib.load(run_dir / "gbt_model_raw.joblib"))
+            preprocess = joblib.load(run_dir / "preprocess.joblib")
+            feature_columns = list(preprocess["feature_columns"])
+            if feature_columns != CANONICAL_FEATURE_COLUMNS:
+                raise ValueError(f"{run_dir} does not use final feature protocol.")
+            self.encoders.append(preprocess["encoder"])
+        self.feature_columns = list(CANONICAL_FEATURE_COLUMNS)
+        self.category_sets = [set(map(str, cats)) for cats in self.encoders[0].categories_]
+
+    def encode(self, row: pd.DataFrame, encoder: Any) -> np.ndarray:
+        return encoder.transform(categorical_frame(row, self.feature_columns))
+
+    def predict_score(self, row: pd.DataFrame) -> float:
+        preds = [
+            float(model.predict(self.encode(row, encoder))[0])
+            for model, encoder in zip(self.models, self.encoders)
+        ]
+        return float(np.clip(np.mean(preds), 0.0, 1.0))
+
+    def unknown_features(self, row: pd.DataFrame) -> List[str]:
+        unknown: List[str] = []
+        for idx, col in enumerate(self.feature_columns):
+            value = str(row.iloc[0].get(col, "__MISSING__"))
+            if value not in self.category_sets[idx]:
+                unknown.append(col)
+        return unknown
 
     def load_background(self) -> Optional[np.ndarray]:
         if self._background is not None:
@@ -389,12 +440,9 @@ class GbtDraftPredictor:
             df = pd.read_parquet(self.train_path, columns=self.feature_columns)
             if len(df) > self.background_size:
                 df = df.sample(n=self.background_size, random_state=42)
-            self._background = self.encoder.transform(categorical_frame(df, self.feature_columns))
+            self._background = self.encoders[0].transform(categorical_frame(df, self.feature_columns))
             self._background_mode = np.asarray(
-                [
-                    pd.Series(self._background[:, i]).mode(dropna=False).iloc[0]
-                    for i in range(self._background.shape[1])
-                ],
+                [pd.Series(self._background[:, i]).mode(dropna=False).iloc[0] for i in range(self._background.shape[1])],
                 dtype=np.float32,
             )
         except Exception:
@@ -402,39 +450,25 @@ class GbtDraftPredictor:
             self._background_mode = None
         return self._background
 
-    def explain_local(
-        self,
-        row: pd.DataFrame,
-        score: float,
-        top_n: int,
-    ) -> Tuple[List[Dict[str, Any]], str]:
+    def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]:
         if self.no_shap:
             return [], "disabled"
-
-        encoded = self.encode(row)
+        encoded = self.encode(row, self.encoders[0])
         background = self.load_background()
         if background is None or len(background) == 0:
             return self._fallback_deltas(row, encoded, score, top_n), "fallback_delta"
-
         try:
             import shap
 
             masker = shap.maskers.Independent(background)
-            explainer = shap.PermutationExplainer(self.model.predict, masker, seed=42)
+            explainer = shap.PermutationExplainer(self.models[0].predict, masker, seed=42)
             values = explainer(encoded, max_evals=2 * encoded.shape[1] + 1)
             contribs = np.asarray(values.values[0], dtype=float)
-            base_value = float(np.asarray(values.base_values).reshape(-1)[0])
-            return self._format_contributions(row, contribs, top_n, base_value), "shap_permutation"
+            return self._format_contributions(row, contribs, top_n), "shap_permutation"
         except Exception:
             return self._fallback_deltas(row, encoded, score, top_n), "fallback_delta"
 
-    def _fallback_deltas(
-        self,
-        row: pd.DataFrame,
-        encoded: np.ndarray,
-        score: float,
-        top_n: int,
-    ) -> List[Dict[str, Any]]:
+    def _fallback_deltas(self, row: pd.DataFrame, encoded: np.ndarray, score: float, top_n: int) -> List[Dict[str, Any]]:
         background = self.load_background()
         if background is None:
             return []
@@ -447,16 +481,10 @@ class GbtDraftPredictor:
         for i in range(encoded.shape[1]):
             replaced = encoded.copy()
             replaced[0, i] = self._background_mode[i]
-            deltas.append(score - float(self.model.predict(replaced)[0]))
-        return self._format_contributions(row, np.asarray(deltas, dtype=float), top_n, None)
+            deltas.append(score - float(self.models[0].predict(replaced)[0]))
+        return self._format_contributions(row, np.asarray(deltas, dtype=float), top_n)
 
-    def _format_contributions(
-        self,
-        row: pd.DataFrame,
-        contribs: np.ndarray,
-        top_n: int,
-        base_value: Optional[float],
-    ) -> List[Dict[str, Any]]:
+    def _format_contributions(self, row: pd.DataFrame, contribs: np.ndarray, top_n: int) -> List[Dict[str, Any]]:
         order = np.argsort(np.abs(contribs))[::-1][:top_n]
         out: List[Dict[str, Any]] = []
         for idx in order:
@@ -467,107 +495,269 @@ class GbtDraftPredictor:
                     "value": self.display_value(col, row.iloc[0].get(col)),
                     "contribution": float(contribs[int(idx)]),
                     "direction": "sube" if contribs[int(idx)] >= 0 else "baja",
-                    "base_value": base_value,
                 }
             )
         return out
 
-    def display_value(self, col: str, value: Any) -> str:
-        if col.endswith("_champion_id"):
-            try:
-                cid = int(float(value))
-                return self.champion_info.get(cid, ChampionInfo(cid, str(cid))).name
-            except (TypeError, ValueError):
-                return str(value)
-        if col.endswith("_summoner1_id") or col.endswith("_summoner2_id"):
-            try:
-                return SPELL_NAMES_BY_ID.get(int(float(value)), str(value))
-            except (TypeError, ValueError):
-                return str(value)
-        return str(value)
 
-    def similar_champions(self, champion_id: int, top_n: int) -> List[Dict[str, Any]]:
-        if self._embedding_frame is None or self._embedding_matrix is None:
-            self._load_embeddings()
-        if self._embedding_frame is None or self._embedding_matrix is None:
-            return []
+def torch_load_state(path: Path, device: Any) -> Any:
+    import torch
 
-        frame = self._embedding_frame
-        matches = frame.index[frame["champion_id"] == int(champion_id)].tolist()
-        if not matches:
-            return []
-        idx = matches[0]
-        sims = self._embedding_matrix @ self._embedding_matrix[idx]
-        order = np.argsort(sims)[::-1]
-        out: List[Dict[str, Any]] = []
-        for neighbor_idx in order:
-            if int(neighbor_idx) == int(idx):
-                continue
-            row = frame.iloc[int(neighbor_idx)]
-            out.append(
-                {
-                    "champion_id": int(row["champion_id"]),
-                    "name": str(row["name"]),
-                    "similarity": float(sims[int(neighbor_idx)]),
-                    "support_archetype": str(row.get("support_archetype", "")),
-                }
+    try:
+        return torch.load(path, map_location=device, weights_only=True)
+    except TypeError:
+        return torch.load(path, map_location=device)
+
+
+class MLPEnsemblePredictor(BasePredictor):
+    def __init__(self, key: str, model_dir: Path, *args: Any, **kwargs: Any) -> None:
+        super().__init__(key, REPORT_MODEL_NAMES[key], *args, **kwargs)
+        self.run_dirs = find_run_dirs(model_dir, MODEL_FILES[key])
+        self.models = []
+        self.vocabs = []
+        self.device = None
+        self._torch = None
+        for run_dir in self.run_dirs:
+            model, vocab = self._load_one_model(key, run_dir)
+            self.models.append(model)
+            self.vocabs.append(vocab)
+
+    def _load_one_model(self, key: str, run_dir: Path) -> Tuple[Any, Dict[int, int]]:
+        import torch
+        import torch.nn as nn
+        import torch.nn.functional as F
+
+        self._torch = torch
+        self.device = torch.device("cpu")
+        config = read_json(run_dir / "model_config.json")
+        vocab_raw = read_json(run_dir / "vocab.json")
+        vocab = {int(k): int(v) for k, v in vocab_raw.items()}
+        hidden_dims = [int(v) for v in config["hidden_dims"]]
+        vocab_size = int(config["vocab_size"])
+        n_slots = int(config["n_champion_slots"])
+        embed_dim = int(config.get("embed_dim", 16))
+        dropout = float(config.get("dropout", 0.0))
+
+        class MLPOneHotEval(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.vocab_size = vocab_size
+                layers: List[nn.Module] = []
+                prev = n_slots * vocab_size + 1
+                for dim in hidden_dims:
+                    layers.extend([nn.Linear(prev, dim), nn.ReLU(), nn.BatchNorm1d(dim), nn.Dropout(dropout)])
+                    prev = dim
+                layers.append(nn.Linear(prev, 1))
+                self.net = nn.Sequential(*layers)
+
+            def forward(self, champion_ids: Any, side: Any) -> Any:
+                onehot = F.one_hot(champion_ids, num_classes=self.vocab_size).to(torch.float32)
+                x = torch.cat([onehot.reshape(onehot.shape[0], -1), side.reshape(-1, 1)], dim=1)
+                return self.net(x).squeeze(-1)
+
+        class MLPEmbedEval(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.embed = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
+                layers: List[nn.Module] = []
+                prev = n_slots * embed_dim + 1
+                for dim in hidden_dims:
+                    layers.extend([nn.Linear(prev, dim), nn.ReLU(), nn.BatchNorm1d(dim), nn.Dropout(dropout)])
+                    prev = dim
+                layers.append(nn.Linear(prev, 1))
+                self.head = nn.Sequential(*layers)
+
+            def forward(self, champion_ids: Any, side: Any) -> Any:
+                emb = self.embed(champion_ids).reshape(champion_ids.shape[0], -1)
+                x = torch.cat([emb, side.reshape(-1, 1)], dim=1)
+                return self.head(x).squeeze(-1)
+
+        class MLPPerRoleEval(nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.slot_embeddings = nn.ModuleList([nn.Embedding(vocab_size, embed_dim, padding_idx=0) for _ in range(n_slots)])
+                layers: List[nn.Module] = []
+                prev = n_slots * embed_dim + 1 + 2
+                for dim in hidden_dims:
+                    layers.extend([nn.Linear(prev, dim), nn.ReLU(), nn.BatchNorm1d(dim), nn.Dropout(dropout)])
+                    prev = dim
+                layers.append(nn.Linear(prev, 1))
+                self.head = nn.Sequential(*layers)
+
+            def forward(self, champion_ids: Any, side: Any) -> Any:
+                embs = [emb(champion_ids[:, i]) for i, emb in enumerate(self.slot_embeddings)]
+                flat = torch.cat(embs, dim=1)
+                support_vs_support = (embs[4] * embs[9]).sum(dim=1, keepdim=True)
+                support_adc = (embs[4] * embs[3]).sum(dim=1, keepdim=True)
+                x = torch.cat([flat, side.reshape(-1, 1), support_vs_support, support_adc], dim=1)
+                return self.head(x).squeeze(-1)
+
+        if key == "mlp_onehot":
+            model = MLPOneHotEval()
+        elif key == "mlp_embed":
+            model = MLPEmbedEval()
+        elif key == "mlp_per_role":
+            model = MLPPerRoleEval()
+        else:
+            raise ValueError(f"Unsupported MLP key: {key}")
+        model.load_state_dict(torch_load_state(run_dir / MODEL_FILES[key], self.device))
+        model.eval()
+        return model, vocab
+
+    @staticmethod
+    def encode_champion_ids(row: pd.DataFrame, vocab: Mapping[int, int]) -> np.ndarray:
+        ids = np.zeros((len(row), len(CHAMPION_COLS)), dtype=np.int64)
+        for i, col in enumerate(CHAMPION_COLS):
+            ids[:, i] = (
+                pd.to_numeric(row[col], errors="coerce")
+                .fillna(-1)
+                .astype(int)
+                .map(lambda x: vocab.get(x, 0))
+                .to_numpy(dtype=np.int64)
             )
-            if len(out) >= top_n:
-                break
-        return out
+        return ids
 
-    def _load_embeddings(self) -> None:
-        if not self.embeddings_path.exists():
-            return
-        try:
-            rows = read_json(self.embeddings_path)
-        except Exception:
-            return
-        records: List[Dict[str, Any]] = []
-        vectors: List[List[float]] = []
-        for row in rows:
-            try:
-                cid = int(row["champion_id"])
-                vector = [float(v) for v in row["embedding"]]
-            except (KeyError, TypeError, ValueError):
-                continue
-            champion = self.champion_info.get(cid)
-            records.append(
-                {
-                    "champion_id": cid,
-                    "name": champion.name if champion else str(row.get("name", cid)),
-                    "support_archetype": champion.support_archetype if champion else str(row.get("archetype", "")),
-                }
-            )
-            vectors.append(vector)
-        if not records:
-            return
-        self._embedding_frame = pd.DataFrame.from_records(records)
-        self._embedding_matrix = normalize(np.asarray(vectors, dtype=np.float32), norm="l2")
+    @staticmethod
+    def encode_side(row: pd.DataFrame) -> np.ndarray:
+        return (row["side"].astype(str).str.lower() == "red").astype(np.float32).to_numpy()
 
-    def predict_full(self, row: pd.DataFrame, assumptions: List[str], top_n: int) -> PredictionResult:
-        score = self.predict_score(row)
-        unknown = self.unknown_features(row)
-        conf_label, conf_score = self.confidence(score, len(unknown))
-        support_id = int(row.iloc[0]["ally_utility_champion_id"])
-        similar = self.similar_champions(support_id, top_n=top_n)
-        top_features, method = self.explain_local(row, score, top_n=top_n)
-        return PredictionResult(
-            score=score,
-            profile=score_profile(score),
-            confidence_label=conf_label,
-            confidence_score=conf_score,
-            percentile=self.target_percentile(score),
-            unknown_features=unknown,
-            similar_champions=similar,
-            top_features=top_features,
-            explanation_method=method,
-            assumptions=assumptions,
+    def predict_score(self, row: pd.DataFrame) -> float:
+        torch = self._torch
+        assert torch is not None
+        preds: List[float] = []
+        with torch.no_grad():
+            for model, vocab in zip(self.models, self.vocabs):
+                champ = torch.from_numpy(self.encode_champion_ids(row, vocab)).to(self.device)
+                side = torch.from_numpy(self.encode_side(row)).to(self.device)
+                pred = model(champ, side).cpu().numpy()
+                preds.append(float(pred[0]))
+        return float(np.clip(np.mean(preds), 0.0, 1.0))
+
+    def unknown_features(self, row: pd.DataFrame) -> List[str]:
+        vocab = self.vocabs[0]
+        unknown = []
+        for col in CHAMPION_COLS:
+            cid = int(row.iloc[0][col])
+            if cid not in vocab:
+                unknown.append(col)
+        return unknown
+
+    def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]:
+        if self.no_shap:
+            return [], "disabled"
+        return fallback_deltas_for_predictor(self, row, score, top_n), "fallback_delta"
+
+
+class GlobalMeanPredictor(BasePredictor):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__("global_mean", REPORT_MODEL_NAMES["global_mean"], *args, **kwargs)
+        train = pd.read_parquet(self.train_path, columns=["support_roam_score", "sample_weight"])
+        self.mean = weighted_mean(train["support_roam_score"], train["sample_weight"])
+
+    def predict_score(self, row: pd.DataFrame) -> float:
+        return float(np.clip(self.mean, 0.0, 1.0))
+
+
+class ChampionMeanPredictor(BasePredictor):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__("champion_mean", REPORT_MODEL_NAMES["champion_mean"], *args, **kwargs)
+        train = pd.read_parquet(
+            self.train_path,
+            columns=["ally_utility_champion_id", "support_roam_score", "sample_weight"],
+        )
+        self.global_mean = weighted_mean(train["support_roam_score"], train["sample_weight"])
+        self.means = (
+            train.groupby("ally_utility_champion_id")
+            .apply(lambda g: weighted_mean(g["support_roam_score"], g["sample_weight"]))
+            .to_dict()
         )
 
+    def predict_score(self, row: pd.DataFrame) -> float:
+        cid = int(row.iloc[0]["ally_utility_champion_id"])
+        return float(np.clip(self.means.get(cid, self.global_mean), 0.0, 1.0))
 
-def default_spell_assumption(prefix: str, role: str, spells: Tuple[int, int]) -> str:
-    return f"{prefix}_{role}_spells={format_spell_pair(spells)}"
+    def unknown_features(self, row: pd.DataFrame) -> List[str]:
+        cid = int(row.iloc[0]["ally_utility_champion_id"])
+        return [] if cid in self.means else ["ally_utility_champion_id"]
+
+    def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]:
+        if self.no_shap:
+            return [], "disabled"
+        return [
+            {
+                "feature": "ally_utility_champion_id",
+                "value": self.display_value("ally_utility_champion_id", row.iloc[0]["ally_utility_champion_id"]),
+                "contribution": float(score - self.global_mean),
+                "direction": "sube" if score >= self.global_mean else "baja",
+            }
+        ], "baseline_delta"
+
+
+def weighted_mean(values: pd.Series, weights: pd.Series) -> float:
+    v = values.astype(float).to_numpy()
+    w = weights.astype(float).to_numpy()
+    return float((v * w).sum() / max(w.sum(), 1e-12))
+
+
+def fallback_deltas_for_predictor(predictor: DraftPredictor, row: pd.DataFrame, score: float, top_n: int) -> List[Dict[str, Any]]:
+    deltas: List[Dict[str, Any]] = []
+    for col in predictor.feature_columns:
+        if col == "side":
+            continue
+        replaced = row.copy()
+        if col.endswith("_champion_id"):
+            replaced.at[replaced.index[0], col] = row.iloc[0].get("ally_utility_champion_id")
+        else:
+            continue
+        new_score = predictor.predict_score(replaced)
+        delta = score - new_score
+        deltas.append(
+            {
+                "feature": col,
+                "value": predictor.display_value(col, row.iloc[0].get(col)) if isinstance(predictor, BasePredictor) else str(row.iloc[0].get(col)),
+                "contribution": float(delta),
+                "direction": "sube" if delta >= 0 else "baja",
+            }
+        )
+    deltas.sort(key=lambda item: abs(float(item["contribution"])), reverse=True)
+    return deltas[:top_n]
+
+
+def build_predictor(
+    key: str,
+    models_root: Path,
+    train_path: Path,
+    champion_info: Mapping[int, ChampionInfo],
+    report_metrics: Mapping[str, Mapping[str, str]],
+    background_size: int,
+    no_shap: bool,
+) -> DraftPredictor:
+    common = (train_path, champion_info, report_metrics, background_size, no_shap)
+    if key == "histgbt":
+        return GbtEnsemblePredictor(models_root / MODEL_DIRS[key], *common)
+    if key in {"mlp_onehot", "mlp_embed", "mlp_per_role"}:
+        return MLPEnsemblePredictor(key, models_root / MODEL_DIRS[key], *common)
+    if key == "champion_mean":
+        return ChampionMeanPredictor(*common)
+    if key == "global_mean":
+        return GlobalMeanPredictor(*common)
+    raise ValueError(f"Unknown model key: {key}")
+
+
+def build_predictors(
+    selected: str,
+    models_root: Path,
+    train_path: Path,
+    champion_info: Mapping[int, ChampionInfo],
+    report_metrics: Mapping[str, Mapping[str, str]],
+    background_size: int,
+    no_shap: bool,
+) -> Dict[str, DraftPredictor]:
+    keys = MODEL_KEYS if selected == "all" else (selected,)
+    return {
+        key: build_predictor(key, models_root, train_path, champion_info, report_metrics, background_size, no_shap)
+        for key in keys
+    }
 
 
 def build_row_from_values(
@@ -578,8 +768,6 @@ def build_row_from_values(
     interactive: bool,
 ) -> Tuple[pd.DataFrame, List[str]]:
     row: Dict[str, Any] = {}
-    assumptions: List[str] = []
-
     side = values.get("side")
     if interactive and not side:
         side = prompt_value("Side del equipo aliado (blue/red)", "blue")
@@ -595,49 +783,15 @@ def build_row_from_values(
             if champ_col in feature_columns:
                 raw_champ = first_present(
                     values,
-                    [
-                        champ_col,
-                        f"{prefix}_{role}_champion_name",
-                        f"{prefix}_{role}",
-                        f"{prefix}_{role}_champion",
-                    ],
+                    [champ_col, f"{prefix}_{role}_champion_name", f"{prefix}_{role}", f"{prefix}_{role}_champion"],
                 )
                 if interactive and (raw_champ is None or str(raw_champ).strip() == ""):
                     raw_champ = prompt_value(f"Campeon {side_label} {role_label}")
                 row[champ_col] = resolve_champion(raw_champ, lookup, champion_info)
 
-            spell1_col = f"{prefix}_{role}_summoner1_id"
-            spell2_col = f"{prefix}_{role}_summoner2_id"
-            if spell1_col in feature_columns or spell2_col in feature_columns:
-                raw_spell_pair = first_present(
-                    values,
-                    [
-                        f"{prefix}_{role}_spells",
-                        f"{prefix}_{role}_summoners",
-                    ],
-                )
-                spell1 = values.get(spell1_col)
-                spell2 = values.get(spell2_col)
-                if spell1 is not None and spell2 is not None and str(spell1) != "" and str(spell2) != "":
-                    spells = (int(float(spell1)), int(float(spell2)))
-                    used_default = False
-                else:
-                    spells, used_default = parse_spell_pair(raw_spell_pair, role)
-                row[spell1_col] = spells[0]
-                row[spell2_col] = spells[1]
-                if used_default:
-                    assumptions.append(default_spell_assumption(prefix, role, spells))
-
     for col in feature_columns:
         row.setdefault(col, "__MISSING__")
-    return pd.DataFrame([row], columns=list(feature_columns)), assumptions
-
-
-def first_present(values: Mapping[str, Any], keys: Sequence[str]) -> Optional[Any]:
-    for key in keys:
-        if key in values and pd.notna(values[key]) and str(values[key]).strip() != "":
-            return values[key]
-    return None
+    return pd.DataFrame([row], columns=list(feature_columns)), []
 
 
 def values_from_args(args: argparse.Namespace) -> Dict[str, Any]:
@@ -645,7 +799,6 @@ def values_from_args(args: argparse.Namespace) -> Dict[str, Any]:
     for prefix in SIDES:
         for role, _ in ROLES:
             values[f"{prefix}_{role}"] = getattr(args, f"{prefix}_{role}")
-            values[f"{prefix}_{role}_spells"] = getattr(args, f"{prefix}_{role}_spells")
     return values
 
 
@@ -679,51 +832,78 @@ def swap_team_perspective(row: pd.DataFrame) -> pd.DataFrame:
     return swapped
 
 
+def predict_full(predictor: DraftPredictor, row: pd.DataFrame, assumptions: List[str], top_n: int) -> PredictionResult:
+    score = predictor.predict_score(row)
+    unknown = predictor.unknown_features(row)
+    conf_label, conf_score = predictor.confidence(score, len(unknown))
+    top_features, method = predictor.explain_local(row, score, top_n=top_n)
+    return PredictionResult(
+        score=score,
+        profile=score_profile(score),
+        confidence_label=conf_label,
+        confidence_score=conf_score,
+        percentile=predictor.target_percentile(score),
+        unknown_features=unknown,
+        top_features=top_features,
+        explanation_method=method,
+        assumptions=assumptions,
+    )
+
+
 def predict_matchup(
-    predictor: GbtDraftPredictor,
+    predictor: DraftPredictor,
     row: pd.DataFrame,
     assumptions: List[str],
     top_n: int,
     explain_enemy: bool,
 ) -> MatchupResult:
-    ally = predictor.predict_full(row, assumptions, top_n=top_n)
+    ally = predict_full(predictor, row, assumptions, top_n=top_n)
     original_no_shap = predictor.no_shap
     if not explain_enemy:
         predictor.no_shap = True
-    enemy = predictor.predict_full(swap_team_perspective(row), assumptions, top_n=top_n)
+    enemy = predict_full(predictor, swap_team_perspective(row), assumptions, top_n=top_n)
     predictor.no_shap = original_no_shap
     delta = ally.score - enemy.score
     label, reading = matchup_profile(delta)
     return MatchupResult(ally=ally, enemy=enemy, delta=delta, label=label, reading=reading)
 
 
+def predict_all_models(
+    predictors: Mapping[str, DraftPredictor],
+    row: pd.DataFrame,
+    assumptions: List[str],
+    top_n: int,
+    explain_enemy: bool,
+) -> Dict[str, MatchupResult]:
+    return {
+        key: predict_matchup(predictor, row, assumptions, top_n=top_n, explain_enemy=explain_enemy)
+        for key, predictor in predictors.items()
+    }
+
+
 def print_prediction(
     row: pd.DataFrame,
-    matchup: MatchupResult,
+    matchups: Mapping[str, MatchupResult],
     champion_info: Mapping[int, ChampionInfo],
-    predictor: GbtDraftPredictor,
+    primary_key: str,
+    predictors: Mapping[str, DraftPredictor],
 ) -> None:
     names = row_champion_names(row, champion_info)
     support_id = int(row.iloc[0]["ally_utility_champion_id"])
     support = champion_info.get(support_id, ChampionInfo(support_id, str(support_id)))
     enemy_support_id = int(row.iloc[0]["enemy_utility_champion_id"])
     enemy_support = champion_info.get(enemy_support_id, ChampionInfo(enemy_support_id, str(enemy_support_id)))
+    matchup = matchups[primary_key]
     result = matchup.ally
+    predictor = predictors[primary_key]
 
     print("\n=== Draft aliado ===")
-    print(
-        "Top: {top} | Jungle: {jungle} | Mid: {middle} | ADC: {bottom} | Support: {utility}".format(
-            **names["ally"]
-        )
-    )
+    print("Top: {top} | Jungle: {jungle} | Mid: {middle} | ADC: {bottom} | Support: {utility}".format(**names["ally"]))
     print("\n=== Draft enemigo ===")
-    print(
-        "Top: {top} | Jungle: {jungle} | Mid: {middle} | ADC: {bottom} | Support: {utility}".format(
-            **names["enemy"]
-        )
-    )
+    print("Top: {top} | Jungle: {jungle} | Mid: {middle} | ADC: {bottom} | Support: {utility}".format(**names["enemy"]))
 
-    print("\n=== Prediccion ===")
+    print("\n=== Prediccion principal ===")
+    print(f"Modelo: {predictor.model_label}")
     print(f"Support aliado: {support.name}")
     if support.support_archetype:
         print(f"Arquetipo de referencia: {support.support_archetype}")
@@ -731,14 +911,13 @@ def print_prediction(
     if result.percentile is not None:
         print(f"Percentil vs distribucion de train: {result.percentile:.1f}")
     print(f"Lectura: {result.profile}")
-    print(
-        f"Confianza: {result.confidence_label} "
-        f"({result.confidence_score:.2f}; no es una probabilidad calibrada)"
-    )
-    spearman = predictor.metrics.get("spearman_corr")
-    r2 = predictor.metrics.get("r2")
-    if spearman is not None and r2 is not None:
-        print(f"Modelo: HistGBT raw, val R2={float(r2):.3f}, Spearman={float(spearman):.3f}")
+    print(f"Confianza: {result.confidence_label} ({result.confidence_score:.2f}; no es una probabilidad calibrada)")
+    metrics = predictor.display_metrics()
+    if metrics.get("r2"):
+        print(
+            f"Metricas informe: R2={metrics.get('r2')} | "
+            f"Spearman={metrics.get('spearman_corr')} | MAE={metrics.get('mae')} | n={metrics.get('n_eval')}"
+        )
 
     print("\n=== Matchup support vs support ===")
     print(f"Support aliado: {support.name} -> {matchup.ally.score:.4f} ({matchup.ally.profile})")
@@ -748,30 +927,22 @@ def print_prediction(
     print(matchup.reading)
     print("Cuidado: esto compara tendencia de roaming, no poder de 2v2 ni probabilidad de ganar linea.")
 
-    if result.similar_champions:
-        print("\nCampeones similares por embeddings:")
-        for item in result.similar_champions:
-            arch = f", {item['support_archetype']}" if item.get("support_archetype") else ""
-            print(f"- {item['name']} (sim={item['similarity']:.3f}{arch})")
+    if len(matchups) > 1:
+        print("\n=== Comparacion de modelos finales ===")
+        for key, item in sorted(matchups.items(), key=lambda kv: kv[1].ally.score, reverse=True):
+            print(f"- {predictors[key].model_label}: ally={item.ally.score:.4f} enemy={item.enemy.score:.4f} delta={item.delta:+.4f}")
 
     if result.top_features:
         method_label = "SHAP local" if result.explanation_method == "shap_permutation" else "delta local"
         print(f"\nTop features que influyen ({method_label}):")
         for item in result.top_features:
             sign = "+" if item["contribution"] >= 0 else ""
-            print(
-                f"- {item['feature']}={item['value']}: "
-                f"{sign}{item['contribution']:.4f} ({item['direction']} el score)"
-            )
+            print(f"- {item['feature']}={item['value']}: {sign}{item['contribution']:.4f} ({item['direction']} el score)")
     elif result.explanation_method == "disabled":
         print("\nExplicacion local: desactivada por --no-shap.")
 
     if result.unknown_features:
         print("\nAviso: features no vistas en entrenamiento: " + ", ".join(result.unknown_features))
-    if result.assumptions:
-        print("\nSuposiciones usadas:")
-        for assumption in result.assumptions:
-            print(f"- {assumption}")
     print("\nNota: el modelo solo observa draft pregame; no observa eventos reales de la partida.")
 
 
@@ -791,19 +962,26 @@ def prediction_to_dict(
         "confidence_label": result.confidence_label,
         "confidence_score": result.confidence_score,
         "percentile_train": result.percentile,
-        "similar_champions": result.similar_champions,
         "top_features": result.top_features,
         "explanation_method": result.explanation_method,
         "unknown_features": result.unknown_features,
     }
 
 
-def result_to_dict(row: pd.DataFrame, matchup: MatchupResult, champion_info: Mapping[int, ChampionInfo]) -> Dict[str, Any]:
+def matchup_to_dict(
+    row: pd.DataFrame,
+    matchup: MatchupResult,
+    champion_info: Mapping[int, ChampionInfo],
+    predictor: DraftPredictor,
+) -> Dict[str, Any]:
     support_id = int(row.iloc[0]["ally_utility_champion_id"])
     support = champion_info.get(support_id, ChampionInfo(support_id, str(support_id)))
     enemy_support_id = int(row.iloc[0]["enemy_utility_champion_id"])
     enemy_support = champion_info.get(enemy_support_id, ChampionInfo(enemy_support_id, str(enemy_support_id)))
     return {
+        "model_key": predictor.key,
+        "model_label": predictor.model_label,
+        "model_metrics": predictor.display_metrics(),
         "ally_support_id": support_id,
         "ally_support_name": support.name,
         "ally_score": matchup.ally.score,
@@ -821,8 +999,6 @@ def result_to_dict(row: pd.DataFrame, matchup: MatchupResult, champion_info: Map
         "matchup_delta": matchup.delta,
         "matchup_label": matchup.label,
         "matchup_reading": matchup.reading,
-        "ally_similar_champions": matchup.ally.similar_champions,
-        "enemy_similar_champions": matchup.enemy.similar_champions,
         "ally_top_features": matchup.ally.top_features,
         "enemy_top_features": matchup.enemy.top_features,
         "ally_explanation_method": matchup.ally.explanation_method,
@@ -832,12 +1008,24 @@ def result_to_dict(row: pd.DataFrame, matchup: MatchupResult, champion_info: Map
         "assumptions": matchup.ally.assumptions,
         "ally": prediction_to_dict(row, matchup.ally, champion_info, "ally"),
         "enemy": prediction_to_dict(row, matchup.enemy, champion_info, "enemy"),
-        "matchup": {
-            "delta": matchup.delta,
-            "label": matchup.label,
-            "reading": matchup.reading,
-        },
+        "matchup": {"delta": matchup.delta, "label": matchup.label, "reading": matchup.reading},
     }
+
+
+def result_to_dict(
+    row: pd.DataFrame,
+    matchups: Mapping[str, MatchupResult],
+    champion_info: Mapping[int, ChampionInfo],
+    primary_key: str,
+    predictors: Mapping[str, DraftPredictor],
+) -> Dict[str, Any]:
+    primary = matchup_to_dict(row, matchups[primary_key], champion_info, predictors[primary_key])
+    if len(matchups) > 1:
+        primary["model_predictions"] = {
+            key: matchup_to_dict(row, matchup, champion_info, predictors[key])
+            for key, matchup in matchups.items()
+        }
+    return primary
 
 
 def read_batch(path: Path) -> pd.DataFrame:
@@ -853,43 +1041,49 @@ def read_batch(path: Path) -> pd.DataFrame:
 
 def run_batch(
     args: argparse.Namespace,
-    predictor: GbtDraftPredictor,
+    predictors: Mapping[str, DraftPredictor],
     lookup: Mapping[str, int],
     champion_info: Mapping[int, ChampionInfo],
+    primary_key: str,
 ) -> None:
     df = read_batch(args.batch)
     records: List[Dict[str, Any]] = []
-    original_no_shap = predictor.no_shap
+    original_no_shap = {key: predictor.no_shap for key, predictor in predictors.items()}
     if not args.explain_batch:
-        predictor.no_shap = True
+        for predictor in predictors.values():
+            predictor.no_shap = True
     for idx, raw in df.iterrows():
         try:
             row, assumptions = build_row_from_values(
                 raw.to_dict(),
-                predictor.feature_columns,
+                CANONICAL_FEATURE_COLUMNS,
                 lookup,
                 champion_info,
                 interactive=False,
             )
-            matchup = predict_matchup(
-                predictor,
+            matchups = predict_all_models(
+                predictors,
                 row,
                 assumptions,
                 top_n=args.top_n,
                 explain_enemy=args.explain_enemy and args.explain_batch,
             )
-            payload = result_to_dict(row, matchup, champion_info)
+            payload = result_to_dict(row, matchups, champion_info, primary_key, predictors)
+            if len(matchups) > 1:
+                for key, matchup in matchups.items():
+                    payload[f"score_{key}"] = matchup.ally.score
+                    payload[f"profile_{key}"] = matchup.ally.profile
             payload["row_index"] = int(idx)
             payload["status"] = "ok"
         except Exception as exc:
             payload = {"row_index": int(idx), "status": "error", "error": str(exc)}
         records.append(payload)
-    predictor.no_shap = original_no_shap
+    for key, value in original_no_shap.items():
+        predictors[key].no_shap = value
 
     out = pd.DataFrame(records)
     json_cols = [
-        "ally_similar_champions",
-        "enemy_similar_champions",
+        "model_metrics",
         "ally_top_features",
         "enemy_top_features",
         "ally_unknown_features",
@@ -898,12 +1092,11 @@ def run_batch(
         "ally",
         "enemy",
         "matchup",
+        "model_predictions",
     ]
     for col in json_cols:
         if col in out.columns:
-            out[col] = out[col].map(
-                lambda v: json.dumps(v, ensure_ascii=False) if isinstance(v, (list, dict)) else v
-            )
+            out[col] = out[col].map(lambda v: json.dumps(v, ensure_ascii=False) if isinstance(v, (list, dict)) else v)
 
     if args.output:
         out.to_csv(args.output, index=False)
@@ -917,35 +1110,29 @@ def add_draft_args(parser: argparse.ArgumentParser) -> None:
     for prefix in SIDES:
         for role, _ in ROLES:
             parser.add_argument(f"--{prefix}-{role}", dest=f"{prefix}_{role}", default=None)
-            parser.add_argument(
-                f"--{prefix}-{role}-spells",
-                dest=f"{prefix}_{role}_spells",
-                default=None,
-                help="Two spells by name or id, e.g. flash,ignite or 4,14.",
-            )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Predict support roaming score from 10 champions + side using the final GBT model.",
+        description="Predict support roaming score from 10 champions + side using the final report models.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--model-dir", type=Path, default=DEFAULT_MODEL_DIR)
+    parser.add_argument("--model", choices=list(MODEL_KEYS) + ["all"], default="histgbt")
+    parser.add_argument("--models-root", type=Path, default=DEFAULT_MODELS_ROOT)
     parser.add_argument("--train-path", type=Path, default=DEFAULT_TRAIN_PATH)
+    parser.add_argument("--metrics-table", type=Path, default=DEFAULT_METRICS_TABLE)
     parser.add_argument("--champion-classes", type=Path, default=DEFAULT_CHAMPION_CLASSES)
     parser.add_argument("--champion-archetypes", type=Path, default=DEFAULT_CHAMPION_ARCHETYPES)
-    parser.add_argument("--embeddings", type=Path, default=DEFAULT_EMBEDDINGS)
     parser.add_argument("--batch", type=Path, default=None, help="CSV/JSON/JSONL file with drafts.")
     parser.add_argument("--output", type=Path, default=None, help="CSV output for batch mode.")
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON for single-draft mode.")
     parser.add_argument("--no-interactive", action="store_true", help="Do not prompt for missing champions.")
-    parser.add_argument("--no-shap", action="store_true", help="Disable local SHAP explanation.")
+    parser.add_argument("--no-shap", action="store_true", help="Disable local explanation.")
     parser.add_argument("--explain-batch", action="store_true", help="Compute local explanations in batch mode.")
     parser.add_argument("--explain-enemy", action="store_true", help="Also compute local explanation for enemy support.")
-    parser.add_argument("--background-size", type=int, default=80, help="Background rows for SHAP.")
+    parser.add_argument("--background-size", type=int, default=80, help="Background rows for SHAP/fallback.")
     parser.add_argument("--top-n", type=int, default=5)
     parser.add_argument("--list-champions", nargs="?", const="", default=None)
-    parser.add_argument("--list-spells", action="store_true")
     parser.add_argument("--example-batch", action="store_true", help="Print a minimal batch CSV template.")
     add_draft_args(parser)
     return parser.parse_args()
@@ -976,11 +1163,6 @@ def main() -> None:
     champion_info = load_champion_info(args.champion_classes, args.champion_archetypes)
     lookup = build_champion_lookup(champion_info)
 
-    if args.list_spells:
-        for name, spell_id in sorted(SPELL_IDS.items(), key=lambda item: item[1]):
-            print(f"{name}: {spell_id}")
-        return
-
     if args.list_champions is not None:
         needle = normalize_key(args.list_champions)
         for champion in sorted(champion_info.values(), key=lambda c: c.name):
@@ -992,49 +1174,44 @@ def main() -> None:
         print_example_batch()
         return
 
-    required = [
-        args.model_dir / "gbt_model_raw.joblib",
-        args.model_dir / "preprocess.joblib",
-    ]
-    missing = [str(path) for path in required if not path.exists()]
-    if missing:
-        raise SystemExit("Missing model artifacts:\n" + "\n".join(f"- {path}" for path in missing))
-
-    predictor = GbtDraftPredictor(
-        model_dir=args.model_dir,
-        train_path=args.train_path,
-        champion_info=champion_info,
-        embeddings_path=args.embeddings,
-        background_size=args.background_size,
-        no_shap=args.no_shap,
+    report_metrics = load_report_metrics(args.metrics_table)
+    predictors = build_predictors(
+        args.model,
+        args.models_root,
+        args.train_path,
+        champion_info,
+        report_metrics,
+        args.background_size,
+        args.no_shap,
     )
+    primary_key = "histgbt" if args.model == "all" else args.model
 
     if args.batch:
-        run_batch(args, predictor, lookup, champion_info)
+        run_batch(args, predictors, lookup, champion_info, primary_key)
         return
 
     try:
         row, assumptions = build_row_from_values(
             values_from_args(args),
-            predictor.feature_columns,
+            CANONICAL_FEATURE_COLUMNS,
             lookup,
             champion_info,
             interactive=not args.no_interactive,
         )
-        matchup = predict_matchup(
-            predictor,
+        matchups = predict_all_models(
+            predictors,
             row,
             assumptions,
             top_n=args.top_n,
             explain_enemy=args.explain_enemy,
         )
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError, FileNotFoundError) as exc:
         raise SystemExit(str(exc)) from exc
 
     if args.json:
-        print(json.dumps(result_to_dict(row, matchup, champion_info), indent=2, ensure_ascii=False))
+        print(json.dumps(result_to_dict(row, matchups, champion_info, primary_key, predictors), indent=2, ensure_ascii=False))
     else:
-        print_prediction(row, matchup, champion_info, predictor)
+        print_prediction(row, matchups, champion_info, primary_key, predictors)
 
 
 if __name__ == "__main__":

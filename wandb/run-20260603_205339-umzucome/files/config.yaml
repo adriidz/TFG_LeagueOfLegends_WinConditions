@@ -1,0 +1,96 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            34u9oqqueudcc8glbs9hwh9la5n2neql:
+                args:
+                    - --train
+                    - C:\Users\adria\Desktop\TFG\final\data\training\train.parquet
+                    - --val
+                    - C:\Users\adria\Desktop\TFG\final\data\training\val.parquet
+                    - --hidden-dims
+                    - "192"
+                    - "96"
+                    - --dropout
+                    - "0.35"
+                    - --weight-decay
+                    - "0.0005"
+                    - --patience
+                    - "20"
+                    - --epochs
+                    - "150"
+                    - --lr
+                    - "0.0005"
+                    - --use-wandb
+                    - --seed
+                    - "42"
+                    - --outdir
+                    - C:\Users\adria\Desktop\TFG\final\models\mlp_onehot\seed42
+                codePath: final\scripts\04a_train_mlp_onehot.py
+                codePathLocal: final\scripts\04a_train_mlp_onehot.py
+                cpu_count: 6
+                cpu_count_logical: 12
+                disk:
+                    /:
+                        total: "999231057920"
+                        used: "853647626240"
+                email: adrian.diazg@autonoma.cat
+                executable: C:\Users\adria\Desktop\TFG\.venv\Scripts\python.exe
+                git:
+                    commit: 20df305893ccfd062b32dec9e0857e83881e263a
+                    remote: https://github.com/adriidz/TFG_LeagueOfLegends_WinConditions.git
+                host: PC_DIAZ
+                memory:
+                    total: "33409191936"
+                os: Windows-10-10.0.26200-SP0
+                program: C:\Users\adria\Desktop\TFG\final\scripts\04a_train_mlp_onehot.py
+                python: CPython 3.8.10
+                root: C:\Users\adria\Desktop\TFG
+                startedAt: "2026-06-03T18:53:39.819388Z"
+                writerId: 34u9oqqueudcc8glbs9hwh9la5n2neql
+        m: []
+        python_version: 3.8.10
+        t:
+            "1":
+                - 1
+                - 53
+            "2":
+                - 1
+                - 53
+            "3":
+                - 2
+                - 13
+                - 16
+                - 62
+            "4": 3.8.10
+            "5": 0.24.2
+            "8":
+                - 3
+            "10":
+                - 20
+            "12": 0.24.2
+            "13": windows-amd64
+batch_size:
+    value: 512
+dropout:
+    value: 0.35
+epochs:
+    value: 150
+has_weights:
+    value: true
+hidden_dims:
+    value:
+        - 192
+        - 96
+lr:
+    value: 0.0005
+model:
+    value: MLP_OneHot
+patience:
+    value: 20
+seed:
+    value: 42
+target:
+    value: quantile
+weight_decay:
+    value: 0.0005

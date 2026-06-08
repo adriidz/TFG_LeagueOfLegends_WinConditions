@@ -157,6 +157,8 @@ def compute_scores(
     xp_ratio_min: float,
     xp_ratio_max: float,
     min_support_frames: int,
+    start_minute: float = 5.0,
+    max_minute: float = 12.0,
 ) -> pd.DataFrame:
     xp_last = (
         df.sort_values(["match_id", "team_id", "frame_idx"])
@@ -226,8 +228,8 @@ def compute_scores(
     out["support_score_confidence_v5"] = np.minimum(1.0, out["valid_support_frames_v5"] / 6.0)
     out["variant_id"] = "v5_geometry_gamma075"
     out["variant_description"] = "v3 selected recipe with manual geometry v5 bot context"
-    out["start_minute"] = 5.0
-    out["max_minute"] = 12.0
+    out["start_minute"] = start_minute
+    out["max_minute"] = max_minute
     out["far_adc_threshold"] = far_adc_threshold
     out["w_outside"] = weights[0]
     out["w_far"] = weights[1]
@@ -342,6 +344,8 @@ def main() -> None:
         xp_ratio_min=args.xp_ratio_min,
         xp_ratio_max=args.xp_ratio_max,
         min_support_frames=args.min_support_frames,
+        start_minute=args.start_minute,
+        max_minute=args.max_minute,
     )
     comparison = compare_to_baseline(scores, args.baseline_path)
 

@@ -1,0 +1,271 @@
+
+  Training GBT (raw, with sample_weight)...
+C:\Users\adria\Desktop\TFG\.venv\lib\site-packages\joblib\externals\loky\backend\context.py:136: UserWarning: Could not find the number of physical cores for the following reason:
+[WinError 2] El sistema no puede encontrar el archivo especificado
+Returning the number of logical cores instead. You can silence this warning by setting LOKY_MAX_CPU_COUNT to the number of cores you want to use.
+  warnings.warn(
+  File "C:\Users\adria\Desktop\TFG\.venv\lib\site-packages\joblib\externals\loky\backend\context.py", line 257, in _count_physical_cores
+    cpu_info = subprocess.run(
+  File "C:\Users\adria\AppData\Local\Programs\Python\Python38\lib\subprocess.py", line 493, in run
+    with Popen(*popenargs, **kwargs) as process:
+  File "C:\Users\adria\AppData\Local\Programs\Python\Python38\lib\subprocess.py", line 858, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Users\adria\AppData\Local\Programs\Python\Python38\lib\subprocess.py", line 1311, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+Binning 0.021 GB of training data: 0.043 s
+Binning 0.002 GB of validation data: 0.006 s
+Fitting gradient boosted rounds:
+[1/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01743, val loss: 0.01738, in 0.057s
+[2/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01720, val loss: 0.01715, in 0.021s
+[3/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01698, val loss: 0.01694, in 0.017s
+[4/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01679, val loss: 0.01675, in 0.026s
+[5/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01661, val loss: 0.01658, in 0.025s
+[6/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01645, val loss: 0.01643, in 0.022s
+[7/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01630, val loss: 0.01628, in 0.022s
+[8/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01617, val loss: 0.01615, in 0.021s
+[9/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01605, val loss: 0.01604, in 0.020s
+[10/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01593, val loss: 0.01593, in 0.020s
+[11/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01583, val loss: 0.01583, in 0.039s
+[12/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01574, val loss: 0.01574, in 0.031s
+[13/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01565, val loss: 0.01566, in 0.038s
+[14/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01557, val loss: 0.01559, in 0.023s
+[15/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01549, val loss: 0.01552, in 0.020s
+[16/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01543, val loss: 0.01546, in 0.021s
+[17/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01536, val loss: 0.01540, in 0.023s
+[18/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01531, val loss: 0.01534, in 0.018s
+[19/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01525, val loss: 0.01530, in 0.018s
+[20/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01520, val loss: 0.01525, in 0.021s
+[21/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01515, val loss: 0.01521, in 0.026s
+[22/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01511, val loss: 0.01517, in 0.025s
+[23/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01507, val loss: 0.01514, in 0.028s
+[24/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01503, val loss: 0.01511, in 0.022s
+[25/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01499, val loss: 0.01508, in 0.017s
+[26/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01496, val loss: 0.01506, in 0.019s
+[27/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01493, val loss: 0.01503, in 0.019s
+[28/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01490, val loss: 0.01501, in 0.020s
+[29/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01487, val loss: 0.01499, in 0.019s
+[30/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01484, val loss: 0.01497, in 0.033s
+[31/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01481, val loss: 0.01496, in 0.024s
+[32/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01479, val loss: 0.01494, in 0.020s
+[33/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01477, val loss: 0.01493, in 0.026s
+[34/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01474, val loss: 0.01491, in 0.024s
+[35/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01472, val loss: 0.01490, in 0.019s
+[36/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01470, val loss: 0.01489, in 0.030s
+[37/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01468, val loss: 0.01488, in 0.021s
+[38/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01466, val loss: 0.01487, in 0.017s
+[39/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01464, val loss: 0.01486, in 0.019s
+[40/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01463, val loss: 0.01485, in 0.017s
+[41/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01461, val loss: 0.01484, in 0.022s
+[42/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01459, val loss: 0.01483, in 0.020s
+[43/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01458, val loss: 0.01483, in 0.016s
+[44/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01456, val loss: 0.01482, in 0.024s
+[45/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01455, val loss: 0.01481, in 0.025s
+[46/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01453, val loss: 0.01481, in 0.022s
+[47/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01452, val loss: 0.01480, in 0.017s
+[48/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01450, val loss: 0.01480, in 0.018s
+[49/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01449, val loss: 0.01479, in 0.020s
+[50/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01447, val loss: 0.01479, in 0.017s
+[51/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01446, val loss: 0.01478, in 0.019s
+[52/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01445, val loss: 0.01478, in 0.023s
+[53/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01443, val loss: 0.01477, in 0.019s
+[54/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01442, val loss: 0.01477, in 0.023s
+[55/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01441, val loss: 0.01476, in 0.025s
+[56/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01439, val loss: 0.01476, in 0.017s
+[57/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01438, val loss: 0.01475, in 0.021s
+[58/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01437, val loss: 0.01475, in 0.021s
+[59/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01436, val loss: 0.01474, in 0.023s
+[60/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01435, val loss: 0.01474, in 0.017s
+[61/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01433, val loss: 0.01474, in 0.019s
+[62/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01432, val loss: 0.01474, in 0.018s
+[63/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01431, val loss: 0.01473, in 0.019s
+[64/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01430, val loss: 0.01473, in 0.018s
+[65/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01429, val loss: 0.01473, in 0.021s
+[66/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01428, val loss: 0.01473, in 0.019s
+[67/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01427, val loss: 0.01473, in 0.023s
+[68/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01425, val loss: 0.01473, in 0.019s
+[69/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01424, val loss: 0.01472, in 0.016s
+[70/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01423, val loss: 0.01472, in 0.022s
+[71/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01422, val loss: 0.01472, in 0.022s
+[72/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01421, val loss: 0.01472, in 0.025s
+[73/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01420, val loss: 0.01472, in 0.025s
+[74/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01419, val loss: 0.01472, in 0.018s
+[75/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01418, val loss: 0.01471, in 0.018s
+[76/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01417, val loss: 0.01471, in 0.020s
+[77/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01416, val loss: 0.01471, in 0.022s
+[78/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01415, val loss: 0.01471, in 0.022s
+[79/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01414, val loss: 0.01470, in 0.020s
+[80/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01413, val loss: 0.01470, in 0.014s
+[81/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01412, val loss: 0.01470, in 0.018s
+[82/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01411, val loss: 0.01470, in 0.020s
+[83/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01411, val loss: 0.01470, in 0.019s
+[84/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01410, val loss: 0.01470, in 0.022s
+[85/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01409, val loss: 0.01470, in 0.022s
+[86/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01408, val loss: 0.01470, in 0.026s
+[87/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01407, val loss: 0.01470, in 0.017s
+[88/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01406, val loss: 0.01470, in 0.017s
+[89/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01406, val loss: 0.01469, in 0.027s
+[90/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01405, val loss: 0.01469, in 0.025s
+[91/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01404, val loss: 0.01469, in 0.016s
+[92/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01403, val loss: 0.01469, in 0.027s
+[93/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01402, val loss: 0.01469, in 0.033s
+[94/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01401, val loss: 0.01469, in 0.018s
+[95/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01401, val loss: 0.01469, in 0.021s
+[96/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01400, val loss: 0.01469, in 0.022s
+[97/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01399, val loss: 0.01469, in 0.017s
+[98/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01398, val loss: 0.01469, in 0.018s
+[99/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01397, val loss: 0.01469, in 0.021s
+[100/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01397, val loss: 0.01469, in 0.017s
+[101/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01396, val loss: 0.01469, in 0.016s
+[102/300] 1 tree, 21 leaves, max depth = 6, train loss: 0.01396, val loss: 0.01469, in 0.014s
+[103/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01395, val loss: 0.01469, in 0.023s
+[104/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01394, val loss: 0.01469, in 0.018s
+[105/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01393, val loss: 0.01469, in 0.017s
+[106/300] 1 tree, 19 leaves, max depth = 6, train loss: 0.01393, val loss: 0.01469, in 0.012s
+[107/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01392, val loss: 0.01469, in 0.020s
+[108/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01392, val loss: 0.01468, in 0.022s
+[109/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01391, val loss: 0.01469, in 0.021s
+[110/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01390, val loss: 0.01469, in 0.022s
+[111/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01389, val loss: 0.01469, in 0.016s
+[112/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01388, val loss: 0.01469, in 0.023s
+[113/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01388, val loss: 0.01468, in 0.017s
+[114/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01387, val loss: 0.01469, in 0.018s
+[115/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01386, val loss: 0.01469, in 0.087s
+[116/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01386, val loss: 0.01469, in 0.068s
+[117/300] 1 tree, 29 leaves, max depth = 6, train loss: 0.01385, val loss: 0.01469, in 0.067s
+[118/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.01385, val loss: 0.01469, in 0.093s
+Fit 118 trees in 3.002 s, (3634 total leaves)
+Time spent computing histograms: 0.799s
+Time spent finding best splits:  0.368s
+Time spent applying splits:      0.709s
+Time spent predicting:           0.037s
+  R2=0.1543  Spearman=0.3796  pred_std=0.0743  time=3.0s
+
+  Training GBT (quantile, with sample_weight)...
+Binning 0.021 GB of training data: 0.036 s
+Binning 0.002 GB of validation data: 0.004 s
+Fitting gradient boosted rounds:
+[1/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04233, val loss: 0.04213, in 0.045s
+[2/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04177, val loss: 0.04159, in 0.039s
+[3/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04127, val loss: 0.04109, in 0.024s
+[4/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04081, val loss: 0.04065, in 0.024s
+[5/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04039, val loss: 0.04025, in 0.022s
+[6/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.04001, val loss: 0.03988, in 0.038s
+[7/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03966, val loss: 0.03955, in 0.030s
+[8/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03935, val loss: 0.03925, in 0.018s
+[9/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03906, val loss: 0.03897, in 0.024s
+[10/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03879, val loss: 0.03873, in 0.046s
+[11/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03855, val loss: 0.03849, in 0.041s
+[12/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03833, val loss: 0.03829, in 0.026s
+[13/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03812, val loss: 0.03809, in 0.028s
+[14/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03793, val loss: 0.03792, in 0.022s
+[15/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03775, val loss: 0.03775, in 0.028s
+[16/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03759, val loss: 0.03760, in 0.023s
+[17/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03744, val loss: 0.03747, in 0.023s
+[18/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03730, val loss: 0.03734, in 0.024s
+[19/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03717, val loss: 0.03723, in 0.028s
+[20/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03705, val loss: 0.03713, in 0.042s
+[21/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03694, val loss: 0.03703, in 0.032s
+[22/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03684, val loss: 0.03694, in 0.037s
+[23/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03674, val loss: 0.03686, in 0.044s
+[24/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03665, val loss: 0.03679, in 0.023s
+[25/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03656, val loss: 0.03672, in 0.022s
+[26/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03648, val loss: 0.03665, in 0.023s
+[27/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03640, val loss: 0.03660, in 0.021s
+[28/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03633, val loss: 0.03655, in 0.025s
+[29/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03626, val loss: 0.03650, in 0.027s
+[30/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03620, val loss: 0.03646, in 0.023s
+[31/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03614, val loss: 0.03642, in 0.024s
+[32/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03608, val loss: 0.03638, in 0.021s
+[33/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03602, val loss: 0.03635, in 0.071s
+[34/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03597, val loss: 0.03631, in 0.026s
+[35/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03592, val loss: 0.03628, in 0.027s
+[36/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03587, val loss: 0.03625, in 0.035s
+[37/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03582, val loss: 0.03623, in 0.045s
+[38/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03578, val loss: 0.03620, in 0.021s
+[39/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03573, val loss: 0.03618, in 0.021s
+[40/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03569, val loss: 0.03616, in 0.018s
+[41/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03565, val loss: 0.03614, in 0.024s
+[42/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03561, val loss: 0.03612, in 0.035s
+[43/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03557, val loss: 0.03610, in 0.062s
+[44/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03553, val loss: 0.03609, in 0.021s
+[45/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03549, val loss: 0.03607, in 0.025s
+[46/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03545, val loss: 0.03606, in 0.024s
+[47/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03542, val loss: 0.03604, in 0.023s
+[48/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03539, val loss: 0.03603, in 0.026s
+[49/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03535, val loss: 0.03601, in 0.021s
+[50/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03532, val loss: 0.03600, in 0.021s
+[51/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03529, val loss: 0.03598, in 0.017s
+[52/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03525, val loss: 0.03597, in 0.027s
+[53/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03522, val loss: 0.03596, in 0.021s
+[54/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03519, val loss: 0.03595, in 0.018s
+[55/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03515, val loss: 0.03594, in 0.026s
+[56/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03512, val loss: 0.03594, in 0.021s
+[57/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03510, val loss: 0.03593, in 0.018s
+[58/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03506, val loss: 0.03592, in 0.023s
+[59/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03503, val loss: 0.03591, in 0.018s
+[60/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03500, val loss: 0.03590, in 0.022s
+[61/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03497, val loss: 0.03590, in 0.020s
+[62/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03495, val loss: 0.03589, in 0.030s
+[63/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03492, val loss: 0.03588, in 0.018s
+[64/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03489, val loss: 0.03588, in 0.022s
+[65/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03486, val loss: 0.03588, in 0.021s
+[66/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03483, val loss: 0.03587, in 0.017s
+[67/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03481, val loss: 0.03586, in 0.021s
+[68/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03478, val loss: 0.03585, in 0.016s
+[69/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03476, val loss: 0.03585, in 0.020s
+[70/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03473, val loss: 0.03585, in 0.027s
+[71/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03471, val loss: 0.03584, in 0.020s
+[72/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03469, val loss: 0.03584, in 0.022s
+[73/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03466, val loss: 0.03583, in 0.022s
+[74/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03463, val loss: 0.03583, in 0.022s
+[75/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03461, val loss: 0.03583, in 0.020s
+[76/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03459, val loss: 0.03582, in 0.018s
+[77/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03456, val loss: 0.03581, in 0.020s
+[78/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03454, val loss: 0.03581, in 0.020s
+[79/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03451, val loss: 0.03581, in 0.016s
+[80/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03449, val loss: 0.03580, in 0.017s
+[81/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03447, val loss: 0.03580, in 0.017s
+[82/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03445, val loss: 0.03580, in 0.020s
+[83/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03443, val loss: 0.03580, in 0.021s
+[84/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03441, val loss: 0.03579, in 0.019s
+[85/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03439, val loss: 0.03579, in 0.026s
+[86/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03436, val loss: 0.03579, in 0.020s
+[87/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03435, val loss: 0.03578, in 0.020s
+[88/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03432, val loss: 0.03578, in 0.030s
+[89/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03430, val loss: 0.03578, in 0.020s
+[90/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03428, val loss: 0.03578, in 0.016s
+[91/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03426, val loss: 0.03578, in 0.020s
+[92/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03424, val loss: 0.03578, in 0.017s
+[93/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03422, val loss: 0.03577, in 0.018s
+[94/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03420, val loss: 0.03577, in 0.016s
+[95/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03418, val loss: 0.03577, in 0.019s
+[96/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03416, val loss: 0.03577, in 0.019s
+[97/300] 1 tree, 25 leaves, max depth = 6, train loss: 0.03415, val loss: 0.03577, in 0.014s
+[98/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03413, val loss: 0.03577, in 0.016s
+[99/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03411, val loss: 0.03576, in 0.021s
+[100/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03409, val loss: 0.03576, in 0.017s
+[101/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03407, val loss: 0.03576, in 0.019s
+[102/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03405, val loss: 0.03576, in 0.022s
+[103/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03403, val loss: 0.03576, in 0.016s
+[104/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03402, val loss: 0.03576, in 0.019s
+[105/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03400, val loss: 0.03577, in 0.024s
+[106/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03398, val loss: 0.03577, in 0.016s
+[107/300] 1 tree, 29 leaves, max depth = 6, train loss: 0.03397, val loss: 0.03577, in 0.019s
+[108/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03395, val loss: 0.03576, in 0.020s
+[109/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03394, val loss: 0.03576, in 0.024s
+[110/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03392, val loss: 0.03576, in 0.018s
+[111/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03391, val loss: 0.03576, in 0.018s
+[112/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03389, val loss: 0.03576, in 0.022s
+[113/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03387, val loss: 0.03576, in 0.031s
+[114/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03386, val loss: 0.03576, in 0.015s
+[115/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03385, val loss: 0.03576, in 0.019s
+[116/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03383, val loss: 0.03576, in 0.021s
+[117/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03381, val loss: 0.03576, in 0.018s
+[118/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03380, val loss: 0.03576, in 0.020s
+[119/300] 1 tree, 31 leaves, max depth = 6, train loss: 0.03378, val loss: 0.03576, in 0.018s
+Fit 119 trees in 3.089 s, (3681 total leaves)
+Time spent computing histograms: 0.847s
+Time spent finding best splits:  0.365s
+Time spent applying splits:      0.717s
+Time spent predicting:           0.042s
+  R2=0.1512  Spearman=0.3800  pred_std=0.1142  time=3.1s

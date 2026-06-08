@@ -3,7 +3,11 @@
 03_train_gbt.py — HistGradientBoostingRegressor with proper categorical handling.
 
 Uses OrdinalEncoder (fitted on train only) + categorical_features to avoid
-imposing artificial ordering on champion/spell/rune IDs.
+imposing artificial ordering on categorical IDs.
+
+The default "main" feature set is intentionally limited to the same conceptual
+input used by the MLP models: 10 champion IDs + side. The "all" feature set is
+kept only for legacy/secondary experiments that include summoner spells.
 
 See final/docs/technical_spec.md (Script 03) for the full specification.
 """
@@ -45,6 +49,12 @@ FEATURE_GROUPS: Dict[str, List[str]] = {
     "context": ["side"],
 }
 
+FEATURE_SET_GROUPS: Dict[str, List[str]] = {
+    "main": ["champions", "context"],
+    "all": ["champions", "summoner_spells", "context"],
+}
+FEATURE_PROTOCOL_ID = "draft_10_champions_side"
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Train HistGBT regressor.")
@@ -57,12 +67,34 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--min-samples-leaf", type=int, default=50)
     p.add_argument("--max-leaf-nodes", type=int, default=31)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--feature-set",
+        choices=sorted(FEATURE_SET_GROUPS),
+        default="main",
+        help="main = 10 champion IDs + side; all = legacy champions + summoner spells + side.",
+    )
+    p.add_argument(
+        "--allow-missing-sample-weight",
+        action="store_true",
+        help="Allow unweighted training if sample_weight is absent.",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Load data, build encoded feature matrices, save feature audit, then exit.",
+    )
+    p.add_argument(
+        "--use-wandb",
+        action="store_true",
+        help="Use Weights & Biases to track training metrics.",
+    )
     return p.parse_args()
 
 
-def get_feature_columns(df: pd.DataFrame) -> List[str]:
+def get_feature_columns(df: pd.DataFrame, feature_set: str) -> List[str]:
     cols = []
-    for group_cols in FEATURE_GROUPS.values():
+    for group_name in FEATURE_SET_GROUPS[feature_set]:
+        group_cols = FEATURE_GROUPS[group_name]
         cols.extend([c for c in group_cols if c in df.columns])
     return list(dict.fromkeys(cols))
 
@@ -91,6 +123,63 @@ def prepare_features(
     categorical_mask = [True] * len(feature_cols)
 
     return X_train, X_val, enc, categorical_mask
+
+
+def sample_weight_from_train(
+    df_train: pd.DataFrame,
+    allow_missing: bool,
+) -> Optional[np.ndarray]:
+    sw_col = "sample_weight"
+    if sw_col not in df_train.columns:
+        if allow_missing:
+            print("[Weights] No sample_weight column found - training without weights")
+            return None
+        raise SystemExit(
+            "[Weights] Missing required sample_weight column. "
+            "Use --allow-missing-sample-weight only for legacy/debug runs."
+        )
+
+    sample_weight = df_train[sw_col].to_numpy(dtype=np.float32)
+    print(
+        f"[Weights] Using sample_weight: mean={sample_weight.mean():.3f}  "
+        f"min={sample_weight.min():.3f}  max={sample_weight.max():.3f}"
+    )
+    return sample_weight
+
+
+def save_feature_audit(
+    outdir: Path,
+    args: argparse.Namespace,
+    feature_cols: List[str],
+    x_shape: tuple[int, int],
+    sample_weight: Optional[np.ndarray],
+) -> None:
+    payload = {
+        "model": "HistGBT",
+        "feature_set": args.feature_set,
+        "feature_protocol_id": (
+            FEATURE_PROTOCOL_ID if args.feature_set == "main" else "legacy_all_features"
+        ),
+        "input_feature_columns": feature_cols,
+        "feature_count": len(feature_cols),
+        "matrix_shape_train": [int(x_shape[0]), int(x_shape[1])],
+        "included_feature_groups": FEATURE_SET_GROUPS[args.feature_set],
+        "excluded_feature_groups": [
+            name for name in FEATURE_GROUPS if name not in FEATURE_SET_GROUPS[args.feature_set]
+        ],
+        "sample_weight_column": "sample_weight",
+        "used_sample_weight": sample_weight is not None,
+        "sample_weight_summary": None
+        if sample_weight is None
+        else {
+            "mean": float(sample_weight.mean()),
+            "min": float(sample_weight.min()),
+            "max": float(sample_weight.max()),
+        },
+    }
+    (outdir / "feature_audit.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 def compute_metrics(
@@ -174,21 +263,43 @@ def main() -> None:
 
     df_train = pd.read_parquet(args.train)
     df_val = pd.read_parquet(args.val)
-    feature_cols = get_feature_columns(df_train)
-    print(f"[Data] train={len(df_train):,}  val={len(df_val):,}  features={len(feature_cols)}")
+    feature_cols = get_feature_columns(df_train, args.feature_set)
+    print(
+        f"[Data] train={len(df_train):,}  val={len(df_val):,}  "
+        f"feature_set={args.feature_set}  features={len(feature_cols)}"
+    )
+    print("[Features] " + ", ".join(feature_cols))
 
     X_train, X_val, encoder, cat_mask = prepare_features(df_train, df_val, feature_cols)
     print(f"[Encoding] OrdinalEncoder fitted. Shape: {X_train.shape}")
 
-    # Extract sample_weight if available
-    sw_col = "sample_weight"
-    if sw_col in df_train.columns:
-        sample_weight = df_train[sw_col].to_numpy(dtype=np.float32)
-        print(f"[Weights] Using sample_weight: mean={sample_weight.mean():.3f}  "
-              f"min={sample_weight.min():.3f}  max={sample_weight.max():.3f}")
-    else:
-        sample_weight = None
-        print("[Weights] No sample_weight column found - training without weights")
+    sample_weight = sample_weight_from_train(df_train, args.allow_missing_sample_weight)
+    save_feature_audit(outdir, args, feature_cols, X_train.shape, sample_weight)
+    if args.dry_run:
+        print(f"[Dry run] Feature audit saved to {outdir / 'feature_audit.json'}")
+        return
+
+    if args.use_wandb:
+        try:
+            import wandb
+            wandb.init(
+                project="tfg-support-roaming",
+                name=f"HistGBT_{args.feature_set}",
+                config={
+                    "model": "HistGBT",
+                    "feature_set": args.feature_set,
+                    "max_iter": args.max_iter,
+                    "max_depth": args.max_depth,
+                    "learning_rate": args.learning_rate,
+                    "min_samples_leaf": args.min_samples_leaf,
+                    "max_leaf_nodes": args.max_leaf_nodes,
+                    "seed": args.seed,
+                    "sample_weight": sample_weight is not None,
+                },
+            )
+        except ImportError:
+            print("[Warning] wandb is not installed. Running without wandb.")
+            args.use_wandb = False
 
     results = []
 
@@ -212,12 +323,36 @@ def main() -> None:
         results.append(m_q)
 
     # Save encoder and config
-    joblib.dump({"encoder": encoder, "feature_columns": feature_cols},
-                outdir / "preprocess.joblib")
+    joblib.dump(
+        {
+            "encoder": encoder,
+            "feature_columns": feature_cols,
+            "feature_set": args.feature_set,
+            "feature_protocol_id": (
+                FEATURE_PROTOCOL_ID if args.feature_set == "main" else "legacy_all_features"
+            ),
+            "sample_weight_column": "sample_weight",
+            "used_sample_weight": sample_weight is not None,
+        },
+        outdir / "preprocess.joblib",
+    )
 
     config = {
+        "model_type": "hist_gbt",
+        "feature_set": args.feature_set,
+        "feature_protocol_id": (
+            FEATURE_PROTOCOL_ID if args.feature_set == "main" else "legacy_all_features"
+        ),
         "feature_columns": feature_cols,
-        "feature_groups": {k: v for k, v in FEATURE_GROUPS.items()},
+        "feature_groups": {
+            k: [c for c in FEATURE_GROUPS[k] if c in df_train.columns]
+            for k in FEATURE_SET_GROUPS[args.feature_set]
+        },
+        "excluded_feature_groups": [
+            name for name in FEATURE_GROUPS if name not in FEATURE_SET_GROUPS[args.feature_set]
+        ],
+        "sample_weight_column": "sample_weight",
+        "used_sample_weight": sample_weight is not None,
         "max_iter": args.max_iter,
         "max_depth": args.max_depth,
         "learning_rate": args.learning_rate,
@@ -231,6 +366,17 @@ def main() -> None:
     (outdir / "metrics.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+    if args.use_wandb:
+        wandb_summary = {}
+        for r in results:
+            target = r["target"]
+            for k, v in r.items():
+                if k not in ["model", "target", "eval_split"]:
+                    wandb_summary[f"{target}/{k}"] = v
+        import wandb
+        wandb.log(wandb_summary)
+        wandb.finish()
 
     print(f"\n[Saved] {outdir.resolve()}")
 

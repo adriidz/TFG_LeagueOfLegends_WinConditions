@@ -28,68 +28,74 @@ Primary Data Dragon class counts:
 
 ## Cluster coherence
 
-- Support archetype silhouette, cosine metric: -0.146 (n=39, groups=6)
+- Support archetype silhouette, cosine metric: -0.145 (n=39, groups=6)
 - Primary class silhouette, cosine metric: -0.074 (n=172, groups=7)
 
 Interpretation guide: silhouette near 1 implies compact, separated clusters; near 0 implies overlapping groups; negative values imply that many samples are closer to other groups than to their own.
 
 ## Roam-score continuity
 
-- Pairwise support-champion embedding distance vs. absolute mean roam-score difference: Pearson r=0.166, p=3.18e-06; Spearman rho=0.176, p=7.61e-07.
+- Pairwise support-champion embedding distance vs. absolute mean roam-score difference: Pearson r=0.168, p=2.25e-06; Spearman rho=0.178, p=5.63e-07.
 - Pairs analyzed: 780 from 40 support champions.
 
 ## Nearest-neighbor structure
 
+### Neighbors among all champions (Unrestricted)
 - Top-5 neighbors that are support-labeled: 0.220
 - Top-5 neighbors with same support archetype: 0.040
-- Top-5 neighbors with same primary class: 0.150
+- Top-5 neighbors with same primary class: 0.155
 - Rank-1 nearest neighbor support-labeled rate: 0.300
 - Rank-1 same support archetype rate: 0.025
 
-Rank-1 nearest neighbors for support champions:
+### Neighbors restricted to support champions
+- Top-5 support neighbors with same support archetype: 0.170
+- Top-5 support neighbors with same primary class: 0.335
+- Rank-1 nearest support neighbor with same support archetype rate: 0.125
+
+Rank-1 nearest neighbors for support champions (Unrestricted):
 
 | Support | Archetype | Nearest neighbor | Neighbor archetype | Neighbor class | Cosine sim. |
 |---|---|---|---|---|---:|
-| Morgana | catcher | Rakan | engage_tank | Support | 0.746 |
-| Ivern | enchanter | Swain | mage_support | Mage | 0.605 |
-| Janna | enchanter | Riven | - | Fighter | 0.799 |
-| Karma | enchanter | Singed | - | Tank | 0.586 |
-| Kayle | enchanter | Kassadin | - | Assassin | 0.609 |
-| Lulu | enchanter | Wukong | - | Fighter | 0.609 |
-| Milio | enchanter | Taric | warden | Support | 0.547 |
-| Nami | enchanter | Vel'Koz | mage_support | Mage | 0.597 |
-| Renata Glasc | enchanter | Sylas | - | Mage | 0.548 |
-| Senna | enchanter | Ryze | - | Mage | 0.622 |
-| Seraphine | enchanter | Malzahar | - | Mage | 0.578 |
-| Sona | enchanter | Lulu | enchanter | Support | 0.535 |
-| Soraka | enchanter | Kalista | - | Marksman | 0.562 |
-| Yuumi | enchanter | Hwei | - | Mage | 0.631 |
-| Zilean | enchanter | champ_800 | - | Unknown | 0.595 |
-| Alistar | engage_tank | Vex | - | Mage | 0.694 |
-| Amumu | engage_tank | Malzahar | - | Mage | 0.610 |
-| Leona | engage_tank | Xin Zhao | - | Fighter | 0.530 |
-| Maokai | engage_tank | Lissandra | - | Mage | 0.609 |
+| Morgana | catcher | Rakan | engage_tank | Support | 0.741 |
+| Ivern | enchanter | Swain | mage_support | Mage | 0.602 |
+| Janna | enchanter | Riven | - | Fighter | 0.793 |
+| Karma | enchanter | Singed | - | Tank | 0.571 |
+| Kayle | enchanter | Kassadin | - | Assassin | 0.602 |
+| Lulu | enchanter | Wukong | - | Fighter | 0.608 |
+| Milio | enchanter | Kennen | - | Mage | 0.549 |
+| Nami | enchanter | Vel'Koz | mage_support | Mage | 0.595 |
+| Renata Glasc | enchanter | Sylas | - | Mage | 0.552 |
+| Senna | enchanter | Ryze | - | Mage | 0.623 |
+| Seraphine | enchanter | Malzahar | - | Mage | 0.581 |
+| Sona | enchanter | Lulu | enchanter | Support | 0.531 |
+| Soraka | enchanter | Kalista | - | Marksman | 0.556 |
+| Yuumi | enchanter | Xerath | mage_support | Mage | 0.631 |
+| Zilean | enchanter | champ_800 | - | Unknown | 0.603 |
+| Alistar | engage_tank | Vex | - | Mage | 0.688 |
+| Amumu | engage_tank | Malzahar | - | Mage | 0.616 |
+| Leona | engage_tank | Xin Zhao | - | Fighter | 0.531 |
+| Maokai | engage_tank | Lissandra | - | Mage | 0.613 |
 | Nautilus | engage_tank | Jax | - | Fighter | 0.589 |
-| Pantheon | engage_tank | Ekko | - | Assassin | 0.654 |
-| Rakan | engage_tank | Morgana | catcher | Mage | 0.746 |
-| Rell | engage_tank | Diana | - | Fighter | 0.660 |
-| Blitzcrank | hook | Riven | - | Fighter | 0.602 |
-| Thresh | hook | Heimerdinger | mage_support | Mage | 0.622 |
-| Annie | mage_support | Volibear | - | Fighter | 0.623 |
-| Brand | mage_support | Talon | - | Assassin | 0.625 |
-| Fiddlesticks | mage_support | Janna | enchanter | Support | 0.641 |
-| Heimerdinger | mage_support | Thresh | hook | Support | 0.622 |
-| Lux | mage_support | Quinn | - | Marksman | 0.572 |
+| Pantheon | engage_tank | Ekko | - | Assassin | 0.656 |
+| Rakan | engage_tank | Morgana | catcher | Mage | 0.741 |
+| Rell | engage_tank | Diana | - | Fighter | 0.662 |
+| Blitzcrank | hook | Riven | - | Fighter | 0.603 |
+| Thresh | hook | Heimerdinger | mage_support | Mage | 0.617 |
+| Annie | mage_support | Volibear | - | Fighter | 0.624 |
+| Brand | mage_support | Talon | - | Assassin | 0.633 |
+| Fiddlesticks | mage_support | Janna | enchanter | Support | 0.634 |
+| Heimerdinger | mage_support | Thresh | hook | Support | 0.617 |
+| Lux | mage_support | Quinn | - | Marksman | 0.571 |
 | Neeko | mage_support | Nautilus | engage_tank | Tank | 0.551 |
-| Swain | mage_support | Ivern | enchanter | Support | 0.605 |
+| Swain | mage_support | Ivern | enchanter | Support | 0.602 |
 | Vel'Koz | mage_support | Karthus | - | Mage | 0.631 |
-| Xerath | mage_support | Lillia | - | Fighter | 0.679 |
-| Zyra | mage_support | Sejuani | - | Tank | 0.654 |
-| Bard | roamer | Zac | - | Tank | 0.593 |
-| Pyke | roamer | Briar | - | Fighter | 0.652 |
-| Braum | warden | Kalista | - | Marksman | 0.605 |
-| Tahm Kench | warden | Nilah | - | Fighter | 0.647 |
-| Taric | warden | Milio | enchanter | Support | 0.547 |
+| Xerath | mage_support | Lillia | - | Fighter | 0.682 |
+| Zyra | mage_support | Sejuani | - | Tank | 0.652 |
+| Bard | roamer | Zac | - | Tank | 0.590 |
+| Pyke | roamer | Briar | - | Fighter | 0.658 |
+| Braum | warden | Kalista | - | Marksman | 0.606 |
+| Tahm Kench | warden | Nilah | - | Fighter | 0.662 |
+| Taric | warden | Milio | enchanter | Support | 0.546 |
 
 ## Figure outputs
 

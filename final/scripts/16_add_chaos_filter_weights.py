@@ -239,6 +239,67 @@ def process_split(
     return df, stats
 
 
+def update_split_summary_json(training_dir: Path, df_splits: Dict[str, pd.DataFrame]) -> None:
+    summary_path = training_dir / "split_summary.json"
+    if not summary_path.exists():
+        print("  [INFO] split_summary.json not found, skipping update.")
+        return
+
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"  [WARN] Failed to read split_summary.json ({exc}), skipping update.")
+        return
+
+    def stats(s: pd.Series) -> Dict[str, float]:
+        return {
+            "n": int(len(s)),
+            "mean": float(s.mean()),
+            "std": float(s.std(ddof=0)),
+            "min": float(s.min()),
+            "q05": float(s.quantile(0.05)),
+            "q25": float(s.quantile(0.25)),
+            "median": float(s.quantile(0.50)),
+            "q75": float(s.quantile(0.75)),
+            "q95": float(s.quantile(0.95)),
+            "max": float(s.max()),
+            "share_eq_0": float((s == 0).mean()),
+        }
+
+    df_train = df_splits["train"]
+    df_val = df_splits["val"]
+    df_test = df_splits["test"]
+
+    target_col = "support_roam_score"
+    quantile_col = "support_roam_score_quantile"
+
+    summary["split_sizes"] = {
+        "train": len(df_train),
+        "val": len(df_val),
+        "test": len(df_test),
+        "total": len(df_train) + len(df_val) + len(df_test),
+    }
+    summary["split_match_counts"] = {
+        "train": int(df_train["match_id"].nunique()),
+        "val": int(df_val["match_id"].nunique()),
+        "test": int(df_test["match_id"].nunique()),
+    }
+    if target_col in df_train.columns:
+        summary["target_stats_train"] = stats(df_train[target_col])
+    if quantile_col in df_train.columns:
+        summary["quantile_stats_train"] = stats(df_train[quantile_col])
+    if target_col in df_val.columns:
+        summary["target_stats_val"] = stats(df_val[target_col])
+    if target_col in df_test.columns:
+        summary["target_stats_test"] = stats(df_test[target_col])
+
+    try:
+        summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"  [Saved] Updated {summary_path}")
+    except Exception as exc:
+        print(f"  [WARN] Failed to write updated split_summary.json ({exc})")
+
+
 # ── Main ────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -250,6 +311,7 @@ def main() -> None:
     )
 
     all_stats = []
+    df_splits = {}
 
     for split_name in ["train", "val", "test"]:
         split_path = training_dir / f"{split_name}.parquet"
@@ -275,6 +337,10 @@ def main() -> None:
         df_out.to_parquet(split_path, index=False)
         print(f"  [Saved] {split_path}")
         all_stats.append(stats)
+        df_splits[split_name] = df_out
+
+    # Update split_summary.json if it exists
+    update_split_summary_json(training_dir, df_splits)
 
     # Summary
     summary = {

@@ -28,6 +28,8 @@ import torch.nn.functional as F
 from scipy.stats import spearmanr
 from torch.utils.data import DataLoader, TensorDataset
 
+from mlp_losses import weighted_mse_loss
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRAIN = str(REPO_ROOT / "final" / "data" / "training" / "train.parquet")
@@ -40,6 +42,8 @@ QUANTILE_COL = "support_roam_score_quantile"
 ROLE_KEYS = ("top", "jungle", "middle", "bottom", "utility")
 SIDES = ("ally", "enemy")
 CHAMPION_COLS = [f"{s}_{r}_champion_id" for s in SIDES for r in ROLE_KEYS]
+INPUT_FEATURE_COLUMNS = CHAMPION_COLS + ["side"]
+FEATURE_PROTOCOL_ID = "draft_10_champions_side"
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,6 +59,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--patience", type=int, default=15)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--allow-missing-sample-weight",
+        action="store_true",
+        help="Allow unweighted training if sample_weight is absent.",
+    )
+    p.add_argument(
+        "--use-wandb",
+        action="store_true",
+        help="Use Weights & Biases to track training metrics.",
+    )
     return p.parse_args()
 
 
@@ -109,6 +123,18 @@ def make_dataset(
         torch.from_numpy(side),
         torch.from_numpy(y),
         torch.from_numpy(w),
+    )
+
+
+def require_sample_weight(df: pd.DataFrame, allow_missing: bool) -> None:
+    if "sample_weight" in df.columns:
+        return
+    if allow_missing:
+        print("[Weights] No sample_weight column found - using unit weights")
+        return
+    raise SystemExit(
+        "[Weights] Missing required sample_weight column. "
+        "Use --allow-missing-sample-weight only for legacy/debug runs."
     )
 
 
@@ -211,6 +237,31 @@ def train_model(
     else:
         print(f"  [{target_label}] No sample_weight")
 
+    wandb_run = None
+    if getattr(args, "use_wandb", False):
+        try:
+            import wandb
+            wandb_run = wandb.init(
+                project="tfg-support-roaming",
+                name=f"MLP_OneHot_{target_label}",
+                config={
+                    "model": "MLP_OneHot",
+                    "target": target_label,
+                    "hidden_dims": args.hidden_dims,
+                    "dropout": args.dropout,
+                    "lr": args.lr,
+                    "weight_decay": args.weight_decay,
+                    "batch_size": args.batch_size,
+                    "epochs": args.epochs,
+                    "patience": args.patience,
+                    "seed": args.seed,
+                    "has_weights": has_weights,
+                },
+                reinit=True
+            )
+        except ImportError:
+            print("[Warning] wandb is not installed. Running without wandb.")
+
     best_val_loss = float("inf")
     best_epoch = 0
     best_state: Optional[Dict[str, torch.Tensor]] = None
@@ -220,6 +271,7 @@ def train_model(
     for epoch in range(1, args.epochs + 1):
         model.train()
         train_loss_sum = 0.0
+        train_weight_sum = 0.0
         for batch in loader_train:
             champion_ids = batch[0].to(device)
             side = batch[1].to(device)
@@ -228,16 +280,19 @@ def train_model(
 
             pred = model(champion_ids, side)
             if w is not None:
-                # Weighted MSE
-                loss = (w * (pred - y) ** 2).mean()
+                loss = weighted_mse_loss(pred, y, w)
+                train_loss_sum += (w * (pred.detach() - y) ** 2).sum().item()
+                train_weight_sum += w.sum().item()
             else:
                 loss = criterion(pred, y)
+                train_loss_sum += ((pred.detach() - y) ** 2).sum().item()
+                train_weight_sum += float(len(y))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            train_loss_sum += loss.item() * len(y)
-        train_loss = train_loss_sum / len(ds_train)
+        train_loss = train_loss_sum / max(train_weight_sum, 1e-8)
 
+        # Validation and checkpoint selection stay unweighted by design.
         model.eval()
         val_loss_sum = 0.0
         with torch.no_grad():
@@ -267,6 +322,14 @@ def train_model(
                 "is_best": is_best,
             }
         )
+
+        if wandb_run:
+            wandb.log({
+                "epoch": epoch,
+                "train/loss": train_loss,
+                "val/loss": val_loss,
+                "lr": lr,
+            })
 
         if epoch == 1 or epoch % 5 == 0 or is_best:
             print(
@@ -312,6 +375,13 @@ def train_model(
         f"Spearman={metrics['spearman_corr']:.4f}  "
         f"pred_std={metrics['pred_std']:.4f}  best_epoch={best_epoch}"
     )
+
+    if wandb_run:
+        for k, v in metrics.items():
+            if k not in ["model", "target", "eval_split"]:
+                wandb_run.summary[f"val/{k}"] = v
+        wandb_run.finish()
+
     return metrics, history
 
 
@@ -325,6 +395,7 @@ def main() -> None:
 
     df_train = pd.read_parquet(args.train)
     df_val = pd.read_parquet(args.val)
+    require_sample_weight(df_train, args.allow_missing_sample_weight)
     print(f"[Data] train={len(df_train):,}  val={len(df_val):,}")
 
     vocab = build_champion_vocab(df_train)
@@ -350,7 +421,11 @@ def main() -> None:
         history_rows.extend(history)
 
     config = {
+        "model_type": "mlp_onehot",
+        "feature_set": "main",
+        "feature_protocol_id": FEATURE_PROTOCOL_ID,
         "champion_cols": CHAMPION_COLS,
+        "input_feature_columns": INPUT_FEATURE_COLUMNS,
         "vocab_size": vocab_size,
         "n_champion_slots": n_slots,
         "input_dim": input_dim,
@@ -362,6 +437,8 @@ def main() -> None:
         "epochs": args.epochs,
         "patience": args.patience,
         "seed": args.seed,
+        "sample_weight_column": "sample_weight",
+        "used_sample_weight": "sample_weight" in df_train.columns,
     }
     (outdir / "model_config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     (outdir / "metrics.json").write_text(
@@ -375,7 +452,11 @@ def main() -> None:
         {
             "vocab": vocab,
             "champion_cols": CHAMPION_COLS,
+            "input_feature_columns": INPUT_FEATURE_COLUMNS,
+            "feature_protocol_id": FEATURE_PROTOCOL_ID,
             "side_mapping": {"blue": 0.0, "red": 1.0},
+            "sample_weight_column": "sample_weight",
+            "used_sample_weight": "sample_weight" in df_train.columns,
         },
         outdir / "preprocess.joblib",
     )

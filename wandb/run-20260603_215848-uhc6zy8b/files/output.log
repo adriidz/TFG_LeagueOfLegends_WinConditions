@@ -1,0 +1,19 @@
+  [quantile] epoch   1  train=0.17257  val=0.08653  lr=5.0e-04
+  [quantile] epoch   2  train=0.08842  val=0.08008  lr=5.0e-04
+  [quantile] epoch   3  train=0.08125  val=0.07814  lr=5.0e-04
+  [quantile] epoch   4  train=0.07799  val=0.07616  lr=5.0e-04
+  [quantile] epoch   5  train=0.07599  val=0.07534  lr=5.0e-04
+  [quantile] epoch   6  train=0.07482  val=0.07472  lr=5.0e-04
+  [quantile] epoch   7  train=0.07410  val=0.07438  lr=5.0e-04
+  [quantile] epoch   8  train=0.07362  val=0.07426  lr=5.0e-04
+  [quantile] epoch   9  train=0.07318  val=0.07398  lr=5.0e-04
+  [quantile] epoch  10  train=0.07285  val=0.07401  lr=5.0e-04
+  [quantile] epoch  11  train=0.07254  val=0.07390  lr=5.0e-04
+  [quantile] epoch  13  train=0.07218  val=0.07389  lr=5.0e-04
+  [quantile] epoch  15  train=0.07181  val=0.07367  lr=5.0e-04
+  [quantile] epoch  20  train=0.07090  val=0.07393  lr=5.0e-04
+  [quantile] epoch  25  train=0.06978  val=0.07402  lr=2.5e-04
+  [quantile] epoch  30  train=0.06898  val=0.07441  lr=1.3e-04
+  [quantile] epoch  35  train=0.06855  val=0.07436  lr=6.3e-05
+  [quantile] Early stopping at epoch 35 (best=15)
+  [quantile] R2=0.1450  Spearman=0.3712  pred_std=0.1105  best_epoch=15

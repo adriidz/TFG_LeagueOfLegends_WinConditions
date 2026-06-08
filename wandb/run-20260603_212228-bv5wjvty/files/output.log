@@ -1,0 +1,12 @@
+  [quantile] epoch   1  train=0.15998  val=0.07865  lr=5.0e-04
+  [quantile] epoch   2  train=0.07976  val=0.07446  lr=5.0e-04
+  [quantile] epoch   3  train=0.07428  val=0.07388  lr=5.0e-04
+  [quantile] epoch   4  train=0.07262  val=0.07381  lr=5.0e-04
+  [quantile] epoch   5  train=0.07177  val=0.07393  lr=5.0e-04
+  [quantile] epoch   6  train=0.07108  val=0.07377  lr=5.0e-04
+  [quantile] epoch  10  train=0.06754  val=0.07534  lr=5.0e-04
+  [quantile] epoch  15  train=0.05916  val=0.07832  lr=2.5e-04
+  [quantile] epoch  20  train=0.05359  val=0.08128  lr=1.3e-04
+  [quantile] epoch  25  train=0.05067  val=0.08218  lr=6.3e-05
+  [quantile] Early stopping at epoch 26 (best=6)
+  [quantile] R2=0.1439  Spearman=0.3716  pred_std=0.1206  best_epoch=6

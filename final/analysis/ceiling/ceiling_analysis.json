@@ -1,116 +1,109 @@
 [
   {
-    "icc": 0.12136835938262029,
-    "n_groups": 144,
-    "n_rows": 268390,
-    "mean_group_size": 1863.8194444444443,
-    "var_between": 8.181526637763826,
-    "var_within": 0.03165543345075594,
-    "total_var": 0.035997755908892336,
     "grouping": "support_champion",
     "columns": [
       "ally_utility_champion_id"
     ],
-    "r2_group_mean": 0.12116385902585003
+    "icc_train": 0.12143532084455097,
+    "r2_group_mean_oos": 0.124915672103459,
+    "n_train_groups_icc_min_size": 144,
+    "n_train_groups_oos_means": 164,
+    "n_test_groups": 149,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 4,
+    "n_unseen_test_rows": 4
   },
   {
-    "icc": 0.1210936125555837,
-    "n_groups": 255,
-    "n_rows": 268300,
-    "mean_group_size": 1052.1568627450981,
-    "var_between": 4.619667995629826,
-    "var_within": 0.031649442061480966,
-    "total_var": 0.035992942084240497,
     "grouping": "support_champion+side",
     "columns": [
       "ally_utility_champion_id",
       "side"
     ],
-    "r2_group_mean": 0.12168655903007786
+    "icc_train": 0.12117205351001532,
+    "r2_group_mean_oos": 0.12458526242716184,
+    "n_train_groups_icc_min_size": 255,
+    "n_train_groups_oos_means": 313,
+    "n_test_groups": 274,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 9,
+    "n_unseen_test_rows": 10
   },
   {
-    "icc": 0.13933276688109256,
-    "n_groups": 2518,
-    "n_rows": 262674,
-    "mean_group_size": 104.31850675138999,
-    "var_between": 0.5517690485834221,
-    "var_within": 0.03084568920477603,
-    "total_var": 0.03583731032897247,
     "grouping": "botlane_champions",
     "columns": [
       "ally_utility_champion_id",
       "ally_bottom_champion_id"
     ],
-    "r2_group_mean": 0.16061825515192485
+    "icc_train": 0.13942487804540168,
+    "r2_group_mean_oos": 0.12392210811764803,
+    "n_train_groups_icc_min_size": 2518,
+    "n_train_groups_oos_means": 5846,
+    "n_test_groups": 3447,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 371,
+    "n_unseen_test_rows": 386
   },
   {
-    "icc": 0.13904658450209836,
-    "n_groups": 3846,
-    "n_rows": 259263,
-    "mean_group_size": 67.41107644305772,
-    "var_between": 0.36610964232354093,
-    "var_within": 0.030798921242860884,
-    "total_var": 0.035771766174070296,
     "grouping": "botlane_champions+side",
     "columns": [
       "ally_utility_champion_id",
       "ally_bottom_champion_id",
       "side"
     ],
-    "r2_group_mean": 0.17263311556242522
+    "icc_train": 0.13911576324790514,
+    "r2_group_mean_oos": 0.11317790834117047,
+    "n_train_groups_icc_min_size": 3845,
+    "n_train_groups_oos_means": 9284,
+    "n_test_groups": 5329,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 601,
+    "n_unseen_test_rows": 636
   },
   {
-    "icc": 0.13153251997367313,
-    "n_groups": 2722,
-    "n_rows": 262063,
-    "mean_group_size": 96.27590007347538,
-    "var_between": 0.4860535982861498,
-    "var_within": 0.031194613586517102,
-    "total_var": 0.035917432222441814,
     "grouping": "sup_vs_enemy_sup_champion",
     "columns": [
       "ally_utility_champion_id",
       "enemy_utility_champion_id"
     ],
-    "r2_group_mean": 0.15353957428823417
+    "icc_train": 0.13161808039718317,
+    "r2_group_mean_oos": 0.12001756283406795,
+    "n_train_groups_icc_min_size": 2720,
+    "n_train_groups_oos_means": 6330,
+    "n_test_groups": 3642,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 388,
+    "n_unseen_test_rows": 414
   },
   {
-    "icc": 0.02636734765211338,
-    "n_groups": 7,
-    "n_rows": 268423,
-    "mean_group_size": 38346.142857142855,
-    "var_between": 36.569149113471845,
-    "var_within": 0.03518064913191521,
-    "total_var": 0.035997287897687164,
     "grouping": "support_riot_class",
     "columns": [
       "ally_utility_class"
     ],
-    "r2_group_mean": 0.022707965008374242
+    "icc_train": 0.026416330111328636,
+    "r2_group_mean_oos": 0.021833758387347912,
+    "n_train_groups_icc_min_size": 7,
+    "n_train_groups_oos_means": 7,
+    "n_test_groups": 7,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 0,
+    "n_unseen_test_rows": 0
   },
   {
-    "icc": 0.032427351104823705,
-    "n_groups": 47,
-    "n_rows": 268420,
-    "mean_group_size": 5711.063829787234,
-    "var_between": 6.705912268896887,
-    "var_within": 0.03485377666046749,
-    "total_var": 0.03599702170140302,
     "grouping": "botlane_riot_classes",
     "columns": [
       "ally_utility_class",
       "ally_bottom_class"
     ],
-    "r2_group_mean": 0.031941993531819146
+    "icc_train": 0.032473005645100944,
+    "r2_group_mean_oos": 0.030134614523643743,
+    "n_train_groups_icc_min_size": 47,
+    "n_train_groups_oos_means": 49,
+    "n_test_groups": 46,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 0,
+    "n_unseen_test_rows": 0
   },
   {
-    "icc": 0.018594895919492916,
-    "n_groups": 7229,
-    "n_rows": 88547,
-    "mean_group_size": 12.248858763314429,
-    "var_between": 0.04261720694775123,
-    "var_within": 0.034589592406680573,
-    "total_var": 0.03524488567687752,
     "grouping": "all_10_riot_classes",
     "columns": [
       "ally_top_class",
@@ -124,138 +117,138 @@
       "enemy_bottom_class",
       "enemy_utility_class"
     ],
-    "r2_group_mean": 0.5775152589400928
+    "icc_train": 0.01859312923395599,
+    "r2_group_mean_oos": -0.18235072464886293,
+    "n_train_groups_icc_min_size": 7225,
+    "n_train_groups_oos_means": 149794,
+    "n_test_groups": 42476,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 24556,
+    "n_unseen_test_rows": 25285
   },
   {
-    "icc": 0.0836250841519838,
-    "n_groups": 29,
-    "n_rows": 268423,
-    "mean_group_size": 9255.965517241379,
-    "var_between": 27.97666574899481,
-    "var_within": 0.033082398902736766,
-    "total_var": 0.035997287897687164,
     "grouping": "support_archetype",
     "columns": [
       "ally_utility_archetype"
     ],
-    "r2_group_mean": 0.08107110567170872
+    "icc_train": 0.08366721097225963,
+    "r2_group_mean_oos": 0.085231707650538,
+    "n_train_groups_icc_min_size": 29,
+    "n_train_groups_oos_means": 29,
+    "n_test_groups": 29,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 0,
+    "n_unseen_test_rows": 0
   },
   {
-    "icc": 0.08229336981428555,
-    "n_groups": 58,
-    "n_rows": 268423,
-    "mean_group_size": 4627.982758620689,
-    "var_between": 13.762207096356946,
-    "var_within": 0.03308187806748511,
-    "total_var": 0.035997287897687164,
     "grouping": "support_archetype+side",
     "columns": [
       "ally_utility_archetype",
       "side"
     ],
-    "r2_group_mean": 0.08118486169906591
+    "icc_train": 0.08233352422083658,
+    "r2_group_mean_oos": 0.08521658026334578,
+    "n_train_groups_icc_min_size": 58,
+    "n_train_groups_oos_means": 58,
+    "n_test_groups": 58,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 0,
+    "n_unseen_test_rows": 0
   },
   {
-    "icc": 0.09318051449512219,
-    "n_groups": 388,
-    "n_rows": 268067,
-    "mean_group_size": 690.8943298969073,
-    "var_between": 2.3494941475367783,
-    "var_within": 0.03263500932338656,
-    "total_var": 0.03597979936199116,
     "grouping": "botlane_archetypes",
     "columns": [
       "ally_utility_archetype",
       "ally_bottom_archetype"
     ],
-    "r2_group_mean": 0.09521066279862578
+    "icc_train": 0.09322482537657964,
+    "r2_group_mean_oos": 0.09463920503165313,
+    "n_train_groups_icc_min_size": 388,
+    "n_train_groups_oos_means": 564,
+    "n_test_groups": 432,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 12,
+    "n_unseen_test_rows": 13
   },
   {
-    "icc": 0.09309735671741083,
-    "n_groups": 635,
-    "n_rows": 267669,
-    "mean_group_size": 421.5259842519685,
-    "var_between": 1.4441953035118005,
-    "var_within": 0.03262139936750192,
-    "total_var": 0.03596486162383246,
     "grouping": "botlane_archetypes+side",
     "columns": [
       "ally_utility_archetype",
       "ally_bottom_archetype",
       "side"
     ],
-    "r2_group_mean": 0.09697068262262531
+    "icc_train": 0.09312899277997856,
+    "r2_group_mean_oos": 0.09298545805857994,
+    "n_train_groups_icc_min_size": 635,
+    "n_train_groups_oos_means": 1007,
+    "n_test_groups": 728,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 28,
+    "n_unseen_test_rows": 29
   },
   {
-    "icc": 0.09004118277587,
-    "n_groups": 385,
-    "n_rows": 268015,
-    "mean_group_size": 696.1428571428571,
-    "var_between": 2.28879108108442,
-    "var_within": 0.032751328628420014,
-    "total_var": 0.03598369434417779,
     "grouping": "sup_vs_enemy_sup_archetype",
     "columns": [
       "ally_utility_archetype",
       "enemy_utility_archetype"
     ],
-    "r2_group_mean": 0.0920299443774919
+    "icc_train": 0.09008535413270727,
+    "r2_group_mean_oos": 0.09442818176848466,
+    "n_train_groups_icc_min_size": 385,
+    "n_train_groups_oos_means": 573,
+    "n_test_groups": 433,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 15,
+    "n_unseen_test_rows": 22
   },
   {
-    "icc": 0.08178937666322438,
-    "n_groups": 390,
-    "n_rows": 268120,
-    "mean_group_size": 687.4871794871794,
-    "var_between": 2.0566747799083096,
-    "var_within": 0.03304545794083464,
-    "total_var": 0.03598143713755455,
     "grouping": "sup+jungle_archetypes",
     "columns": [
       "ally_utility_archetype",
       "ally_jungle_archetype"
     ],
-    "r2_group_mean": 0.08366782743695267
+    "icc_train": 0.0818225774373358,
+    "r2_group_mean_oos": 0.08405513282612587,
+    "n_train_groups_icc_min_size": 390,
+    "n_train_groups_oos_means": 541,
+    "n_test_groups": 423,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 14,
+    "n_unseen_test_rows": 17
   },
   {
-    "icc": 0.08183362197817193,
-    "n_groups": 654,
-    "n_rows": 267752,
-    "mean_group_size": 409.40672782874617,
-    "var_between": 1.2383113689341707,
-    "var_within": 0.03303107385906567,
-    "total_var": 0.03597055133135912,
     "grouping": "sup+jungle_archetypes+side",
     "columns": [
       "ally_utility_archetype",
       "ally_jungle_archetype",
       "side"
     ],
-    "r2_group_mean": 0.08551041619964994
+    "icc_train": 0.08186247782779685,
+    "r2_group_mean_oos": 0.08222777875994514,
+    "n_train_groups_icc_min_size": 653,
+    "n_train_groups_oos_means": 986,
+    "n_test_groups": 737,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 30,
+    "n_unseen_test_rows": 35
   },
   {
-    "icc": 0.08151158081925333,
-    "n_groups": 2651,
-    "n_rows": 262516,
-    "mean_group_size": 99.02527348170501,
-    "var_between": 0.3227189419084034,
-    "var_within": 0.032970765454584786,
-    "total_var": 0.03589567514585051,
     "grouping": "sup+jungle+top_archetypes",
     "columns": [
       "ally_utility_archetype",
       "ally_jungle_archetype",
       "ally_top_archetype"
     ],
-    "r2_group_mean": 0.10388710563542047
+    "icc_train": 0.0815696911424357,
+    "r2_group_mean_oos": 0.06512044098969683,
+    "n_train_groups_icc_min_size": 2650,
+    "n_train_groups_oos_means": 5913,
+    "n_test_groups": 3502,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 340,
+    "n_unseen_test_rows": 376
   },
   {
-    "icc": 0.10051323493545827,
-    "n_groups": 4802,
-    "n_rows": 246385,
-    "mean_group_size": 51.308829654310706,
-    "var_between": 0.21473351059509602,
-    "var_within": 0.03189027825200655,
-    "total_var": 0.035453132814312435,
     "grouping": "botlane_vs_enemy_bot_archetypes",
     "columns": [
       "ally_utility_archetype",
@@ -263,16 +256,16 @@
       "enemy_utility_archetype",
       "enemy_bottom_archetype"
     ],
-    "r2_group_mean": 0.17413258347522753
+    "icc_train": 0.10057046844767993,
+    "r2_group_mean_oos": 0.06170394463896722,
+    "n_train_groups_icc_min_size": 4800,
+    "n_train_groups_oos_means": 18737,
+    "n_test_groups": 8425,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 1738,
+    "n_unseen_test_rows": 1850
   },
   {
-    "icc": 0.07679916910855736,
-    "n_groups": 10124,
-    "n_rows": 173122,
-    "mean_group_size": 17.100158040300276,
-    "var_between": 0.07883406890806846,
-    "var_within": 0.0325420832157186,
-    "total_var": 0.03524894010288803,
     "grouping": "ally_team_archetypes",
     "columns": [
       "ally_top_archetype",
@@ -281,16 +274,16 @@
       "ally_bottom_archetype",
       "ally_utility_archetype"
     ],
-    "r2_group_mean": 0.35486702852556007
+    "icc_train": 0.0768577248920425,
+    "r2_group_mean_oos": -0.07872169302199028,
+    "n_train_groups_icc_min_size": 10122,
+    "n_train_groups_oos_means": 76587,
+    "n_test_groups": 27271,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 9741,
+    "n_unseen_test_rows": 10226
   },
   {
-    "icc": 0.07099034733057381,
-    "n_groups": 10535,
-    "n_rows": 146178,
-    "mean_group_size": 13.87546274323683,
-    "var_between": 0.06725615091248062,
-    "var_within": 0.032643948521646746,
-    "total_var": 0.035138218755575774,
     "grouping": "ally_team_archetypes+side",
     "columns": [
       "ally_top_archetype",
@@ -300,14 +293,16 @@
       "ally_utility_archetype",
       "side"
     ],
-    "r2_group_mean": 0.4257660305216783
+    "icc_train": 0.07110633841027494,
+    "r2_group_mean_oos": -0.11595460732262519,
+    "n_train_groups_icc_min_size": 10534,
+    "n_train_groups_oos_means": 97992,
+    "n_test_groups": 32950,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 13225,
+    "n_unseen_test_rows": 13812
   },
   {
-    "icc": NaN,
-    "n_groups": 0,
-    "n_rows": 0,
-    "mean_group_size": NaN,
-    "note": "insufficient data",
     "grouping": "all_10_archetypes",
     "columns": [
       "ally_top_archetype",
@@ -321,14 +316,16 @@
       "enemy_bottom_archetype",
       "enemy_utility_archetype"
     ],
-    "r2_group_mean": 0.9975306846319215
+    "icc_train": NaN,
+    "r2_group_mean_oos": -0.0023419271821674137,
+    "n_train_groups_icc_min_size": 0,
+    "n_train_groups_oos_means": 267611,
+    "n_test_groups": 57432,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 57124,
+    "n_unseen_test_rows": 57158
   },
   {
-    "icc": NaN,
-    "n_groups": 0,
-    "n_rows": 0,
-    "mean_group_size": NaN,
-    "note": "insufficient data",
     "grouping": "all_10_archetypes+side",
     "columns": [
       "ally_top_archetype",
@@ -343,6 +340,13 @@
       "enemy_utility_archetype",
       "side"
     ],
-    "r2_group_mean": 0.9986791669107469
+    "icc_train": NaN,
+    "r2_group_mean_oos": -0.0016851718311325925,
+    "n_train_groups_icc_min_size": 0,
+    "n_train_groups_oos_means": 267928,
+    "n_test_groups": 57452,
+    "n_test_rows": 57468,
+    "n_unseen_test_groups": 57302,
+    "n_unseen_test_rows": 57318
   }
 ]

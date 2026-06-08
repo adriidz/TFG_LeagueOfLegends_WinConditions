@@ -1,0 +1,41 @@
+{
+  "os": "Windows-10-10.0.26200-SP0",
+  "python": "CPython 3.8.10",
+  "startedAt": "2026-06-03T19:17:19.829260Z",
+  "args": [
+    "--train",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\train.parquet",
+    "--val",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\val.parquet",
+    "--feature-set",
+    "main",
+    "--use-wandb",
+    "--seed",
+    "123",
+    "--outdir",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed123"
+  ],
+  "program": "C:\\Users\\adria\\Desktop\\TFG\\final\\scripts\\03_train_gbt.py",
+  "codePath": "final\\scripts\\03_train_gbt.py",
+  "codePathLocal": "final\\scripts\\03_train_gbt.py",
+  "git": {
+    "remote": "https://github.com/adriidz/TFG_LeagueOfLegends_WinConditions.git",
+    "commit": "20df305893ccfd062b32dec9e0857e83881e263a"
+  },
+  "email": "adrian.diazg@autonoma.cat",
+  "root": "C:\\Users\\adria\\Desktop\\TFG",
+  "host": "PC_DIAZ",
+  "executable": "C:\\Users\\adria\\Desktop\\TFG\\.venv\\Scripts\\python.exe",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "disk": {
+    "/": {
+      "total": "999231057920",
+      "used": "853649141760"
+    }
+  },
+  "memory": {
+    "total": "33409191936"
+  },
+  "writerId": "ctfwitgjtpj7uuzn05qe10saz2js1sm5"
+}

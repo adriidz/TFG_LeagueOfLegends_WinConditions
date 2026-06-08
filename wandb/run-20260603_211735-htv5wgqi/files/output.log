@@ -1,0 +1,11 @@
+  [raw] epoch   1  train=0.10935  val=0.03763  lr=5.0e-04
+  [raw] epoch   2  train=0.03591  val=0.03197  lr=5.0e-04
+  [raw] epoch   3  train=0.03140  val=0.03102  lr=5.0e-04
+  [raw] epoch   4  train=0.03023  val=0.03071  lr=5.0e-04
+  [raw] epoch   5  train=0.02975  val=0.03070  lr=5.0e-04
+  [raw] epoch  10  train=0.02846  val=0.03110  lr=5.0e-04
+  [raw] epoch  15  train=0.02548  val=0.03202  lr=2.5e-04
+  [raw] epoch  20  train=0.02283  val=0.03330  lr=1.3e-04
+  [raw] epoch  25  train=0.02148  val=0.03382  lr=6.3e-05
+  [raw] Early stopping at epoch 25 (best=5)
+  [raw] R2=0.1478  Spearman=0.3747  pred_std=0.0786  best_epoch=5

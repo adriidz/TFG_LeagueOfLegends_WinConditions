@@ -1,0 +1,37 @@
+{
+  "model": "HistGBT",
+  "feature_set": "main",
+  "feature_protocol_id": "draft_10_champions_side",
+  "input_feature_columns": [
+    "ally_top_champion_id",
+    "ally_jungle_champion_id",
+    "ally_middle_champion_id",
+    "ally_bottom_champion_id",
+    "ally_utility_champion_id",
+    "enemy_top_champion_id",
+    "enemy_jungle_champion_id",
+    "enemy_middle_champion_id",
+    "enemy_bottom_champion_id",
+    "enemy_utility_champion_id",
+    "side"
+  ],
+  "feature_count": 11,
+  "matrix_shape_train": [
+    268322,
+    11
+  ],
+  "included_feature_groups": [
+    "champions",
+    "context"
+  ],
+  "excluded_feature_groups": [
+    "summoner_spells"
+  ],
+  "sample_weight_column": "sample_weight",
+  "used_sample_weight": true,
+  "sample_weight_summary": {
+    "mean": 0.7881858944892883,
+    "min": 0.20000000298023224,
+    "max": 1.0
+  }
+}

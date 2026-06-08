@@ -1,0 +1,104 @@
+{
+  "clean_plus_chaotic_equals_all": true,
+  "n_all": 57468,
+  "n_clean": 42147,
+  "n_chaotic": 15321,
+  "chaos_flag_nan_count": 0,
+  "chaos_flag_has_nan": false,
+  "prediction_rows_match_test": true,
+  "model_source": "HistGBT final seed ensemble",
+  "n_model_seeds": 3,
+  "mean_prediction_seed_std": 0.005177959228807122,
+  "feature_protocol_id": "draft_10_champions_side",
+  "feature_columns": [
+    "ally_top_champion_id",
+    "ally_jungle_champion_id",
+    "ally_middle_champion_id",
+    "ally_bottom_champion_id",
+    "ally_utility_champion_id",
+    "enemy_top_champion_id",
+    "enemy_jungle_champion_id",
+    "enemy_middle_champion_id",
+    "enemy_bottom_champion_id",
+    "enemy_utility_champion_id",
+    "side"
+  ],
+  "used_sample_weight": true,
+  "predictions_match_final_retrained_artifacts": true,
+  "artifact_runs": [
+    {
+      "run_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed123",
+      "model_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed123\\gbt_model_raw.joblib",
+      "preprocess_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed123\\preprocess.joblib",
+      "config_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed123\\model_config.json",
+      "seed": 123,
+      "feature_protocol_id": "draft_10_champions_side",
+      "feature_columns": [
+        "ally_top_champion_id",
+        "ally_jungle_champion_id",
+        "ally_middle_champion_id",
+        "ally_bottom_champion_id",
+        "ally_utility_champion_id",
+        "enemy_top_champion_id",
+        "enemy_jungle_champion_id",
+        "enemy_middle_champion_id",
+        "enemy_bottom_champion_id",
+        "enemy_utility_champion_id",
+        "side"
+      ],
+      "used_sample_weight": true,
+      "model_mtime": 1780514246.1675963
+    },
+    {
+      "run_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed42",
+      "model_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed42\\gbt_model_raw.joblib",
+      "preprocess_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed42\\preprocess.joblib",
+      "config_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed42\\model_config.json",
+      "seed": 42,
+      "feature_protocol_id": "draft_10_champions_side",
+      "feature_columns": [
+        "ally_top_champion_id",
+        "ally_jungle_champion_id",
+        "ally_middle_champion_id",
+        "ally_bottom_champion_id",
+        "ally_utility_champion_id",
+        "enemy_top_champion_id",
+        "enemy_jungle_champion_id",
+        "enemy_middle_champion_id",
+        "enemy_bottom_champion_id",
+        "enemy_utility_champion_id",
+        "side"
+      ],
+      "used_sample_weight": true,
+      "model_mtime": 1780512517.1891584
+    },
+    {
+      "run_dir": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed456",
+      "model_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed456\\gbt_model_raw.joblib",
+      "preprocess_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed456\\preprocess.joblib",
+      "config_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\gbt\\seed456\\model_config.json",
+      "seed": 456,
+      "feature_protocol_id": "draft_10_champions_side",
+      "feature_columns": [
+        "ally_top_champion_id",
+        "ally_jungle_champion_id",
+        "ally_middle_champion_id",
+        "ally_bottom_champion_id",
+        "ally_utility_champion_id",
+        "enemy_top_champion_id",
+        "enemy_jungle_champion_id",
+        "enemy_middle_champion_id",
+        "enemy_bottom_champion_id",
+        "enemy_utility_champion_id",
+        "side"
+      ],
+      "used_sample_weight": true,
+      "model_mtime": 1780515901.4055548
+    }
+  ],
+  "chaos_flag_definition": [
+    "support_deaths_0_12 + adc_deaths_0_12 >= 6",
+    "adc_deaths_0_12 >= 5",
+    "support_deaths_0_12 >= 4 AND support_kill_assists_out_bot_0_12 == 0"
+  ]
+}

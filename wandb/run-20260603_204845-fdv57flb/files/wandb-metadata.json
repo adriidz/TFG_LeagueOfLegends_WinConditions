@@ -1,0 +1,52 @@
+{
+  "os": "Windows-10-10.0.26200-SP0",
+  "python": "CPython 3.8.10",
+  "startedAt": "2026-06-03T18:48:45.286517Z",
+  "args": [
+    "--train",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\train.parquet",
+    "--val",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\data\\training\\val.parquet",
+    "--hidden-dims",
+    "192",
+    "96",
+    "--dropout",
+    "0.35",
+    "--weight-decay",
+    "0.0005",
+    "--patience",
+    "20",
+    "--epochs",
+    "150",
+    "--lr",
+    "0.0005",
+    "--use-wandb",
+    "--seed",
+    "42",
+    "--outdir",
+    "C:\\Users\\adria\\Desktop\\TFG\\final\\models\\mlp_onehot\\seed42"
+  ],
+  "program": "C:\\Users\\adria\\Desktop\\TFG\\final\\scripts\\04a_train_mlp_onehot.py",
+  "codePath": "final\\scripts\\04a_train_mlp_onehot.py",
+  "codePathLocal": "final\\scripts\\04a_train_mlp_onehot.py",
+  "git": {
+    "remote": "https://github.com/adriidz/TFG_LeagueOfLegends_WinConditions.git",
+    "commit": "20df305893ccfd062b32dec9e0857e83881e263a"
+  },
+  "email": "adrian.diazg@autonoma.cat",
+  "root": "C:\\Users\\adria\\Desktop\\TFG",
+  "host": "PC_DIAZ",
+  "executable": "C:\\Users\\adria\\Desktop\\TFG\\.venv\\Scripts\\python.exe",
+  "cpu_count": 6,
+  "cpu_count_logical": 12,
+  "disk": {
+    "/": {
+      "total": "999231057920",
+      "used": "853651415040"
+    }
+  },
+  "memory": {
+    "total": "33409191936"
+  },
+  "writerId": "4p1hizvm3d7wyunwcau8x38j49a41hxu"
+}

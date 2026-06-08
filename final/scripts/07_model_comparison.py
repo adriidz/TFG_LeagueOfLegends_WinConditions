@@ -39,6 +39,29 @@ QUANTILE_COL = "support_roam_score_quantile"
 ROLE_KEYS = ("top", "jungle", "middle", "bottom", "utility")
 SIDES = ("ally", "enemy")
 CHAMPION_COLS = [f"{s}_{r}_champion_id" for s in SIDES for r in ROLE_KEYS]
+CANONICAL_MAIN_FEATURES = CHAMPION_COLS + ["side"]
+MAIN_FEATURE_PROTOCOL_ID = "draft_10_champions_side"
+PRIMARY_MODEL_KEYS = ["baselines", "gbt", "mlp_onehot", "mlp_embed", "mlp_per_role"]
+SECONDARY_MODEL_KEYS = ["gbt_enriched", "gbt_interactions", "mlp_per_role_tuned", "ceiling"]
+MAIN_LEARNED_MODELS = {
+    "HistGBT",
+    "MLP OneHot",
+    "MLP Embed Shared",
+    "MLP Per-Role + Interactions",
+}
+MAIN_BASELINE_MODELS = {"Global Mean", "Champion Mean"}
+FINAL_MAIN_COLUMNS = [
+    "model",
+    "r2",
+    "spearman_corr",
+    "pearson_corr",
+    "mae",
+    "rmse",
+    "pred_std",
+    "n_eval",
+    "within_010",
+    "within_020",
+]
 SIDE_MAPPING = {"blue": 0.0, "red": 1.0}
 ROLE_TO_ARCH_KEY = {
     "top": "top",
@@ -59,7 +82,47 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--quantile-transformer", default=DEFAULT_TRANSFORMER)
     p.add_argument("--outdir", default=DEFAULT_OUTDIR)
     p.add_argument("--batch-size", type=int, default=4096)
+    p.add_argument(
+        "--models",
+        nargs="+",
+        choices=PRIMARY_MODEL_KEYS + SECONDARY_MODEL_KEYS,
+        default=None,
+        help="Models to include. Defaults to the fair primary comparison only.",
+    )
+    p.add_argument(
+        "--include-secondary",
+        action="store_true",
+        help="Also include enriched/Pair-TE/HP-best/reference rows as secondary analyses.",
+    )
     return p.parse_args()
+
+
+def selected_model_keys(args: argparse.Namespace) -> List[str]:
+    if args.models:
+        keys = list(args.models)
+        if args.include_secondary:
+            keys.extend(SECONDARY_MODEL_KEYS)
+        return list(dict.fromkeys(keys))
+    keys = list(PRIMARY_MODEL_KEYS)
+    if args.include_secondary:
+        keys.extend(SECONDARY_MODEL_KEYS)
+    return keys
+
+
+def find_model_run_dirs(base_dir: Path, target_names: List[str] = ["model_config.json"]) -> List[Path]:
+    if not base_dir.exists():
+        return []
+    seed_subdirs = sorted(list(base_dir.glob("seed*")))
+    valid_seed_dirs = []
+    for d in seed_subdirs:
+        if d.is_dir() and all((d / name).exists() for name in target_names):
+            valid_seed_dirs.append(d)
+    
+    if valid_seed_dirs:
+        return valid_seed_dirs
+    if all((base_dir / name).exists() for name in target_names):
+        return [base_dir]
+    return []
 
 
 def init_practical_context(train_y_raw: np.ndarray) -> None:
@@ -82,6 +145,15 @@ def init_practical_context(train_y_raw: np.ndarray) -> None:
         }
     )
     DECILE_ROWS.clear()
+
+
+def weighted_mean(values: pd.Series, weights: pd.Series) -> float:
+    w = weights.to_numpy(dtype=np.float64)
+    v = values.to_numpy(dtype=np.float64)
+    w_sum = float(w.sum())
+    if w_sum <= 1e-8:
+        return float(np.mean(v))
+    return float(np.sum(v * w) / w_sum)
 
 
 def bin_indices(values: np.ndarray, edges: np.ndarray) -> np.ndarray:
@@ -272,49 +344,69 @@ def eval_mean_baselines(
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     n_train = len(df_train)
+    if "sample_weight" not in df_train.columns:
+        raise SystemExit("[Weights] Missing required sample_weight column for main baselines.")
+    weights = df_train["sample_weight"].astype(np.float64)
 
     for label, target_col in [("raw", TARGET_COL), ("quantile", QUANTILE_COL)]:
         if target_col not in df_train.columns or target_col not in df_test.columns:
             continue
 
-        y_pred_global = np.full(len(df_test), float(df_train[target_col].mean()), dtype=np.float64)
+        global_mean = weighted_mean(df_train[target_col], weights)
+        y_pred_global = np.full(len(df_test), global_mean, dtype=np.float64)
         if label == "raw":
-            rows.append(
-                make_row(
-                    "Global Mean",
-                    "raw",
-                    "raw",
-                    df_test[TARGET_COL].to_numpy(),
-                    y_pred_global,
-                    n_train,
-                )
+            row = make_row(
+                "Global Mean",
+                "raw",
+                "raw",
+                df_test[TARGET_COL].to_numpy(),
+                y_pred_global,
+                n_train,
+                notes="Sample-weighted train mean.",
             )
+            row["used_sample_weight"] = True
+            row["seed"] = None
+            row["feature_protocol_id"] = "baseline_no_features"
+            rows.append(row)
         else:
             add_quantile_rows(rows, "Global Mean", y_pred_global, df_test, n_train, transformer)
+            for row in rows[-2:]:
+                if row["model"].startswith("Global Mean"):
+                    row["notes"] = (
+                        f"{row['notes']} Sample-weighted train mean."
+                        if row["notes"]
+                        else "Sample-weighted train mean."
+                    )
+                    row["used_sample_weight"] = True
 
         champ_col = "ally_utility_champion_id"
-        means = df_train.groupby(champ_col)[target_col].mean()
-        fallback = float(df_train[target_col].mean())
+        means = df_train.groupby(champ_col).apply(
+            lambda g: weighted_mean(g[target_col], g["sample_weight"])
+        )
+        fallback = global_mean
         y_pred_champ = df_test[champ_col].map(means).fillna(fallback).to_numpy(dtype=np.float64)
         unseen = int((~df_test[champ_col].isin(means.index)).sum())
-        notes = f"{unseen} unseen support champions in test."
+        notes = f"Sample-weighted support-champion means. {unseen} unseen support champions in test."
         if label == "raw":
-            rows.append(
-                make_row(
-                    "Champion Mean",
-                    "raw",
-                    "raw",
-                    df_test[TARGET_COL].to_numpy(),
-                    y_pred_champ,
-                    n_train,
-                    notes=notes,
-                )
+            row = make_row(
+                "Champion Mean",
+                "raw",
+                "raw",
+                df_test[TARGET_COL].to_numpy(),
+                y_pred_champ,
+                n_train,
+                notes=notes,
             )
+            row["used_sample_weight"] = True
+            row["seed"] = None
+            row["feature_protocol_id"] = "baseline_support_champion_only"
+            rows.append(row)
         else:
             before = len(rows)
             add_quantile_rows(rows, "Champion Mean", y_pred_champ, df_test, n_train, transformer)
             for row in rows[before:]:
                 row["notes"] = notes if not row["notes"] else f"{row['notes']} {notes}"
+                row["used_sample_weight"] = True
 
     return rows
 
@@ -385,39 +477,44 @@ def eval_gbt_family(
     model_dir: Path,
     model_name: str,
 ) -> List[Dict[str, Any]]:
-    gbt_dir = model_dir
-    preprocess_path = gbt_dir / "preprocess.joblib"
-    if not preprocess_path.exists():
-        print(f"[{model_name}] preprocess.joblib not found, skipping")
+    run_dirs = find_model_run_dirs(model_dir, ["model_config.json", "preprocess.joblib"])
+    if not run_dirs:
+        print(f"[{model_name}] no valid run directories found in {model_dir}, skipping")
         return []
 
-    preprocess = joblib.load(preprocess_path)
-    encoder = preprocess["encoder"]
-    feature_cols = preprocess["feature_columns"]
-    df_eval = add_gbt_enrichment_columns(df_test, preprocess)
-    X_test = prepare_gbt_features(df_eval, feature_cols, encoder)
-
     rows: List[Dict[str, Any]] = []
-    for label, target_col in [("raw", TARGET_COL), ("quantile", QUANTILE_COL)]:
-        model_path = gbt_dir / f"gbt_model_{label}.joblib"
-        if not model_path.exists():
-            print(f"[{model_name}] {model_path.name} not found, skipping")
-            continue
-        model = joblib.load(model_path)
-        y_pred = model.predict(X_test)
-        if label == "raw":
-            rows.append(
-                make_row(
-                    model_name,
-                    "raw",
-                    "raw",
-                    df_test[TARGET_COL].to_numpy(),
-                    y_pred,
-                    n_train,
+    for run_dir in run_dirs:
+        preprocess_path = run_dir / "preprocess.joblib"
+        preprocess = joblib.load(preprocess_path)
+        encoder = preprocess["encoder"]
+        feature_cols = preprocess["feature_columns"]
+        config = load_json_if_exists(run_dir / "model_config.json")
+        df_eval = add_gbt_enrichment_columns(df_test, preprocess)
+        X_test = prepare_gbt_features(df_eval, feature_cols, encoder)
+
+        for label, target_col in [("raw", TARGET_COL), ("quantile", QUANTILE_COL)]:
+            model_path = run_dir / f"gbt_model_{label}.joblib"
+            if not model_path.exists():
+                continue
+            model = joblib.load(model_path)
+            y_pred = model.predict(X_test)
+            if label == "raw":
+                rows.append(
+                    {
+                        **make_row(
+                            model_name,
+                            "raw",
+                            "raw",
+                            df_test[TARGET_COL].to_numpy(),
+                            y_pred,
+                            n_train,
+                        ),
+                        "seed": config.get("seed"),
+                        "feature_protocol_id": config.get("feature_protocol_id"),
+                    }
                 )
-            )
-        elif target_col in df_test.columns:
-            add_quantile_rows(rows, model_name, y_pred, df_test, n_train, transformer)
+            elif target_col in df_test.columns:
+                add_quantile_rows(rows, model_name, y_pred, df_test, n_train, transformer)
     return rows
 
 
@@ -545,19 +642,9 @@ def eval_mlp(
     batch_size: int,
 ) -> List[Dict[str, Any]]:
     model_dir = REPO_ROOT / "final" / "models" / f"mlp_{model_type}"
-    config_path = model_dir / "model_config.json"
-    vocab_path = model_dir / "vocab.json"
-    if not config_path.exists() or not vocab_path.exists():
-        print(f"[MLP {model_type}] config/vocab not found, skipping")
-        return []
-
-    weight_paths = {
-        label: model_dir / f"mlp_{model_type}_{label}.pt"
-        for label in ("raw", "quantile")
-    }
-    weight_paths = {k: v for k, v in weight_paths.items() if v.exists()}
-    if not weight_paths:
-        print(f"[MLP {model_type}] weights not found, skipping")
+    run_dirs = find_model_run_dirs(model_dir, ["model_config.json", "vocab.json"])
+    if not run_dirs:
+        print(f"[MLP {model_type}] no valid run directories found, skipping")
         return []
 
     try:
@@ -568,11 +655,6 @@ def eval_mlp(
         print(f"[MLP {model_type}] torch unavailable ({exc}), skipping")
         return []
 
-    config = json.loads(config_path.read_text(encoding="utf-8"))
-    vocab_raw = json.loads(vocab_path.read_text(encoding="utf-8"))
-    vocab = {int(k): int(v) for k, v in vocab_raw.items()}
-    champ_ids_np = encode_champion_ids(df_test, vocab)
-    side_np = encode_side(df_test)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     class MLPOneHotEval(nn.Module):
@@ -645,84 +727,111 @@ def eval_mlp(
     rows: List[Dict[str, Any]] = []
     pretty_names = {
         "onehot": "MLP OneHot",
-        "embed": "MLP Embed",
+        "embed": "MLP Embed Shared",
         "per_role": "MLP Per-Role + Interactions",
         "per_role_tuned": "MLP Per-Role + Interactions HP Best",
     }
     pretty_name = pretty_names.get(model_type, f"MLP {model_type}")
-    n_slots = int(config.get("n_champion_slots", len(CHAMPION_COLS)))
 
-    for label, path in weight_paths.items():
-        if model_type == "onehot":
-            model = MLPOneHotEval(
-                vocab_size=int(config["vocab_size"]),
-                n_slots=n_slots,
-                hidden_dims=list(config["hidden_dims"]),
-            )
-        elif model_type in {"per_role", "per_role_tuned"}:
-            model = MLPPerRoleEval(
-                vocab_size=int(config["vocab_size"]),
-                embed_dim=int(config["embed_dim"]),
-                n_slots=n_slots,
-                hidden_dims=list(config["hidden_dims"]),
-            )
-        else:
-            model = MLPEmbedEval(
-                vocab_size=int(config["vocab_size"]),
-                embed_dim=int(config["embed_dim"]),
-                n_slots=n_slots,
-                hidden_dims=list(config["hidden_dims"]),
-            )
-        model.load_state_dict(torch_load_state(path, device))
-        model.to(device)
-        model.eval()
+    for run_dir in run_dirs:
+        config_path = run_dir / "model_config.json"
+        vocab_path = run_dir / "vocab.json"
+        
+        weight_paths = {
+            label: run_dir / f"mlp_{model_type}_{label}.pt"
+            for label in ("raw", "quantile")
+        }
+        weight_paths = {k: v for k, v in weight_paths.items() if v.exists()}
+        if not weight_paths:
+            print(f"[MLP {model_type}] weights not found in {run_dir}, skipping")
+            continue
 
-        preds: List[np.ndarray] = []
-        with torch.no_grad():
-            for sl in iter_batches(len(df_test), batch_size):
-                champion_ids = torch.from_numpy(champ_ids_np[sl]).to(device)
-                side = torch.from_numpy(side_np[sl]).to(device)
-                preds.append(model(champion_ids, side).cpu().numpy())
-        y_pred = np.concatenate(preds)
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        vocab_raw = json.loads(vocab_path.read_text(encoding="utf-8"))
+        vocab = {int(k): int(v) for k, v in vocab_raw.items()}
+        champ_ids_np = encode_champion_ids(df_test, vocab)
+        side_np = encode_side(df_test)
+        n_slots = int(config.get("n_champion_slots", len(CHAMPION_COLS)))
 
-        if label == "raw":
-            rows.append(
-                make_row(
-                    pretty_name,
-                    "raw",
-                    "raw",
-                    df_test[TARGET_COL].to_numpy(),
-                    y_pred,
-                    n_train,
+        for label, path in weight_paths.items():
+            if model_type == "onehot":
+                model = MLPOneHotEval(
+                    vocab_size=int(config["vocab_size"]),
+                    n_slots=n_slots,
+                    hidden_dims=list(config["hidden_dims"]),
                 )
-            )
-        elif QUANTILE_COL in df_test.columns:
-            add_quantile_rows(rows, pretty_name, y_pred, df_test, n_train, transformer)
+            elif model_type in {"per_role", "per_role_tuned"}:
+                model = MLPPerRoleEval(
+                    vocab_size=int(config["vocab_size"]),
+                    embed_dim=int(config["embed_dim"]),
+                    n_slots=n_slots,
+                    hidden_dims=list(config["hidden_dims"]),
+                )
+            else:
+                model = MLPEmbedEval(
+                    vocab_size=int(config["vocab_size"]),
+                    embed_dim=int(config["embed_dim"]),
+                    n_slots=n_slots,
+                    hidden_dims=list(config["hidden_dims"]),
+                )
+            model.load_state_dict(torch_load_state(path, device))
+            model.to(device)
+            model.eval()
+
+            preds: List[np.ndarray] = []
+            with torch.no_grad():
+                for sl in iter_batches(len(df_test), batch_size):
+                    champion_ids = torch.from_numpy(champ_ids_np[sl]).to(device)
+                    side = torch.from_numpy(side_np[sl]).to(device)
+                    preds.append(model(champion_ids, side).cpu().numpy())
+            y_pred = np.concatenate(preds)
+
+            if label == "raw":
+                rows.append(
+                    {
+                        **make_row(
+                            pretty_name,
+                            "raw",
+                            "raw",
+                            df_test[TARGET_COL].to_numpy(),
+                            y_pred,
+                            n_train,
+                        ),
+                        "seed": config.get("seed"),
+                        "feature_protocol_id": config.get("feature_protocol_id"),
+                    }
+                )
+            elif QUANTILE_COL in df_test.columns:
+                add_quantile_rows(rows, pretty_name, y_pred, df_test, n_train, transformer)
 
     return rows
 
 
 def add_ceiling_reference(rows: List[Dict[str, Any]], n_eval: int) -> None:
-    ceiling_path = REPO_ROOT / "final" / "analysis" / "ceiling" / "ceiling_analysis.json"
+    ceiling_path = REPO_ROOT / "final" / "analysis" / "ceiling" / "ceiling_oos_summary.csv"
     if not ceiling_path.exists():
         return
-    data = json.loads(ceiling_path.read_text(encoding="utf-8"))
-    ref = next((r for r in data if r.get("grouping") == "botlane_champions+side"), None)
-    if ref is None:
+    data = pd.read_csv(ceiling_path)
+    ref_df = data[data["grouping"] == "botlane_champions+side"]
+    if ref_df.empty:
         return
+    ref = ref_df.iloc[0]
     rows.append(
         {
-            "model": "ICC Ceiling (botlane+side)",
+            "model": "OOS Group Mean Reference (botlane+side)",
             "trained_target": "reference",
             "evaluation_scale": "raw",
             "eval_split": "test",
-            "n_train": int(ref.get("n_rows", 0)),
+            "n_train": int(ref.get("n_train_groups", 0)),
             "n_eval": int(n_eval),
-            "notes": "Reference from empirical ceiling analysis on train.",
+            "notes": (
+                "Train-only botlane+side group means applied to test; unseen groups "
+                "fall back to train global mean. ICC is descriptive and not used as model R2."
+            ),
             "mse": float("nan"),
             "rmse": float("nan"),
             "mae": float("nan"),
-            "r2": float(ref.get("r2_group_mean", float("nan"))),
+            "r2": float(ref.get("r2_group_mean_oos", float("nan"))),
             "pearson_corr": float("nan"),
             "spearman_corr": float("nan"),
             "pred_std": float("nan"),
@@ -971,6 +1080,8 @@ def save_plot(raw_df: pd.DataFrame, quantile_df: pd.DataFrame, outdir: Path) -> 
         ],
         ignore_index=True,
     )
+    if "spearman_corr" not in plot_df.columns:
+        return
     plot_df = plot_df.dropna(subset=["spearman_corr"])
     if plot_df.empty:
         return
@@ -985,6 +1096,322 @@ def save_plot(raw_df: pd.DataFrame, quantile_df: pd.DataFrame, outdir: Path) -> 
     fig.tight_layout()
     fig.savefig(outdir / "comparison_spearman.png", dpi=160)
     plt.close(fig)
+
+
+def attach_test_metadata(rows: List[Dict[str, Any]], test_path: str) -> None:
+    resolved = str(Path(test_path).resolve())
+    for row in rows:
+        row["test_dataset"] = resolved
+        row["metrics_source"] = "recomputed_from_predictions"
+
+
+def format_metric_mean_std(values: pd.Series) -> str:
+    vals = pd.to_numeric(values, errors="coerce").dropna()
+    if vals.empty:
+        return ""
+    if len(vals) == 1:
+        return f"{float(vals.iloc[0]):.4f}"
+    return f"{float(vals.mean()):.4f} +/- {float(vals.std(ddof=0)):.4f}"
+
+
+def build_final_main_table(rows: List[Dict[str, Any]]) -> pd.DataFrame:
+    raw_rows = [
+        row
+        for row in rows
+        if row.get("evaluation_scale") == "raw"
+        and row.get("trained_target") == "raw"
+        and row.get("model") in MAIN_BASELINE_MODELS.union(MAIN_LEARNED_MODELS)
+    ]
+    df = pd.DataFrame(raw_rows)
+    if df.empty:
+        return df
+
+    required = FINAL_MAIN_COLUMNS + ["pearson_corr", "test_dataset", "metrics_source"]
+    missing = [col for col in required if col not in df.columns]
+    if missing:
+        raise SystemExit(f"[Final table] Missing required columns: {missing}")
+
+    n_eval_values = sorted(df["n_eval"].dropna().unique().tolist())
+    if len(n_eval_values) != 1:
+        raise SystemExit(f"[Final table] n_eval mismatch across main rows: {n_eval_values}")
+
+    test_values = sorted(df["test_dataset"].dropna().unique().tolist())
+    if len(test_values) != 1:
+        raise SystemExit(f"[Final table] test dataset mismatch across main rows: {test_values}")
+
+    source_values = sorted(df["metrics_source"].dropna().unique().tolist())
+    if source_values != ["recomputed_from_predictions"]:
+        raise SystemExit(f"[Final table] Metrics were not all recomputed from predictions: {source_values}")
+
+    order = {
+        "Global Mean": 0,
+        "Champion Mean": 1,
+        "HistGBT": 2,
+        "MLP OneHot": 3,
+        "MLP Embed Shared": 4,
+        "MLP Per-Role + Interactions": 5,
+    }
+    metric_cols = [
+        "r2",
+        "spearman_corr",
+        "pearson_corr",
+        "mae",
+        "rmse",
+        "pred_std",
+        "within_010",
+        "within_020",
+    ]
+    grouped_rows: List[Dict[str, Any]] = []
+    for model, sub in df.groupby("model", sort=False):
+        row: Dict[str, Any] = {
+            "model": model,
+            "n_eval": int(sub["n_eval"].iloc[0]),
+            "n_seeds": int(sub["seed"].dropna().nunique()) if "seed" in sub.columns else 0,
+        }
+        for metric in metric_cols:
+            row[metric] = format_metric_mean_std(sub[metric])
+        row["_order"] = order.get(model, 99)
+        grouped_rows.append(row)
+
+    out = pd.DataFrame(grouped_rows).sort_values("_order").drop(columns=["_order"])
+    return out[
+        [
+            "model",
+            "r2",
+            "spearman_corr",
+            "pearson_corr",
+            "mae",
+            "rmse",
+            "pred_std",
+            "within_010",
+            "within_020",
+            "n_eval",
+            "n_seeds",
+        ]
+    ]
+
+
+def validate_main_rows_have_manifests(
+    rows: List[Dict[str, Any]],
+    audit_rows: List[Dict[str, Any]],
+) -> None:
+    audit_by_model = {row["model"]: row for row in audit_rows}
+    for row in rows:
+        model = row.get("model")
+        if model not in MAIN_LEARNED_MODELS:
+            continue
+        audit = audit_by_model.get(model)
+        if audit is None:
+            raise SystemExit(f"[Final table] Missing protocol manifest audit for {model}.")
+        if audit.get("manifest_feature_protocol_id") != MAIN_FEATURE_PROTOCOL_ID:
+            raise SystemExit(f"[Final table] {model} lacks explicit main protocol manifest.")
+        if audit.get("matches_main_feature_protocol") is not True:
+            raise SystemExit(f"[Final table] {model} does not match main feature protocol.")
+
+
+def load_json_if_exists(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def learned_manifest_columns(cfg: Dict[str, Any]) -> List[str]:
+    if "input_feature_columns" in cfg:
+        return list(cfg["input_feature_columns"])
+    if "feature_columns" in cfg:
+        return list(cfg["feature_columns"])
+    return []
+
+
+def audit_feature_protocol(model_keys: List[str], outdir: Path) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+
+    def add_row(
+        model_key: str,
+        model_name: str,
+        feature_columns: List[str],
+        role: str,
+        used_sample_weight: Optional[bool],
+        manifest_feature_protocol_id: str = "",
+        notes: str = "",
+    ) -> None:
+        feature_columns = list(feature_columns)
+        matches_main = feature_columns == CANONICAL_MAIN_FEATURES
+        has_manifest = (
+            role not in {"main_learned_model", "secondary_hp_tuned"}
+            or bool(feature_columns)
+        )
+        rows.append(
+            {
+                "model_key": model_key,
+                "model": model_name,
+                "comparison_role": role,
+                "feature_protocol_id": (
+                    MAIN_FEATURE_PROTOCOL_ID
+                    if matches_main
+                    else manifest_feature_protocol_id or role
+                ),
+                "manifest_feature_protocol_id": manifest_feature_protocol_id,
+                "feature_count": len(feature_columns),
+                "input_feature_columns": feature_columns,
+                "matches_main_feature_protocol": matches_main,
+                "sample_weight_column": "sample_weight",
+                "used_sample_weight": used_sample_weight,
+                "has_manifest": has_manifest,
+                "notes": notes,
+            }
+        )
+
+    if "baselines" in model_keys:
+        add_row(
+            "global_mean",
+            "Global Mean",
+            [],
+            "baseline_no_features",
+            True,
+            manifest_feature_protocol_id="baseline_no_features",
+        )
+        add_row(
+            "champion_mean",
+            "Champion Mean",
+            ["ally_utility_champion_id"],
+            "baseline_support_champion_only",
+            True,
+            manifest_feature_protocol_id="baseline_support_champion_only",
+        )
+
+    if "gbt" in model_keys:
+        cfg = load_json_if_exists(REPO_ROOT / "final" / "models" / "gbt" / "model_config.json")
+        add_row(
+            "gbt",
+            "HistGBT",
+            learned_manifest_columns(cfg),
+            "main_learned_model",
+            cfg.get("used_sample_weight"),
+            manifest_feature_protocol_id=str(cfg.get("feature_protocol_id", "missing_manifest"))
+            if cfg
+            else "missing_manifest",
+            notes="" if cfg else "model_config.json not found; retrain GBT before final comparison.",
+        )
+
+    for model_key, model_name, model_dir in [
+        ("mlp_onehot", "MLP OneHot", "mlp_onehot"),
+        ("mlp_embed", "MLP Embed Shared", "mlp_embed"),
+        ("mlp_per_role", "MLP Per-Role + Interactions", "mlp_per_role"),
+        ("mlp_per_role_tuned", "MLP Per-Role + Interactions HP Best", "mlp_per_role_tuned"),
+    ]:
+        if model_key not in model_keys:
+            continue
+        cfg = load_json_if_exists(REPO_ROOT / "final" / "models" / model_dir / "model_config.json")
+        add_row(
+            model_key,
+            model_name,
+            learned_manifest_columns(cfg),
+            "main_learned_model" if model_key != "mlp_per_role_tuned" else "secondary_hp_tuned",
+            cfg.get("used_sample_weight") if cfg else None,
+            manifest_feature_protocol_id=str(cfg.get("feature_protocol_id", "missing_manifest"))
+            if cfg
+            else "missing_manifest",
+            notes="" if cfg else "model_config.json not found.",
+        )
+
+    if "gbt_enriched" in model_keys:
+        cfg = load_json_if_exists(REPO_ROOT / "final" / "models" / "gbt_enriched" / "model_config.json")
+        add_row(
+            "gbt_enriched",
+            "HistGBT + Archetypes",
+            learned_manifest_columns(cfg),
+            "secondary_enriched_features",
+            cfg.get("used_sample_weight"),
+            manifest_feature_protocol_id=str(
+                cfg.get("feature_protocol_id", "secondary_enriched_features")
+            )
+            if cfg
+            else "missing_manifest",
+            notes="Excluded from main table because it adds archetype/class features.",
+        )
+
+    if "gbt_interactions" in model_keys:
+        cfg = load_json_if_exists(REPO_ROOT / "final" / "models" / "gbt_interactions" / "model_config.json")
+        add_row(
+            "gbt_interactions",
+            "HistGBT + Pair TE",
+            learned_manifest_columns(cfg),
+            "secondary_target_encoded_features",
+            cfg.get("used_sample_weight"),
+            manifest_feature_protocol_id=str(
+                cfg.get("feature_protocol_id", "secondary_target_encoded_features")
+            )
+            if cfg
+            else "missing_manifest",
+            notes="Excluded from main table because it adds target-encoded interaction features.",
+        )
+
+    outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "feature_protocol_audit.json").write_text(
+        json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    pd.DataFrame(
+        [
+            {
+                **row,
+                "input_feature_columns": ", ".join(row["input_feature_columns"]),
+            }
+            for row in rows
+        ]
+    ).to_csv(outdir / "feature_protocol_audit.csv", index=False)
+
+    print("\n--- Feature Protocol Audit ---")
+    for row in rows:
+        print(
+            f"[Features] {row['model']}: count={row['feature_count']} "
+            f"role={row['comparison_role']} used_sample_weight={row['used_sample_weight']}"
+        )
+        if row["input_feature_columns"]:
+            print("           " + ", ".join(row["input_feature_columns"]))
+        if row["notes"]:
+            print("           " + row["notes"])
+
+    bad = [
+        row
+        for row in rows
+        if row["comparison_role"] == "main_learned_model"
+        and not row["matches_main_feature_protocol"]
+    ]
+    missing_manifest = [
+        row
+        for row in rows
+        if row["comparison_role"] == "main_learned_model"
+        and (
+            row["manifest_feature_protocol_id"] != MAIN_FEATURE_PROTOCOL_ID
+            or not row["has_manifest"]
+        )
+    ]
+    missing_weights = [
+        row
+        for row in rows
+        if row["comparison_role"] in {"main_learned_model", "baseline_no_features", "baseline_support_champion_only"}
+        and row["used_sample_weight"] is not True
+    ]
+    if missing_manifest:
+        names = ", ".join(row["model"] for row in missing_manifest)
+        raise SystemExit(
+            "[Feature audit] Main comparison has models without an explicit "
+            f"{MAIN_FEATURE_PROTOCOL_ID} manifest: {names}. Retrain or regenerate those artifacts."
+        )
+    if bad:
+        names = ", ".join(row["model"] for row in bad)
+        raise SystemExit(
+            "[Feature audit] Main learned comparison would mix feature protocols: "
+            f"{names}. Retrain these models with 10 champion IDs + side."
+        )
+    if missing_weights:
+        names = ", ".join(row["model"] for row in missing_weights)
+        raise SystemExit(
+            "[Feature audit] Main comparison has models without confirmed sample_weight: "
+            f"{names}."
+        )
+    return rows
 
 
 def main() -> None:
@@ -1002,57 +1429,138 @@ def main() -> None:
     if QUANTILE_COL in df_test.columns:
         print(f"[Target] test quantile std={df_test[QUANTILE_COL].std():.4f}")
 
+    model_keys = selected_model_keys(args)
+    audit_rows = audit_feature_protocol(model_keys, outdir)
+
     rows: List[Dict[str, Any]] = []
 
-    print("\n--- Baselines ---")
-    rows.extend(eval_mean_baselines(df_train, df_test, transformer))
+    if "baselines" in model_keys:
+        print("\n--- Baselines ---")
+        rows.extend(eval_mean_baselines(df_train, df_test, transformer))
 
-    print("\n--- HistGBT ---")
-    rows.extend(eval_gbt(df_test, len(df_train), transformer))
+    if "gbt" in model_keys:
+        print("\n--- HistGBT ---")
+        rows.extend(eval_gbt(df_test, len(df_train), transformer))
 
-    print("\n--- HistGBT + Archetypes ---")
-    rows.extend(
-        eval_gbt_family(
-            df_test=df_test,
-            n_train=len(df_train),
-            transformer=transformer,
-            model_dir=REPO_ROOT / "final" / "models" / "gbt_enriched",
-            model_name="HistGBT + Archetypes",
+    secondary_rows: List[Dict[str, Any]] = []
+    if "gbt_enriched" in model_keys:
+        print("\n--- HistGBT + Archetypes ---")
+        secondary_rows.extend(
+            eval_gbt_family(
+                df_test=df_test,
+                n_train=len(df_train),
+                transformer=transformer,
+                model_dir=REPO_ROOT / "final" / "models" / "gbt_enriched",
+                model_name="HistGBT + Archetypes",
+            )
         )
-    )
 
-    print("\n--- HistGBT + Pair Target Encodings ---")
-    rows.extend(eval_gbt_interactions(df_test, len(df_train), transformer))
+    if "gbt_interactions" in model_keys:
+        print("\n--- HistGBT + Pair Target Encodings ---")
+        secondary_rows.extend(eval_gbt_interactions(df_test, len(df_train), transformer))
 
-    print("\n--- MLP OneHot ---")
-    rows.extend(eval_mlp(df_test, "onehot", len(df_train), transformer, args.batch_size))
+    if "mlp_onehot" in model_keys:
+        print("\n--- MLP OneHot ---")
+        rows.extend(eval_mlp(df_test, "onehot", len(df_train), transformer, args.batch_size))
 
-    print("\n--- MLP Embed ---")
-    rows.extend(eval_mlp(df_test, "embed", len(df_train), transformer, args.batch_size))
+    if "mlp_embed" in model_keys:
+        print("\n--- MLP Embed ---")
+        rows.extend(eval_mlp(df_test, "embed", len(df_train), transformer, args.batch_size))
 
-    print("\n--- MLP Per-Role + Interactions ---")
-    rows.extend(eval_mlp(df_test, "per_role", len(df_train), transformer, args.batch_size))
+    if "mlp_per_role" in model_keys:
+        print("\n--- MLP Per-Role + Interactions ---")
+        rows.extend(eval_mlp(df_test, "per_role", len(df_train), transformer, args.batch_size))
 
-    print("\n--- MLP Per-Role + Interactions HP Best ---")
-    rows.extend(eval_mlp(df_test, "per_role_tuned", len(df_train), transformer, args.batch_size))
+    if "mlp_per_role_tuned" in model_keys:
+        print("\n--- MLP Per-Role + Interactions HP Best ---")
+        secondary_rows.extend(
+            eval_mlp(df_test, "per_role_tuned", len(df_train), transformer, args.batch_size)
+        )
 
-    add_ceiling_reference(rows, len(df_test))
+    if "ceiling" in model_keys:
+        add_ceiling_reference(secondary_rows, len(df_test))
+
+    attach_test_metadata(rows, args.test)
+    attach_test_metadata(secondary_rows, args.test)
+    validate_main_rows_have_manifests(rows, audit_rows)
+    final_main_df = build_final_main_table(rows)
 
     all_df = pd.DataFrame(rows)
     raw_df = sorted_table(rows, "raw")
     quantile_df = sorted_table(rows, "quantile")
+    secondary_df = pd.DataFrame(secondary_rows)
+    secondary_raw_df = sorted_table(secondary_rows, "raw")
+    secondary_quantile_df = sorted_table(secondary_rows, "quantile")
 
     all_df.to_csv(outdir / "comparison_all_rows.csv", index=False)
+    final_main_df.to_csv(outdir / "final_main_table_raw.csv", index=False)
     raw_df.to_csv(outdir / "comparison_table_raw.csv", index=False)
     quantile_df.to_csv(outdir / "comparison_table_quantile.csv", index=False)
+    secondary_df.to_csv(outdir / "comparison_secondary_all_rows.csv", index=False)
+    secondary_raw_df.to_csv(outdir / "comparison_secondary_table_raw.csv", index=False)
+    secondary_quantile_df.to_csv(outdir / "comparison_secondary_table_quantile.csv", index=False)
     (outdir / "comparison_results.json").write_text(
         json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+    (outdir / "comparison_results_with_secondary.json").write_text(
+        json.dumps(
+            {
+                "main_rows": rows,
+                "secondary_rows": secondary_rows,
+                "excluded_from_main": [
+                    {
+                        "model": "HistGBT + Archetypes",
+                        "reason": "Adds champion archetype/class features beyond 10 champion IDs + side.",
+                    },
+                    {
+                        "model": "HistGBT + Pair TE",
+                        "reason": "Adds target-encoded pair interaction features.",
+                    },
+                    {
+                        "model": "MLP Per-Role + Interactions HP Best",
+                        "reason": "Hyperparameter-search result; not retrained by the default master run.",
+                    },
+                ],
+            },
+            indent=2,
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
 
     raw_md = format_markdown_table(raw_df, "Table A - Raw Scale (Test)")
+    final_main_md = format_markdown_table(final_main_df, "Main Table - Common Protocol Raw Models")
     quantile_md = format_markdown_table(quantile_df, "Table B - Quantile Scale (Test)")
-    md = "# Final Model Comparison (Test Set)\n\n" + raw_md + "\n" + quantile_md
+    secondary_raw_md = format_markdown_table(secondary_raw_df, "Secondary A - Raw Scale (Test)")
+    secondary_quantile_md = format_markdown_table(
+        secondary_quantile_df, "Secondary B - Quantile Scale (Test)"
+    )
+    md = (
+        "# Final Model Comparison (Test Set)\n\n"
+        "Main tables use the fair feature protocol for learned models: "
+        "10 champion IDs + side. Global Mean and Champion Mean are retained as "
+        "lower-information baselines and are labelled in the feature audit.\n\n"
+        + final_main_md
+        + "\n"
+        + raw_md
+        + "\n"
+        + quantile_md
+        + "\n"
+        + secondary_raw_md
+        + "\n"
+        + secondary_quantile_md
+    )
     (outdir / "comparison_tables.md").write_text(md, encoding="utf-8")
+    (outdir / "final_main_table_raw.md").write_text(
+        "# Final Main Table - Common Protocol\n\n"
+        "Metrics are recomputed from predictions on the same held-out test split. "
+        "Rows are restricted to raw-target models trained under the common input "
+        "protocol for learned models: 10 champion IDs + side. Practical columns "
+        "`within_010` and `within_020` are the share of predictions within +/-0.10 "
+        "and +/-0.20 absolute error.\n\n"
+        + final_main_md,
+        encoding="utf-8",
+    )
     save_plot(raw_df, quantile_df, outdir)
     save_practical_outputs(rows, outdir)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-03c_train_gbt_interactions.py -- HistGBT with empirical pair-interaction features.
+03c_train_gbt_interactions.py -- HistGBT with smoothed draft-interaction features.
 
 This experiment is deliberately different from champion archetypes. Archetypes
 are f(champion_id); interaction encodings estimate f(champion_a, champion_b)
@@ -22,6 +22,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -35,6 +37,8 @@ from sklearn.model_selection import GroupKFold, KFold
 from sklearn.preprocessing import OrdinalEncoder
 
 
+os.environ.setdefault("LOKY_MAX_CPU_COUNT", "1")
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRAIN = str(REPO_ROOT / "final" / "data" / "training" / "train.parquet")
 DEFAULT_VAL = str(REPO_ROOT / "final" / "data" / "training" / "val.parquet")
@@ -42,9 +46,11 @@ DEFAULT_OUTDIR = str(REPO_ROOT / "final" / "models" / "gbt_interactions")
 
 TARGET_COL = "support_roam_score"
 QUANTILE_COL = "support_roam_score_quantile"
+WEIGHT_COL = "sample_weight"
 
 ROLE_KEYS = ("top", "jungle", "middle", "bottom", "utility")
 SIDES = ("ally", "enemy")
+FEATURE_PROTOCOL_ID = "draft_10_champions_side_plus_smoothed_interactions"
 
 BASE_FEATURE_GROUPS: Dict[str, List[str]] = {
     "champions": [f"{s}_{r}_champion_id" for s in SIDES for r in ROLE_KEYS],
@@ -52,6 +58,10 @@ BASE_FEATURE_GROUPS: Dict[str, List[str]] = {
         f"{s}_{r}_summoner{i}_id" for s in SIDES for r in ROLE_KEYS for i in (1, 2)
     ],
     "context": ["side"],
+}
+FEATURE_SET_GROUPS: Dict[str, List[str]] = {
+    "main": ["champions", "context"],
+    "all": ["champions", "summoner_spells", "context"],
 }
 
 INTERACTION_SPECS: Dict[str, List[str]] = {
@@ -82,12 +92,24 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--min-samples-leaf", type=int, default=50)
     p.add_argument("--max-leaf-nodes", type=int, default=31)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--feature-set",
+        choices=sorted(FEATURE_SET_GROUPS),
+        default="main",
+        help="main = 10 champion IDs + side; all = legacy champions + summoner spells + side.",
+    )
+    p.add_argument(
+        "--allow-missing-sample-weight",
+        action="store_true",
+        help="Allow unweighted training if sample_weight is absent.",
+    )
     return p.parse_args()
 
 
-def available_base_features(df: pd.DataFrame) -> List[str]:
+def available_base_features(df: pd.DataFrame, feature_set: str = "main") -> List[str]:
     cols: List[str] = []
-    for group_cols in BASE_FEATURE_GROUPS.values():
+    for group_name in FEATURE_SET_GROUPS[feature_set]:
+        group_cols = BASE_FEATURE_GROUPS[group_name]
         cols.extend([c for c in group_cols if c in df.columns])
     return list(dict.fromkeys(cols))
 
@@ -110,13 +132,36 @@ def make_key(df: pd.DataFrame, cols: List[str]) -> pd.Series:
 def fit_encoding_map(
     keys: pd.Series,
     y: np.ndarray,
+    sample_weight: Optional[np.ndarray],
     global_mean: float,
     smoothing: float,
-) -> Tuple[Dict[str, float], Dict[str, int]]:
-    tmp = pd.DataFrame({"key": keys.to_numpy(), "target": y})
-    grouped = tmp.groupby("key")["target"].agg(["sum", "count"])
-    values = (grouped["sum"] + smoothing * global_mean) / (grouped["count"] + smoothing)
-    return values.to_dict(), grouped["count"].astype(int).to_dict()
+) -> Tuple[Dict[str, float], Dict[str, int], Dict[str, float]]:
+    if sample_weight is None:
+        weights = np.ones(len(y), dtype=np.float64)
+    else:
+        weights = np.asarray(sample_weight, dtype=np.float64)
+
+    tmp = pd.DataFrame(
+        {
+            "key": keys.to_numpy(),
+            "target": np.asarray(y, dtype=np.float64),
+            "weight": weights,
+        }
+    )
+    tmp["weighted_target"] = tmp["target"] * tmp["weight"]
+    grouped = tmp.groupby("key").agg(
+        weighted_sum=("weighted_target", "sum"),
+        weight_sum=("weight", "sum"),
+        row_count=("target", "size"),
+    )
+    values = (
+        grouped["weighted_sum"] + smoothing * global_mean
+    ) / (grouped["weight_sum"] + smoothing)
+    return (
+        values.astype(float).to_dict(),
+        grouped["row_count"].astype(int).to_dict(),
+        grouped["weight_sum"].astype(float).to_dict(),
+    )
 
 
 def apply_encoding(
@@ -128,6 +173,24 @@ def apply_encoding(
     encoded = keys.map(values).fillna(global_mean).to_numpy(dtype=np.float32)
     count_feature = np.log1p(keys.map(counts).fillna(0).to_numpy(dtype=np.float32))
     return encoded, count_feature
+
+
+def dump_joblib_atomic(obj: Any, path: Path) -> None:
+    tmp_dir = Path(tempfile.gettempdir())
+    tmp_file = tempfile.NamedTemporaryFile(
+        prefix=f"{path.stem}_",
+        suffix=path.suffix,
+        dir=tmp_dir,
+        delete=False,
+    )
+    tmp_path = Path(tmp_file.name)
+    tmp_file.close()
+    try:
+        joblib.dump(obj, tmp_path)
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
 
 
 def make_oof_splits(df: pd.DataFrame, n_folds: int, seed: int) -> List[Tuple[np.ndarray, np.ndarray]]:
@@ -143,12 +206,17 @@ def build_interaction_features(
     df_train: pd.DataFrame,
     df_eval: pd.DataFrame,
     y_train: np.ndarray,
+    sample_weight: Optional[np.ndarray],
     specs: Dict[str, List[str]],
     smoothing: float,
     n_folds: int,
     seed: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
-    global_mean = float(np.mean(y_train))
+    if sample_weight is None:
+        global_mean = float(np.mean(y_train))
+    else:
+        weights = np.asarray(sample_weight, dtype=np.float64)
+        global_mean = float(np.sum(np.asarray(y_train, dtype=np.float64) * weights) / np.sum(weights))
     train_out = pd.DataFrame(index=df_train.index)
     eval_out = pd.DataFrame(index=df_eval.index)
     mappings: Dict[str, Any] = {}
@@ -163,17 +231,29 @@ def build_interaction_features(
         oof_mean = np.full(len(df_train), global_mean, dtype=np.float32)
         oof_count = np.zeros(len(df_train), dtype=np.float32)
         for fit_idx, hold_idx in splits:
-            values, counts = fit_encoding_map(
+            fold_weights = None if sample_weight is None else sample_weight[fit_idx]
+            if fold_weights is None:
+                fold_mean = float(np.mean(y_train[fit_idx]))
+            else:
+                fold_mean = float(np.sum(y_train[fit_idx] * fold_weights) / np.sum(fold_weights))
+            values, counts, _ = fit_encoding_map(
                 train_key.iloc[fit_idx],
                 y_train[fit_idx],
-                global_mean,
+                fold_weights,
+                fold_mean,
                 smoothing,
             )
-            enc, cnt = apply_encoding(train_key.iloc[hold_idx], values, counts, global_mean)
+            enc, cnt = apply_encoding(train_key.iloc[hold_idx], values, counts, fold_mean)
             oof_mean[hold_idx] = enc
             oof_count[hold_idx] = cnt
 
-        full_values, full_counts = fit_encoding_map(train_key, y_train, global_mean, smoothing)
+        full_values, full_counts, full_weight_sums = fit_encoding_map(
+            train_key,
+            y_train,
+            sample_weight,
+            global_mean,
+            smoothing,
+        )
         eval_mean, eval_count = apply_encoding(eval_key, full_values, full_counts, global_mean)
 
         train_out[mean_col] = oof_mean
@@ -188,6 +268,7 @@ def build_interaction_features(
             "smoothing": smoothing,
             "values": full_values,
             "counts": full_counts,
+            "weight_sums": full_weight_sums,
         }
         print(f"    [{name}] groups={len(full_values):,}  cols={cols}")
 
@@ -269,8 +350,10 @@ def train_and_evaluate(
     args: argparse.Namespace,
     target_label: str,
     outdir: Path,
+    sample_weight: Optional[np.ndarray],
 ) -> Dict[str, Any]:
-    print(f"\n  Training interaction GBT ({target_label})...")
+    weight_info = "with sample_weight" if sample_weight is not None else "no weights"
+    print(f"\n  Training interaction GBT ({target_label}, {weight_info})...")
     model = HistGradientBoostingRegressor(
         max_iter=args.max_iter,
         max_depth=args.max_depth,
@@ -282,7 +365,7 @@ def train_and_evaluate(
         verbose=1,
     )
     t0 = time.time()
-    model.fit(X_train, y_train)
+    model.fit(X_train, y_train, sample_weight=sample_weight)
     elapsed = time.time() - t0
 
     y_pred = model.predict(X_val)
@@ -294,7 +377,9 @@ def train_and_evaluate(
         n_train=len(y_train),
         elapsed=elapsed,
     )
-    joblib.dump(model, outdir / f"gbt_model_{target_label}.joblib")
+    metrics["used_sample_weight"] = sample_weight is not None
+    metrics["sample_weight_column"] = WEIGHT_COL if sample_weight is not None else None
+    dump_joblib_atomic(model, outdir / f"gbt_model_{target_label}.joblib")
     print(
         f"  R2={metrics['r2']:.4f}  Spearman={metrics['spearman_corr']:.4f}  "
         f"pred_std={metrics['pred_std']:.4f}  time={elapsed:.1f}s"
@@ -307,6 +392,7 @@ def run_target(
     df_val: pd.DataFrame,
     categorical_cols: List[str],
     specs: Dict[str, List[str]],
+    sample_weight: Optional[np.ndarray],
     target_col: str,
     target_label: str,
     args: argparse.Namespace,
@@ -319,6 +405,7 @@ def run_target(
         df_train,
         df_val,
         y_train,
+        sample_weight,
         specs,
         smoothing=args.smoothing,
         n_folds=args.n_folds,
@@ -341,6 +428,7 @@ def run_target(
         args,
         target_label,
         outdir,
+        sample_weight,
     )
     preprocess = {
         "encoder": encoder,
@@ -350,8 +438,32 @@ def run_target(
         "categorical_mask": cat_mask,
         "interaction_specs": specs,
         "interaction_mappings": mappings,
+        "feature_protocol_id": FEATURE_PROTOCOL_ID,
+        "sample_weight_column": WEIGHT_COL,
+        "used_sample_weight": sample_weight is not None,
     }
     return metrics, preprocess, feature_cols, cat_mask, encoder
+
+
+def sample_weight_from_train(
+    df_train: pd.DataFrame,
+    allow_missing: bool,
+) -> Optional[np.ndarray]:
+    if WEIGHT_COL not in df_train.columns:
+        if allow_missing:
+            print("[Weights] No sample_weight column found - training without weights")
+            return None
+        raise SystemExit(
+            "[Weights] Missing required sample_weight column. "
+            "Use --allow-missing-sample-weight only for legacy/debug runs."
+        )
+
+    sample_weight = df_train[WEIGHT_COL].to_numpy(dtype=np.float32)
+    print(
+        f"[Weights] Using sample_weight: mean={sample_weight.mean():.3f}  "
+        f"min={sample_weight.min():.3f}  max={sample_weight.max():.3f}"
+    )
+    return sample_weight
 
 
 def main() -> None:
@@ -361,34 +473,60 @@ def main() -> None:
 
     df_train = pd.read_parquet(args.train)
     df_val = pd.read_parquet(args.val)
-    categorical_cols = available_base_features(df_train)
+    categorical_cols = available_base_features(df_train, args.feature_set)
     specs = available_interactions(df_train)
+    sample_weight = sample_weight_from_train(df_train, args.allow_missing_sample_weight)
     print(
         f"[Data] train={len(df_train):,}  val={len(df_val):,}  "
-        f"categorical={len(categorical_cols)}  interactions={len(specs)}"
+        f"feature_set={args.feature_set}  categorical={len(categorical_cols)}  "
+        f"interactions={len(specs)}"
     )
+    print("[Categorical] " + ", ".join(categorical_cols))
 
     results: List[Dict[str, Any]] = []
     preprocess_by_target: Dict[str, Any] = {}
 
     metrics_raw, preprocess_raw, _, _, _ = run_target(
-        df_train, df_val, categorical_cols, specs, TARGET_COL, "raw", args, outdir
+        df_train, df_val, categorical_cols, specs, sample_weight, TARGET_COL, "raw", args, outdir
     )
     results.append(metrics_raw)
     preprocess_by_target["raw"] = preprocess_raw
 
     if QUANTILE_COL in df_train.columns and QUANTILE_COL in df_val.columns:
         metrics_q, preprocess_q, _, _, _ = run_target(
-            df_train, df_val, categorical_cols, specs, QUANTILE_COL, "quantile", args, outdir
+            df_train,
+            df_val,
+            categorical_cols,
+            specs,
+            sample_weight,
+            QUANTILE_COL,
+            "quantile",
+            args,
+            outdir,
         )
         results.append(metrics_q)
         preprocess_by_target["quantile"] = preprocess_q
 
     config = {
+        "model_type": "hist_gbt_smoothed_interactions",
+        "feature_set": args.feature_set,
+        "feature_protocol_id": FEATURE_PROTOCOL_ID,
+        "input_feature_columns": categorical_cols,
+        "feature_columns": (
+            preprocess_by_target["raw"]["feature_columns"]
+            if "raw" in preprocess_by_target
+            else categorical_cols
+        ),
+        "included_feature_groups": FEATURE_SET_GROUPS[args.feature_set],
+        "excluded_feature_groups": [
+            name for name in BASE_FEATURE_GROUPS if name not in FEATURE_SET_GROUPS[args.feature_set]
+        ],
         "categorical_columns": categorical_cols,
         "interaction_specs": specs,
         "n_folds": args.n_folds,
         "smoothing": args.smoothing,
+        "sample_weight_column": WEIGHT_COL,
+        "used_sample_weight": sample_weight is not None,
         "max_iter": args.max_iter,
         "max_depth": args.max_depth,
         "learning_rate": args.learning_rate,
@@ -396,7 +534,7 @@ def main() -> None:
         "max_leaf_nodes": args.max_leaf_nodes,
         "seed": args.seed,
     }
-    joblib.dump(preprocess_by_target, outdir / "preprocess.joblib")
+    dump_joblib_atomic(preprocess_by_target, outdir / "preprocess.joblib")
     (outdir / "model_config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     (outdir / "metrics.json").write_text(
         json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8"

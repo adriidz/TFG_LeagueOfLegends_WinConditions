@@ -29,11 +29,11 @@ from sklearn.preprocessing import QuantileTransformer
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_DRAFT_PATH = (
-    REPO_ROOT / "ProgresoActual" / "data" / "clean" / "features"
+    REPO_ROOT / "final" / "data" / "features"
     / "draft_features.parquet"
 )
 DEFAULT_SCORES_PATH = (
-    REPO_ROOT / "ProgresoActual2" / "data" / "clean" / "scores"
+    REPO_ROOT / "final" / "data" / "scores"
     / "support_scores_v5_geometry_m12.parquet"
 )
 DEFAULT_OUT_DIR = REPO_ROOT / "final" / "data" / "training"

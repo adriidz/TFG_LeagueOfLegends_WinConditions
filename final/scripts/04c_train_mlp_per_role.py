@@ -29,6 +29,8 @@ import torch.nn as nn
 from scipy.stats import spearmanr
 from torch.utils.data import DataLoader, TensorDataset
 
+from mlp_losses import weighted_mse_loss
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRAIN = str(REPO_ROOT / "final" / "data" / "training" / "train.parquet")
@@ -42,6 +44,8 @@ ROLE_KEYS = ("top", "jungle", "middle", "bottom", "utility")
 SIDES = ("ally", "enemy")
 CHAMPION_COLS = [f"{s}_{r}_champion_id" for s in SIDES for r in ROLE_KEYS]
 SLOT_NAMES = [col[: -len("_champion_id")] for col in CHAMPION_COLS]
+INPUT_FEATURE_COLUMNS = CHAMPION_COLS + ["side"]
+FEATURE_PROTOCOL_ID = "draft_10_champions_side"
 
 ALLY_UTILITY_SLOT = SLOT_NAMES.index("ally_utility")
 ENEMY_UTILITY_SLOT = SLOT_NAMES.index("enemy_utility")
@@ -62,6 +66,16 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--patience", type=int, default=15)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--allow-missing-sample-weight",
+        action="store_true",
+        help="Allow unweighted training if sample_weight is absent.",
+    )
+    p.add_argument(
+        "--use-wandb",
+        action="store_true",
+        help="Use Weights & Biases to track training metrics.",
+    )
     return p.parse_args()
 
 
@@ -114,6 +128,18 @@ def make_dataset(
         torch.from_numpy(encode_side(df)),
         torch.from_numpy(y),
         torch.from_numpy(w),
+    )
+
+
+def require_sample_weight(df: pd.DataFrame, allow_missing: bool) -> None:
+    if "sample_weight" in df.columns:
+        return
+    if allow_missing:
+        print("[Weights] No sample_weight column found - using unit weights")
+        return
+    raise SystemExit(
+        "[Weights] Missing required sample_weight column. "
+        "Use --allow-missing-sample-weight only for legacy/debug runs."
     )
 
 
@@ -236,6 +262,32 @@ def train_model(
     w_mean = ds_train.tensors[3].mean().item()
     print(f"  [{target_label}] Using sample_weight (mean={w_mean:.3f})")
 
+    wandb_run = None
+    if getattr(args, "use_wandb", False):
+        try:
+            import wandb
+            wandb_run = wandb.init(
+                project="tfg-support-roaming",
+                name=f"MLP_Per_Role_{target_label}",
+                config={
+                    "model": "MLP_Per_Role",
+                    "target": target_label,
+                    "embed_dim": args.embed_dim,
+                    "hidden_dims": args.hidden_dims,
+                    "dropout": args.dropout,
+                    "lr": args.lr,
+                    "weight_decay": args.weight_decay,
+                    "batch_size": args.batch_size,
+                    "epochs": args.epochs,
+                    "patience": args.patience,
+                    "seed": args.seed,
+                    "w_mean": w_mean,
+                },
+                reinit=True
+            )
+        except ImportError:
+            print("[Warning] wandb is not installed. Running without wandb.")
+
     best_val_loss = float("inf")
     best_epoch = 0
     best_state: Optional[Dict[str, torch.Tensor]] = None
@@ -245,6 +297,7 @@ def train_model(
     for epoch in range(1, args.epochs + 1):
         model.train()
         train_loss_sum = 0.0
+        train_weight_sum = 0.0
         for champ_ids, side, y, w in loader_train:
             champ_ids = champ_ids.to(device)
             side = side.to(device)
@@ -252,13 +305,15 @@ def train_model(
             w = w.to(device)
 
             pred = model(champ_ids, side)
-            loss = (w * (pred - y) ** 2).mean()
+            loss = weighted_mse_loss(pred, y, w)
+            train_loss_sum += (w * (pred.detach() - y) ** 2).sum().item()
+            train_weight_sum += w.sum().item()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            train_loss_sum += loss.item() * len(y)
-        train_loss = train_loss_sum / len(ds_train)
+        train_loss = train_loss_sum / max(train_weight_sum, 1e-8)
 
+        # Validation and checkpoint selection stay unweighted by design.
         model.eval()
         val_loss_sum = 0.0
         with torch.no_grad():
@@ -288,6 +343,14 @@ def train_model(
                 "is_best": is_best,
             }
         )
+
+        if wandb_run:
+            wandb.log({
+                "epoch": epoch,
+                "train/loss": train_loss,
+                "val/loss": val_loss,
+                "lr": lr,
+            })
 
         if epoch % 5 == 0 or epoch == 1 or is_best:
             print(
@@ -331,6 +394,13 @@ def train_model(
     )
 
     torch.save(best_state, outdir / f"mlp_per_role_{target_label}.pt")
+
+    if wandb_run:
+        for k, v in metrics.items():
+            if k not in ["model", "target", "eval_split"]:
+                wandb_run.summary[f"val/{k}"] = v
+        wandb_run.finish()
+
     return metrics, model, history
 
 
@@ -396,6 +466,7 @@ def main() -> None:
 
     df_train = pd.read_parquet(args.train)
     df_val = pd.read_parquet(args.val)
+    require_sample_weight(df_train, args.allow_missing_sample_weight)
     print(f"[Data] train={len(df_train):,}  val={len(df_val):,}")
 
     vocab = build_champion_vocab(df_train)
@@ -434,7 +505,10 @@ def main() -> None:
 
     config = {
         "model_type": "mlp_per_role_interactions",
+        "feature_set": "main",
+        "feature_protocol_id": FEATURE_PROTOCOL_ID,
         "champion_cols": CHAMPION_COLS,
+        "input_feature_columns": INPUT_FEATURE_COLUMNS,
         "slot_names": SLOT_NAMES,
         "interaction_features": [
             "dot(ally_utility, enemy_utility)",
@@ -452,6 +526,8 @@ def main() -> None:
         "epochs": args.epochs,
         "patience": args.patience,
         "seed": args.seed,
+        "sample_weight_column": "sample_weight",
+        "used_sample_weight": "sample_weight" in df_train.columns,
     }
     (outdir / "model_config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
     (outdir / "metrics.json").write_text(
@@ -465,9 +541,13 @@ def main() -> None:
         {
             "vocab": vocab,
             "champion_cols": CHAMPION_COLS,
+            "input_feature_columns": INPUT_FEATURE_COLUMNS,
+            "feature_protocol_id": FEATURE_PROTOCOL_ID,
             "slot_names": SLOT_NAMES,
             "side_mapping": {"blue": 0.0, "red": 1.0},
             "interaction_features": config["interaction_features"],
+            "sample_weight_column": "sample_weight",
+            "used_sample_weight": "sample_weight" in df_train.columns,
         },
         outdir / "preprocess.joblib",
     )

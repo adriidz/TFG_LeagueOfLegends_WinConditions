@@ -4,20 +4,21 @@
 
 Inputs:
   - final/models/mlp_embed/embeddings_raw.json
+  - final/models/mlp_per_role/embeddings_raw_ally_utility.json
   - final/data/champion_archetypes.json
   - final/data/champion_classes.json
   - final/data/training/train.parquet (for per-champion mean roam scores)
 
 Outputs:
-  - final/analysis/embedding_analysis/tsne_by_archetype.png
-  - final/analysis/embedding_analysis/tsne_by_roam_score.png
-  - final/analysis/embedding_analysis/embedding_distance_vs_roam.png
-  - final/analysis/embedding_analysis/umap_by_class.png
-  - final/analysis/embedding_analysis/nearest_neighbors.csv
-  - final/analysis/embedding_analysis/embedding_analysis_summary.md
+  - final/analysis/embedding_analysis/embedding_analysis_comparison.csv
+  - final/analysis/embedding_analysis/<embedding_label>/nearest_neighbors_all_champions.csv
+  - final/analysis/embedding_analysis/<embedding_label>/nearest_neighbors_support_only.csv
+  - final/analysis/embedding_analysis/<embedding_label>/embedding_distance_vs_roam.png
+  - final/analysis/embedding_analysis/<embedding_label>/embedding_analysis_summary.md
 
 The goal is not to tune the model again, but to inspect whether the learned
-champion vectors contain a coherent semantic structure.
+champion vectors show measurable neighborhood structure. The report should not
+claim semantic structure unless the quantitative checks support it.
 """
 
 from __future__ import annotations
@@ -42,7 +43,10 @@ from sklearn.preprocessing import normalize
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-DEFAULT_EMBEDDINGS = REPO_ROOT / "final" / "models" / "mlp_embed" / "embeddings_raw.json"
+DEFAULT_SHARED_EMBEDDINGS = REPO_ROOT / "final" / "models" / "mlp_embed" / "embeddings_raw.json"
+DEFAULT_PER_ROLE_ALLY_UTILITY = (
+    REPO_ROOT / "final" / "models" / "mlp_per_role" / "embeddings_raw_ally_utility.json"
+)
 DEFAULT_ARCHETYPES = REPO_ROOT / "final" / "data" / "champion_archetypes.json"
 DEFAULT_CLASSES = REPO_ROOT / "final" / "data" / "champion_classes.json"
 DEFAULT_TRAIN = REPO_ROOT / "final" / "data" / "training" / "train.parquet"
@@ -78,17 +82,99 @@ CLASS_COLORS = {
     "Unknown": "#7f7f7f",
 }
 
+NEAREST_NEIGHBOR_COLUMNS = [
+    "neighbor_scope",
+    "support_champion_id",
+    "support_name",
+    "support_archetype",
+    "neighbor_rank",
+    "neighbor_champion_id",
+    "neighbor_name",
+    "neighbor_support_archetype",
+    "neighbor_primary_class",
+    "neighbor_is_support",
+    "cosine_distance",
+    "cosine_similarity",
+    "same_support_archetype",
+    "same_primary_class",
+]
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze learned MLP champion embeddings.")
-    parser.add_argument("--embeddings", default=str(DEFAULT_EMBEDDINGS))
+    parser.add_argument(
+        "--embeddings",
+        nargs="*",
+        default=None,
+        help=(
+            "Embedding JSON files to analyze. Defaults to shared mlp_embed and "
+            "per-role ally_utility embeddings when both exist."
+        ),
+    )
+    parser.add_argument(
+        "--embedding-labels",
+        nargs="*",
+        default=None,
+        help="Optional labels matching --embeddings, used for output subdirectories.",
+    )
     parser.add_argument("--champion-archetypes", default=str(DEFAULT_ARCHETYPES))
     parser.add_argument("--champion-classes", default=str(DEFAULT_CLASSES))
     parser.add_argument("--train-data", default=str(DEFAULT_TRAIN))
     parser.add_argument("--outdir", default=str(DEFAULT_OUTDIR))
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument(
+        "--skip-projections",
+        action="store_true",
+        help="Skip t-SNE/UMAP figures; useful for smoke tests and metric-only runs.",
+    )
     parser.add_argument("--annotate-supports", action="store_true", default=True)
     return parser.parse_args()
+
+
+def sanitize_label(label: str) -> str:
+    cleaned = "".join(ch.lower() if ch.isalnum() else "_" for ch in label.strip())
+    cleaned = "_".join(part for part in cleaned.split("_") if part)
+    return cleaned or "embedding"
+
+
+def infer_embedding_label(path: Path) -> str:
+    path_parts = {part.lower() for part in path.parts}
+    stem = path.stem
+    if stem == "embeddings_raw" and "mlp_embed" in path_parts:
+        return "shared"
+    if "mlp_per_role" in path_parts and stem.startswith("embeddings_raw_"):
+        return sanitize_label(f"per_role_{stem[len('embeddings_raw_'):]}")
+    return sanitize_label(stem)
+
+
+def resolve_embedding_specs(args: argparse.Namespace) -> List[Tuple[str, Path]]:
+    if args.embeddings:
+        paths = [Path(path) for path in args.embeddings]
+    else:
+        paths = [
+            path
+            for path in [DEFAULT_SHARED_EMBEDDINGS, DEFAULT_PER_ROLE_ALLY_UTILITY]
+            if path.exists()
+        ]
+        if not paths:
+            paths = [DEFAULT_SHARED_EMBEDDINGS, DEFAULT_PER_ROLE_ALLY_UTILITY]
+
+    if args.embedding_labels:
+        if len(args.embedding_labels) != len(paths):
+            raise ValueError("--embedding-labels must have the same length as --embeddings.")
+        labels = [sanitize_label(label) for label in args.embedding_labels]
+    else:
+        labels = [infer_embedding_label(path) for path in paths]
+
+    seen: Dict[str, int] = {}
+    specs: List[Tuple[str, Path]] = []
+    for label, path in zip(labels, paths):
+        count = seen.get(label, 0)
+        seen[label] = count + 1
+        unique_label = label if count == 0 else f"{label}_{count + 1}"
+        specs.append((unique_label, path))
+    return specs
 
 
 def load_json(path: Path) -> Any:
@@ -98,6 +184,9 @@ def load_json(path: Path) -> Any:
 
 
 def load_archetypes(path: Path) -> Dict[int, Dict[str, str]]:
+    if not path.exists():
+        print(f"[Warning] Archetype metadata not found at {path}; continuing without archetypes.")
+        return {}
     raw = load_json(path)
     champions = raw.get("champions", {})
     out: Dict[int, Dict[str, str]] = {}
@@ -115,6 +204,9 @@ def load_archetypes(path: Path) -> Dict[int, Dict[str, str]]:
 
 
 def load_classes(path: Path) -> Dict[int, Dict[str, Any]]:
+    if not path.exists():
+        print(f"[Warning] Class metadata not found at {path}; continuing without classes.")
+        return {}
     raw = load_json(path)
     out: Dict[int, Dict[str, Any]] = {}
     for cid_str, info in raw.items():
@@ -167,8 +259,10 @@ def build_embedding_frame(
         )
         vectors.append(embedding)
 
-    df = pd.DataFrame.from_records(records).sort_values("vocab_index").reset_index(drop=True)
-    X = np.asarray(vectors, dtype=np.float32)
+    df_unsorted = pd.DataFrame.from_records(records)
+    sort_idx = df_unsorted.sort_values("vocab_index").index.to_numpy()
+    df = df_unsorted.iloc[sort_idx].reset_index(drop=True)
+    X = np.asarray(vectors, dtype=np.float32)[sort_idx]
     if len(df) != len(X):
         raise RuntimeError("Embedding metadata and vector matrix have different lengths.")
     return df, X
@@ -300,6 +394,9 @@ def plot_primary_class(
 
 
 def plot_neighbor_similarity(neighbors: pd.DataFrame, outpath: Path) -> None:
+    if neighbors.empty:
+        return
+
     support_order = (
         neighbors[neighbors["neighbor_rank"] == 1]
         .sort_values(["support_archetype", "support_name"])["support_name"]
@@ -319,7 +416,7 @@ def plot_neighbor_similarity(neighbors: pd.DataFrame, outpath: Path) -> None:
     ax.set_xticklabels([f"#{int(c)}" for c in pivot.columns])
     ax.set_yticks(range(pivot.shape[0]))
     ax.set_yticklabels(pivot.index, fontsize=7.5)
-    ax.set_title("Nearest embedding neighbors for support champions", fontsize=13, weight="bold")
+    ax.set_title("Nearest support-only embedding neighbors for support champions", fontsize=13, weight="bold")
     ax.set_xlabel("neighbor rank")
     ax.set_ylabel("support champion")
 
@@ -529,6 +626,7 @@ def build_nearest_neighbors(df: pd.DataFrame, X_norm: np.ndarray, k: int = 5) ->
             cosine_distance = float(dist[support_idx, neighbor_idx])
             records.append(
                 {
+                    "neighbor_scope": "all_champions_exploratory",
                     "support_champion_id": int(support["champion_id"]),
                     "support_name": support["name"],
                     "support_archetype": support["support_archetype"],
@@ -547,7 +645,82 @@ def build_nearest_neighbors(df: pd.DataFrame, X_norm: np.ndarray, k: int = 5) ->
                     "same_primary_class": support["primary_class"] == neighbor["primary_class"],
                 }
             )
-    return pd.DataFrame.from_records(records)
+    return pd.DataFrame.from_records(records, columns=NEAREST_NEIGHBOR_COLUMNS)
+
+
+def build_nearest_neighbors_restricted(df: pd.DataFrame, X_norm: np.ndarray, k: int = 5) -> pd.DataFrame:
+    dist = cosine_distances(X_norm)
+    records: List[Dict[str, Any]] = []
+    support_indices = df.index[df["is_support"]].tolist()
+
+    for support_idx in support_indices:
+        ordered = np.argsort(dist[support_idx])
+        ordered_supports = [idx for idx in ordered if df.loc[idx, "is_support"] and idx != support_idx][:k]
+        support = df.loc[support_idx]
+        for rank, neighbor_idx in enumerate(ordered_supports, start=1):
+            neighbor = df.loc[neighbor_idx]
+            cosine_distance = float(dist[support_idx, neighbor_idx])
+            records.append(
+                {
+                    "neighbor_scope": "support_only",
+                    "support_champion_id": int(support["champion_id"]),
+                    "support_name": support["name"],
+                    "support_archetype": support["support_archetype"],
+                    "neighbor_rank": rank,
+                    "neighbor_champion_id": int(neighbor["champion_id"]),
+                    "neighbor_name": neighbor["name"],
+                    "neighbor_support_archetype": neighbor["support_archetype"],
+                    "neighbor_primary_class": neighbor["primary_class"],
+                    "neighbor_is_support": True,
+                    "cosine_distance": cosine_distance,
+                    "cosine_similarity": 1.0 - cosine_distance,
+                    "same_support_archetype": support["support_archetype"] == neighbor["support_archetype"],
+                    "same_primary_class": support["primary_class"] == neighbor["primary_class"],
+                }
+            )
+    return pd.DataFrame.from_records(records, columns=NEAREST_NEIGHBOR_COLUMNS)
+
+
+def safe_rate(frame: pd.DataFrame, column: str) -> float:
+    if frame.empty or column not in frame.columns:
+        return float("nan")
+    values = frame[column].dropna()
+    if values.empty:
+        return float("nan")
+    return float(values.astype(float).mean())
+
+
+def compute_neighbor_metrics(
+    all_neighbors: pd.DataFrame,
+    support_only_neighbors: pd.DataFrame,
+    top_k: int,
+) -> Dict[str, Any]:
+    all_rank1 = all_neighbors[all_neighbors["neighbor_rank"] == 1]
+    support_rank1 = support_only_neighbors[support_only_neighbors["neighbor_rank"] == 1]
+
+    return {
+        "top_k": int(top_k),
+        "all_champions_neighbor_scope": "exploratory_all_champions",
+        "all_topk_n_rows": int(len(all_neighbors)),
+        "all_rank1_n_rows": int(len(all_rank1)),
+        "all_topk_support_neighbor_rate": safe_rate(all_neighbors, "neighbor_is_support"),
+        "all_topk_same_support_archetype_rate": safe_rate(all_neighbors, "same_support_archetype"),
+        "all_topk_same_primary_class_rate": safe_rate(all_neighbors, "same_primary_class"),
+        "all_rank1_support_neighbor_rate": safe_rate(all_rank1, "neighbor_is_support"),
+        "all_rank1_same_support_archetype_rate": safe_rate(all_rank1, "same_support_archetype"),
+        "support_only_neighbor_scope": "main_support_only",
+        "support_only_topk_n_rows": int(len(support_only_neighbors)),
+        "support_only_rank1_n_rows": int(len(support_rank1)),
+        "support_only_topk_same_support_archetype_rate": safe_rate(
+            support_only_neighbors, "same_support_archetype"
+        ),
+        "support_only_topk_same_primary_class_rate": safe_rate(
+            support_only_neighbors, "same_primary_class"
+        ),
+        "support_only_rank1_same_support_archetype_rate": safe_rate(
+            support_rank1, "same_support_archetype"
+        ),
+    }
 
 
 def format_float(value: float, digits: int = 3) -> str:
@@ -560,33 +733,37 @@ def write_summary(
     outpath: Path,
     df: pd.DataFrame,
     neighbor_df: pd.DataFrame,
+    neighbor_restricted_df: pd.DataFrame,
     metrics: Dict[str, Any],
 ) -> None:
     support_df = df[df["is_support"]].copy()
     arch_counts = support_df["support_archetype"].value_counts().sort_index()
     class_counts = df["primary_class"].value_counts().sort_index()
+    top_k = int(metrics.get("top_k", 5))
 
-    same_arch_rate = float(neighbor_df["same_support_archetype"].mean()) if len(neighbor_df) else float("nan")
-    support_neighbor_rate = float(neighbor_df["neighbor_is_support"].mean()) if len(neighbor_df) else float("nan")
-    same_class_rate = float(neighbor_df["same_primary_class"].mean()) if len(neighbor_df) else float("nan")
+    def metric_rate(key: str) -> str:
+        return format_float(float(metrics.get(key, float("nan"))))
 
-    rank1 = neighbor_df[neighbor_df["neighbor_rank"] == 1].copy()
-    rank1_same_arch = float(rank1["same_support_archetype"].mean()) if len(rank1) else float("nan")
-    rank1_support = float(rank1["neighbor_is_support"].mean()) if len(rank1) else float("nan")
-
-    nearest_examples = []
-    for _, row in rank1.sort_values(["support_archetype", "support_name"]).iterrows():
-        nearest_examples.append(
-            f"| {row['support_name']} | {row['support_archetype']} | "
-            f"{row['neighbor_name']} | {row['neighbor_support_archetype'] or '-'} | "
-            f"{row['neighbor_primary_class']} | {row['cosine_similarity']:.3f} |"
-        )
+    def neighbor_examples(frame: pd.DataFrame) -> List[str]:
+        rank1 = frame[frame["neighbor_rank"] == 1].copy()
+        if rank1.empty:
+            return ["| n/a | n/a | n/a | n/a | n/a | n/a |"]
+        rows = []
+        for _, row in rank1.sort_values(["support_archetype", "support_name"]).iterrows():
+            rows.append(
+                f"| {row['support_name']} | {row['support_archetype'] or '-'} | "
+                f"{row['neighbor_name']} | {row['neighbor_support_archetype'] or '-'} | "
+                f"{row['neighbor_primary_class']} | {row['cosine_similarity']:.3f} |"
+            )
+        return rows
 
     lines = [
         "# Embedding analysis summary",
         "",
         "## Dataset",
         "",
+        f"- Embedding label: `{metrics.get('embedding_label', 'embedding')}`",
+        f"- Embedding file analyzed: `{metrics.get('embeddings_path', '')}`",
         f"- Champions with embeddings: {len(df)}",
         f"- Support-labeled champions: {len(support_df)}",
         f"- Embedding dimension: {metrics['embedding_dim']}",
@@ -594,7 +771,10 @@ def write_summary(
         "Support archetype counts:",
         "",
     ]
-    lines.extend([f"- {arch}: {count}" for arch, count in arch_counts.items()])
+    if arch_counts.empty:
+        lines.append("- No support archetype metadata available.")
+    else:
+        lines.extend([f"- {arch}: {count}" for arch, count in arch_counts.items()])
     lines.extend(
         [
             "",
@@ -652,163 +832,188 @@ def write_summary(
         [
             "## Nearest-neighbor structure",
             "",
-            f"- Top-5 neighbors that are support-labeled: {format_float(support_neighbor_rate)}",
-            f"- Top-5 neighbors with same support archetype: {format_float(same_arch_rate)}",
-            f"- Top-5 neighbors with same primary class: {format_float(same_class_rate)}",
-            f"- Rank-1 nearest neighbor support-labeled rate: {format_float(rank1_support)}",
-            f"- Rank-1 same support archetype rate: {format_float(rank1_same_arch)}",
+            "### Neighbors among all champions (Exploratory / unrestricted)",
+            (
+                "These neighbors are useful for inspection, but they can mix support and "
+                "non-support champions and should not be used as the main support-archetype check."
+            ),
+            f"- Top-{top_k} neighbors that are support-labeled: {metric_rate('all_topk_support_neighbor_rate')}",
+            f"- Top-{top_k} neighbors with same support archetype: {metric_rate('all_topk_same_support_archetype_rate')}",
+            f"- Top-{top_k} neighbors with same primary class: {metric_rate('all_topk_same_primary_class_rate')}",
+            f"- Rank-1 nearest neighbor support-labeled rate: {metric_rate('all_rank1_support_neighbor_rate')}",
+            f"- Rank-1 same support archetype rate: {metric_rate('all_rank1_same_support_archetype_rate')}",
             "",
-            "Rank-1 nearest neighbors for support champions:",
+            "### Neighbors restricted to support champions (Main support-only check)",
+            f"- Top-{top_k} support neighbors with same support archetype: {metric_rate('support_only_topk_same_support_archetype_rate')}",
+            f"- Top-{top_k} support neighbors with same primary class: {metric_rate('support_only_topk_same_primary_class_rate')}",
+            f"- Rank-1 nearest support neighbor with same support archetype rate: {metric_rate('support_only_rank1_same_support_archetype_rate')}",
+            "",
+            "Rank-1 nearest neighbors for support champions (all champions, exploratory):",
             "",
             "| Support | Archetype | Nearest neighbor | Neighbor archetype | Neighbor class | Cosine sim. |",
             "|---|---|---|---|---|---:|",
         ]
     )
-    lines.extend(nearest_examples)
+    lines.extend(neighbor_examples(neighbor_df))
+    lines.extend(
+        [
+            "",
+            "Rank-1 nearest neighbors restricted to support champions:",
+            "",
+            "| Support | Archetype | Nearest support neighbor | Neighbor archetype | Neighbor class | Cosine sim. |",
+            "|---|---|---|---|---|---:|",
+        ]
+    )
+    lines.extend(neighbor_examples(neighbor_restricted_df))
     lines.extend(
         [
             "",
             "## Figure outputs",
             "",
-            "- `tsne_by_archetype.png`: t-SNE, perplexity=30, support champions colored by support archetype.",
-            "- `tsne_perplexity15_by_archetype.png`: t-SNE sensitivity check, perplexity=15.",
-            "- `tsne_by_roam_score.png`: t-SNE colored by empirical mean support roam score.",
-            "- `embedding_distance_vs_roam.png`: pairwise embedding distance vs. pairwise mean roam-score difference.",
-            "- `umap_by_class.png`: UMAP, n_neighbors=15, all champions colored by primary Data Dragon class.",
-            "- `umap_n10_by_class.png`: UMAP sensitivity check, n_neighbors=10.",
-            "- `support_nearest_neighbors.png`: nearest-neighbor matrix for support champions.",
-            "",
-            "## Suggested wording for the report",
-            "",
         ]
     )
+    if metrics.get("projections_written"):
+        lines.extend(
+            [
+                "- `tsne_by_archetype.png`: t-SNE, perplexity=30, support champions colored by support archetype.",
+                "- `tsne_perplexity15_by_archetype.png`: t-SNE sensitivity check, perplexity=15.",
+                "- `tsne_by_roam_score.png`: t-SNE colored by empirical mean support roam score.",
+                "- `embedding_distance_vs_roam.png`: pairwise embedding distance vs. pairwise mean roam-score difference.",
+                "- `umap_by_class.png`: UMAP, n_neighbors=15, all champions colored by primary Data Dragon class.",
+                "- `umap_n10_by_class.png`: UMAP sensitivity check, n_neighbors=10.",
+                "- `support_only_nearest_neighbors.png`: nearest-neighbor matrix restricted to support champions.",
+            ]
+        )
+    else:
+        lines.append("- Projection figures were skipped because `--skip-projections` was used.")
+        if "roam_pearson_r" in metrics:
+            lines.append("- `embedding_distance_vs_roam.png`: pairwise embedding distance vs. pairwise mean roam-score difference.")
+        if len(neighbor_restricted_df):
+            lines.append("- `support_only_nearest_neighbors.png`: nearest-neighbor matrix restricted to support champions.")
+    lines.extend(["", "## Suggested wording for the report", ""])
 
+    support_same_rate = float(metrics.get("support_only_topk_same_support_archetype_rate", float("nan")))
+    support_silhouette = float(metrics.get("support_archetype_silhouette", float("nan")))
     if "roam_pearson_r" in metrics and metrics["roam_pearson_r"] > 0 and metrics["roam_pearson_p"] < 0.05:
         lines.extend(
             [
-                "The learned embedding space does not align cleanly with discrete human archetypes, "
-                "but pairwise distances do correlate with differences in observed roaming tendency. "
-                "This indicates that the MLP embeddings encode a continuous roaming-related signal "
-                "rather than the expert-defined categories. Architecturally, this signal is diluted "
-                "by the shared embedding table: the same champion vector is reused across all ten "
-                "draft slots, so the representation cannot specialize only for ally support.",
+                "The embedding space shows measurable continuity with empirical roaming tendency: "
+                "support-pair embedding distance increases with pairwise mean roam-score difference. "
+                "This supports a cautious task-specific interpretation, but it is not by itself "
+                "evidence of a general semantic champion map.",
             ]
         )
     elif (
-        not math.isnan(metrics["support_archetype_silhouette"])
-        and metrics["support_archetype_silhouette"] > 0.08
-        and same_arch_rate > 0.25
+        not math.isnan(support_silhouette)
+        and support_silhouette > 0.08
+        and not math.isnan(support_same_rate)
+        and support_same_rate > 0.35
     ):
         lines.extend(
             [
-                "The learned embedding space shows a weak but visible semantic organization. "
-                "Support champions do not form perfectly separated clusters, but nearest-neighbor "
-                "relations preserve part of the expert archetype structure. This suggests that the "
-                "MLP captures champion-level tendencies relevant to roaming without receiving "
-                "archetype labels explicitly.",
+                "The embedding space shows weak archetype-aligned neighborhood structure among "
+                "support champions. This can be reported as limited evidence that the model learned "
+                "task-relevant champion-level tendencies, not as proof that the embeddings are "
+                "semantically organized.",
             ]
         )
     else:
         lines.extend(
             [
-                "The learned embedding space does not produce clearly separated support archetype "
-                "clusters. This supports the broader empirical result: draft identity contains real "
-                "signal, but the label is dominated by match execution and noisy early-game context, "
-                "so the embeddings mostly encode weak champion-level tendencies rather than a clean "
-                "semantic map.",
+                "These checks do not support a strong semantic-embedding claim. The embeddings may "
+                "still encode task-specific signal for prediction, but the observed support-only "
+                "neighborhood and archetype-alignment metrics are not enough to describe the space "
+                "as a clean semantic map.",
             ]
         )
 
     outpath.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def main() -> None:
-    args = parse_args()
-    outdir = Path(args.outdir)
+def analyze_embedding_set(
+    label: str,
+    embeddings_path: Path,
+    args: argparse.Namespace,
+    archetypes: Dict[int, Dict[str, str]],
+    classes: Dict[int, Dict[str, Any]],
+    roam_means: Dict[int, float],
+    output_root: Path,
+    use_label_subdir: bool,
+) -> Dict[str, Any]:
+    outdir = output_root / label if use_label_subdir else output_root
     outdir.mkdir(parents=True, exist_ok=True)
+    top_k = max(1, int(args.top_k))
 
-    embeddings_path = Path(args.embeddings)
-    archetypes_path = Path(args.champion_archetypes)
-    classes_path = Path(args.champion_classes)
-    train_path = Path(args.train_data)
-
-    print(f"[Load] embeddings={embeddings_path}")
-    archetypes = load_archetypes(archetypes_path)
-    classes = load_classes(classes_path)
+    print(f"[Analyze] label={label} embeddings={embeddings_path}")
     df, X = build_embedding_frame(embeddings_path, archetypes, classes)
     X_norm = normalize(X, norm="l2")
-    print(f"[Data] champions={len(df)}  dim={X.shape[1]}  supports={int(df['is_support'].sum())}")
+    df.to_csv(outdir / "embedding_champions.csv", index=False)
+    print(f"[Data:{label}] champions={len(df)}  dim={X.shape[1]}  supports={int(df['is_support'].sum())}")
 
-    # Load roam score means per champion
-    roam_means: Dict[int, float] = {}
-    if train_path.exists():
-        roam_means = compute_roam_score_means(train_path)
-        print(f"[Roam] Loaded mean roam scores for {len(roam_means)} champions")
+    projections_written = False
+    if args.skip_projections:
+        print(f"[Projection:{label}] skipped by --skip-projections")
     else:
-        print(f"[Roam] Train data not found at {train_path}, skipping roam analysis")
+        print(f"[t-SNE:{label}] perplexity=15")
+        tsne15 = run_tsne(X_norm, perplexity=15, seed=args.seed)
+        print(f"[t-SNE:{label}] perplexity=30")
+        tsne30 = run_tsne(X_norm, perplexity=30, seed=args.seed)
+        print(f"[UMAP:{label}] n_neighbors=10")
+        umap10 = run_umap(X_norm, n_neighbors=10, seed=args.seed)
+        print(f"[UMAP:{label}] n_neighbors=15")
+        umap15 = run_umap(X_norm, n_neighbors=15, seed=args.seed)
 
-    # Projection runs requested by the roadmap.
-    print("[t-SNE] perplexity=15")
-    tsne15 = run_tsne(X_norm, perplexity=15, seed=args.seed)
-    print("[t-SNE] perplexity=30")
-    tsne30 = run_tsne(X_norm, perplexity=30, seed=args.seed)
-    print("[UMAP] n_neighbors=10")
-    umap10 = run_umap(X_norm, n_neighbors=10, seed=args.seed)
-    print("[UMAP] n_neighbors=15")
-    umap15 = run_umap(X_norm, n_neighbors=15, seed=args.seed)
+        projections = df.copy()
+        for prefix, coords in [
+            ("tsne_p15", tsne15),
+            ("tsne_p30", tsne30),
+            ("umap_n10", umap10),
+            ("umap_n15", umap15),
+        ]:
+            projections = add_projection(projections, coords, prefix)
+        projections.to_csv(outdir / "embedding_projections.csv", index=False)
 
-    projections = df.copy()
-    for prefix, coords in [
-        ("tsne_p15", tsne15),
-        ("tsne_p30", tsne30),
-        ("umap_n10", umap10),
-        ("umap_n15", umap15),
-    ]:
-        projections = add_projection(projections, coords, prefix)
-    projections.to_csv(outdir / "embedding_projections.csv", index=False)
-
-    # Figures for the report.
-    plot_support_archetype(
-        projections,
-        "tsne_p30_x",
-        "tsne_p30_y",
-        outdir / "tsne_by_archetype.png",
-        "Champion embeddings by support archetype (t-SNE, perplexity=30)",
-        annotate=args.annotate_supports,
-    )
-    plot_support_archetype(
-        projections,
-        "tsne_p15_x",
-        "tsne_p15_y",
-        outdir / "tsne_perplexity15_by_archetype.png",
-        "Champion embeddings by support archetype (t-SNE, perplexity=15)",
-        annotate=args.annotate_supports,
-    )
-    plot_primary_class(
-        projections,
-        "umap_n15_x",
-        "umap_n15_y",
-        outdir / "umap_by_class.png",
-        "Champion embeddings by Data Dragon primary class (UMAP, n_neighbors=15)",
-    )
-    plot_primary_class(
-        projections,
-        "umap_n10_x",
-        "umap_n10_y",
-        outdir / "umap_n10_by_class.png",
-        "Champion embeddings by Data Dragon primary class (UMAP, n_neighbors=10)",
-    )
-
-    # NEW: t-SNE colored by mean roam score
-    if roam_means:
-        plot_tsne_by_roam_score(
-            projections, roam_means,
-            "tsne_p30_x", "tsne_p30_y",
-            outdir / "tsne_by_roam_score.png",
-            annotate_supports=args.annotate_supports,
+        plot_support_archetype(
+            projections,
+            "tsne_p30_x",
+            "tsne_p30_y",
+            outdir / "tsne_by_archetype.png",
+            f"{label}: champion embeddings by support archetype (t-SNE, perplexity=30)",
+            annotate=args.annotate_supports,
         )
+        plot_support_archetype(
+            projections,
+            "tsne_p15_x",
+            "tsne_p15_y",
+            outdir / "tsne_perplexity15_by_archetype.png",
+            f"{label}: champion embeddings by support archetype (t-SNE, perplexity=15)",
+            annotate=args.annotate_supports,
+        )
+        plot_primary_class(
+            projections,
+            "umap_n15_x",
+            "umap_n15_y",
+            outdir / "umap_by_class.png",
+            f"{label}: champion embeddings by Data Dragon primary class (UMAP, n_neighbors=15)",
+        )
+        plot_primary_class(
+            projections,
+            "umap_n10_x",
+            "umap_n10_y",
+            outdir / "umap_n10_by_class.png",
+            f"{label}: champion embeddings by Data Dragon primary class (UMAP, n_neighbors=10)",
+        )
+        if roam_means:
+            plot_tsne_by_roam_score(
+                projections,
+                roam_means,
+                "tsne_p30_x",
+                "tsne_p30_y",
+                outdir / "tsne_by_roam_score.png",
+                annotate_supports=args.annotate_supports,
+            )
+        projections_written = True
 
-    # Quantitative checks.
     support_mask = df["is_support"].to_numpy(dtype=bool)
     support_sil, support_sil_n, support_sil_groups = safe_silhouette(
         X_norm,
@@ -821,48 +1026,155 @@ def main() -> None:
         mask=None,
     )
 
-    nearest = build_nearest_neighbors(df, X_norm, k=5)
-    nearest.to_csv(outdir / "nearest_neighbors.csv", index=False)
-    plot_neighbor_similarity(nearest, outdir / "support_nearest_neighbors.png")
+    nearest_all = build_nearest_neighbors(df, X_norm, k=top_k)
+    nearest_all.to_csv(outdir / "nearest_neighbors_all_champions.csv", index=False)
+    nearest_all.to_csv(outdir / "nearest_neighbors.csv", index=False)
 
-    # NEW: Embedding distance vs roam score difference
+    nearest_support = build_nearest_neighbors_restricted(df, X_norm, k=top_k)
+    nearest_support.to_csv(outdir / "nearest_neighbors_support_only.csv", index=False)
+    nearest_support.to_csv(outdir / "nearest_neighbors_restricted_supports.csv", index=False)
+    plot_neighbor_similarity(nearest_support, outdir / "support_only_nearest_neighbors.png")
+    plot_neighbor_similarity(nearest_support, outdir / "support_nearest_neighbors.png")
+
     roam_corr_metrics: Dict[str, Any] = {}
     if roam_means:
         roam_corr_metrics = embedding_distance_vs_roam_score(
-            df, X_norm, roam_means, outdir
+            df,
+            X_norm,
+            roam_means,
+            outdir,
         )
 
+    neighbor_metrics = compute_neighbor_metrics(nearest_all, nearest_support, top_k=top_k)
     metrics = {
+        "embedding_label": label,
         "embeddings_path": str(embeddings_path.resolve()),
+        "output_dir": str(outdir.resolve()),
         "n_champions": int(len(df)),
         "n_support_labeled_champions": int(df["is_support"].sum()),
         "embedding_dim": int(X.shape[1]),
         "normalization": "l2",
         "distance_metric": "cosine",
-        "tsne_perplexities": [15, 30],
-        "umap_n_neighbors": [10, 15],
+        "tsne_perplexities": [15, 30] if projections_written else [],
+        "umap_n_neighbors": [10, 15] if projections_written else [],
+        "projections_written": bool(projections_written),
         "support_archetype_silhouette": support_sil,
         "support_archetype_silhouette_n": support_sil_n,
         "support_archetype_silhouette_groups": support_sil_groups,
         "primary_class_silhouette": class_sil,
         "primary_class_silhouette_n": class_sil_n,
         "primary_class_silhouette_groups": class_sil_groups,
-        "top5_support_neighbor_rate": float(nearest["neighbor_is_support"].mean()),
-        "top5_same_support_archetype_rate": float(nearest["same_support_archetype"].mean()),
-        "top5_same_primary_class_rate": float(nearest["same_primary_class"].mean()),
+        **neighbor_metrics,
         **roam_corr_metrics,
     }
+    if top_k == 5:
+        metrics.update(
+            {
+                "top5_support_neighbor_rate": metrics["all_topk_support_neighbor_rate"],
+                "top5_same_support_archetype_rate": metrics["all_topk_same_support_archetype_rate"],
+                "top5_same_primary_class_rate": metrics["all_topk_same_primary_class_rate"],
+                "restricted_top5_same_support_archetype_rate": metrics[
+                    "support_only_topk_same_support_archetype_rate"
+                ],
+                "restricted_top5_same_primary_class_rate": metrics[
+                    "support_only_topk_same_primary_class_rate"
+                ],
+                "restricted_rank1_same_support_archetype_rate": metrics[
+                    "support_only_rank1_same_support_archetype_rate"
+                ],
+            }
+        )
+
     (outdir / "embedding_analysis_metadata.json").write_text(
         json.dumps(metrics, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    write_summary(outdir / "embedding_analysis_summary.md", df, nearest, metrics)
+    write_summary(outdir / "embedding_analysis_summary.md", df, nearest_all, nearest_support, metrics)
 
-    print(f"[Metrics] support archetype silhouette={format_float(support_sil)}")
-    print(f"[Metrics] primary class silhouette={format_float(class_sil)}")
+    print(f"[Metrics:{label}] support silhouette={format_float(support_sil)}")
+    print(
+        f"[Metrics:{label}] support-only top-{top_k} same archetype="
+        f"{format_float(metrics['support_only_topk_same_support_archetype_rate'])}"
+    )
     if "roam_pearson_r" in roam_corr_metrics:
-        print(f"[Metrics] embedding dist vs roam diff: Pearson={format_float(roam_corr_metrics['roam_pearson_r'])}")
-    print(f"[Saved] {outdir.resolve()}")
+        print(
+            f"[Metrics:{label}] embedding dist vs roam diff Pearson="
+            f"{format_float(roam_corr_metrics['roam_pearson_r'])}"
+        )
+    print(f"[Saved:{label}] {outdir.resolve()}")
+    return metrics
+
+
+def write_comparison(outdir: Path, metrics_rows: List[Dict[str, Any]]) -> None:
+    comparison = pd.DataFrame(metrics_rows)
+    comparison.to_csv(outdir / "embedding_analysis_comparison.csv", index=False)
+    (outdir / "embedding_analysis_comparison.json").write_text(
+        json.dumps(metrics_rows, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    lines = [
+        "# Embedding analysis comparison",
+        "",
+        "Each row uses the same metadata and train-derived roam means, but a different embedding JSON.",
+        "",
+        "| Embedding | File | Support-only top-k same archetype | Support-only rank-1 same archetype | Roam Pearson r | Roam Spearman rho |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for row in metrics_rows:
+        lines.append(
+            f"| {row['embedding_label']} | `{row['embeddings_path']}` | "
+            f"{format_float(row.get('support_only_topk_same_support_archetype_rate', float('nan')))} | "
+            f"{format_float(row.get('support_only_rank1_same_support_archetype_rate', float('nan')))} | "
+            f"{format_float(row.get('roam_pearson_r', float('nan')))} | "
+            f"{format_float(row.get('roam_spearman_r', float('nan')))} |"
+        )
+    (outdir / "embedding_analysis_comparison.md").write_text(
+        "\n".join(lines) + "\n",
+        encoding="utf-8",
+    )
+
+
+def main() -> None:
+    args = parse_args()
+    outdir = Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    embedding_specs = resolve_embedding_specs(args)
+    archetypes_path = Path(args.champion_archetypes)
+    classes_path = Path(args.champion_classes)
+    train_path = Path(args.train_data)
+
+    print("[Embedding files]")
+    for label, path in embedding_specs:
+        print(f"  - {label}: {path}")
+
+    archetypes = load_archetypes(archetypes_path)
+    classes = load_classes(classes_path)
+
+    roam_means: Dict[int, float] = {}
+    if train_path.exists():
+        roam_means = compute_roam_score_means(train_path)
+        print(f"[Roam] Loaded mean roam scores for {len(roam_means)} champions from train only")
+    else:
+        print(f"[Roam] Train data not found at {train_path}, skipping roam analysis")
+
+    use_label_subdir = len(embedding_specs) > 1
+    metrics_rows = [
+        analyze_embedding_set(
+            label=label,
+            embeddings_path=path,
+            args=args,
+            archetypes=archetypes,
+            classes=classes,
+            roam_means=roam_means,
+            output_root=outdir,
+            use_label_subdir=use_label_subdir,
+        )
+        for label, path in embedding_specs
+    ]
+    write_comparison(outdir, metrics_rows)
+    print(f"[Saved] comparison={outdir.resolve()}")
 
 
 if __name__ == "__main__":

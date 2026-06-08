@@ -1,0 +1,20 @@
+{
+  "frame_state_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual\\data\\clean\\frame_state\\support_frame_state.parquet",
+  "config_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\geometry\\manual_geometry_v5_config.json",
+  "start_minute": 5.0,
+  "max_minute": 12.0,
+  "window_frames": 2359896,
+  "support_spatial_valid_frames": 2071883,
+  "support_spatial_excluded_frames": 288013,
+  "distance_component_valid_frames": 1878674,
+  "distance_component_excluded_frames_given_valid_support": 193209,
+  "support_exclusion_counts": {
+    "support_in_base": 173880,
+    "support_dead_with_xy": 114133
+  },
+  "adc_exclusion_counts_given_valid_support": {
+    "adc_in_base": 117744,
+    "adc_dead_with_xy": 75465
+  },
+  "image_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\invalid_frame_positions\\frame_calculation_exclusions_v5_m5_12.png"
+}

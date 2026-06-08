@@ -1,0 +1,15 @@
+{
+  "frame_state_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual\\data\\clean\\frame_state\\support_frame_state.parquet",
+  "scores_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\clean\\scores\\support_scores_v5_geometry_m12.parquet",
+  "config_path": "C:\\Users\\adria\\Desktop\\TFG\\ProgresoActual2\\data\\geometry\\manual_geometry_v5_config.json",
+  "start_minute": 5.0,
+  "max_minute": 12.0,
+  "score_observations": 337104,
+  "alive_support_frames_with_xy": 2245763,
+  "valid_spatial_non_base_frames": 2071883,
+  "invalid_for_label_v5_frames": 405774,
+  "invalid_for_label_v5_share": 0.1958479315675644,
+  "out_of_map_frames": 0,
+  "image_path": "C:\\Users\\adria\\Desktop\\TFG\\final\\analysis\\invalid_frame_positions\\invalid_support_frame_positions_v5_m5_12.png",
+  "definition": "support alive, xy present, in map, not base, and outside BOT_LANE_CORE/BOT_SIDE_NEAR/RIVER_BOT/DRAGON_AREA"
+}

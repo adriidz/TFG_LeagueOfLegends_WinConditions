@@ -1,0 +1,369 @@
+[
+  {
+    "icc": 0.12143532084455097,
+    "n_groups": 144,
+    "n_rows": 268289,
+    "mean_group_size": 1863.1180555555557,
+    "var_between": 8.179638297935416,
+    "var_within": 0.03164020283482028,
+    "total_var": 0.03598316162388051,
+    "grouping": "support_champion",
+    "columns": [
+      "ally_utility_champion_id"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.12117205351001532,
+    "n_groups": 255,
+    "n_rows": 268201,
+    "mean_group_size": 1051.7686274509804,
+    "var_between": 4.619209315220225,
+    "var_within": 0.03163474335112136,
+    "total_var": 0.03597942620442021,
+    "grouping": "support_champion+side",
+    "columns": [
+      "ally_utility_champion_id",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.13942487804540168,
+    "n_groups": 2518,
+    "n_rows": 262577,
+    "mean_group_size": 104.27998411437649,
+    "var_between": 0.5517079454821585,
+    "var_within": 0.03083067036256321,
+    "total_var": 0.03582369372142318,
+    "grouping": "botlane_champions",
+    "columns": [
+      "ally_utility_champion_id",
+      "ally_bottom_champion_id"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.13911576324790514,
+    "n_groups": 3845,
+    "n_rows": 259164,
+    "mean_group_size": 67.40286085825748,
+    "var_between": 0.36608703166275336,
+    "var_within": 0.03078416311815266,
+    "total_var": 0.03575749737761657,
+    "grouping": "botlane_champions+side",
+    "columns": [
+      "ally_utility_champion_id",
+      "ally_bottom_champion_id",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.13161808039718317,
+    "n_groups": 2720,
+    "n_rows": 261959,
+    "mean_group_size": 96.30845588235294,
+    "var_between": 0.4863206780029669,
+    "var_within": 0.031180022943252606,
+    "total_var": 0.035904167428656236,
+    "grouping": "sup_vs_enemy_sup_champion",
+    "columns": [
+      "ally_utility_champion_id",
+      "enemy_utility_champion_id"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.026416330111328636,
+    "n_groups": 7,
+    "n_rows": 268322,
+    "mean_group_size": 38331.71428571428,
+    "var_between": 36.608654512620824,
+    "var_within": 0.035164865097498846,
+    "total_var": 0.03598269500229624,
+    "grouping": "support_riot_class",
+    "columns": [
+      "ally_utility_class"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.032473005645100944,
+    "n_groups": 47,
+    "n_rows": 268319,
+    "mean_group_size": 5708.914893617021,
+    "var_between": 6.710074280892716,
+    "var_within": 0.034838036875839626,
+    "total_var": 0.035982428482905775,
+    "grouping": "botlane_riot_classes",
+    "columns": [
+      "ally_utility_class",
+      "ally_bottom_class"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.01859312923395599,
+    "n_groups": 7225,
+    "n_rows": 88500,
+    "mean_group_size": 12.249134948096886,
+    "var_between": 0.042584983671752945,
+    "var_within": 0.034563922390592375,
+    "total_var": 0.03521866590967286,
+    "grouping": "all_10_riot_classes",
+    "columns": [
+      "ally_top_class",
+      "ally_jungle_class",
+      "ally_middle_class",
+      "ally_bottom_class",
+      "ally_utility_class",
+      "enemy_top_class",
+      "enemy_jungle_class",
+      "enemy_middle_class",
+      "enemy_bottom_class",
+      "enemy_utility_class"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.08366721097225963,
+    "n_groups": 29,
+    "n_rows": 268322,
+    "mean_group_size": 9252.48275862069,
+    "var_between": 27.968919230561607,
+    "var_within": 0.03306751561634261,
+    "total_var": 0.03598269500229624,
+    "grouping": "support_archetype",
+    "columns": [
+      "ally_utility_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.08233352422083658,
+    "n_groups": 58,
+    "n_rows": 268322,
+    "mean_group_size": 4626.241379310345,
+    "var_between": 13.758166136332273,
+    "var_within": 0.033067043046924635,
+    "total_var": 0.03598269500229624,
+    "grouping": "support_archetype+side",
+    "columns": [
+      "ally_utility_archetype",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.09322482537657964,
+    "n_groups": 388,
+    "n_rows": 267966,
+    "mean_group_size": 690.6340206185567,
+    "var_between": 2.3487664280746734,
+    "var_within": 0.03262015782245,
+    "total_var": 0.03596517902517279,
+    "grouping": "botlane_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.09312899277997856,
+    "n_groups": 635,
+    "n_rows": 267569,
+    "mean_group_size": 421.36850393700786,
+    "var_between": 1.443565329359126,
+    "var_within": 0.03260713838020023,
+    "total_var": 0.035950391284436306,
+    "grouping": "botlane_archetypes+side",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.09008535413270727,
+    "n_groups": 385,
+    "n_rows": 267914,
+    "mean_group_size": 695.8805194805195,
+    "var_between": 2.2881156201797874,
+    "var_within": 0.03273643287325213,
+    "total_var": 0.03596907036350349,
+    "grouping": "sup_vs_enemy_sup_archetype",
+    "columns": [
+      "ally_utility_archetype",
+      "enemy_utility_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.0818225774373358,
+    "n_groups": 390,
+    "n_rows": 268019,
+    "mean_group_size": 687.2282051282051,
+    "var_between": 2.0558970993280923,
+    "var_within": 0.03303084228875161,
+    "total_var": 0.035966820372269524,
+    "grouping": "sup+jungle_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.08186247782779685,
+    "n_groups": 653,
+    "n_rows": 267647,
+    "mean_group_size": 409.8728943338438,
+    "var_between": 1.2396058205548157,
+    "var_within": 0.033016655119092304,
+    "total_var": 0.03595597099104291,
+    "grouping": "sup+jungle_archetypes+side",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.0815696911424357,
+    "n_groups": 2650,
+    "n_rows": 262420,
+    "mean_group_size": 99.02641509433963,
+    "var_between": 0.3228206444002646,
+    "var_within": 0.03295784550735331,
+    "total_var": 0.03588387812796127,
+    "grouping": "sup+jungle+top_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_jungle_archetype",
+      "ally_top_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.10057046844767993,
+    "n_groups": 4800,
+    "n_rows": 246287,
+    "mean_group_size": 51.30979166666667,
+    "var_between": 0.2147650491645373,
+    "var_within": 0.03187726899545069,
+    "total_var": 0.03544092448959752,
+    "grouping": "botlane_vs_enemy_bot_archetypes",
+    "columns": [
+      "ally_utility_archetype",
+      "ally_bottom_archetype",
+      "enemy_utility_archetype",
+      "enemy_bottom_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.0768577248920425,
+    "n_groups": 10122,
+    "n_rows": 173051,
+    "mean_group_size": 17.096522426397947,
+    "var_between": 0.0788301729641271,
+    "var_within": 0.03252876313290978,
+    "total_var": 0.035236746772908334,
+    "grouping": "ally_team_archetypes",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": 0.07110633841027494,
+    "n_groups": 10534,
+    "n_rows": 146119,
+    "mean_group_size": 13.87117903930131,
+    "var_between": 0.06727294101144751,
+    "var_within": 0.03262775544706022,
+    "total_var": 0.03512517355810534,
+    "grouping": "ally_team_archetypes+side",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": NaN,
+    "n_groups": 0,
+    "n_rows": 0,
+    "mean_group_size": NaN,
+    "note": "insufficient data",
+    "grouping": "all_10_archetypes",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "enemy_top_archetype",
+      "enemy_jungle_archetype",
+      "enemy_middle_archetype",
+      "enemy_bottom_archetype",
+      "enemy_utility_archetype"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  },
+  {
+    "icc": NaN,
+    "n_groups": 0,
+    "n_rows": 0,
+    "mean_group_size": NaN,
+    "note": "insufficient data",
+    "grouping": "all_10_archetypes+side",
+    "columns": [
+      "ally_top_archetype",
+      "ally_jungle_archetype",
+      "ally_middle_archetype",
+      "ally_bottom_archetype",
+      "ally_utility_archetype",
+      "enemy_top_archetype",
+      "enemy_jungle_archetype",
+      "enemy_middle_archetype",
+      "enemy_bottom_archetype",
+      "enemy_utility_archetype",
+      "side"
+    ],
+    "split": "train",
+    "metric_role": "descriptive_in_sample_consistency"
+  }
+]
