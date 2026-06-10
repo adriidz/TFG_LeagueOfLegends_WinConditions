@@ -238,5 +238,40 @@
     "used_sample_weight": true,
     "has_manifest": true,
     "notes": "Excluded from main table because it adds target-encoded interaction features."
+  },
+  {
+    "model_key": "residual_interactions",
+    "model": "Smoothed Support Mean + Residual Context GBT",
+    "comparison_role": "secondary_residual_diagnostic",
+    "feature_protocol_id": "support_mean_plus_contextual_residual_interactions",
+    "manifest_feature_protocol_id": "support_mean_plus_contextual_residual_interactions",
+    "feature_count": 20,
+    "input_feature_columns": [
+      "ally_top_champion_id",
+      "ally_jungle_champion_id",
+      "ally_middle_champion_id",
+      "ally_bottom_champion_id",
+      "enemy_top_champion_id",
+      "enemy_jungle_champion_id",
+      "enemy_middle_champion_id",
+      "enemy_bottom_champion_id",
+      "enemy_utility_champion_id",
+      "side",
+      "resid_te_support_adc_synergy",
+      "resid_te_support_adc_synergy_log_count",
+      "resid_te_support_enemy_support_matchup",
+      "resid_te_support_enemy_support_matchup_log_count",
+      "resid_te_support_jungle_setup",
+      "resid_te_support_jungle_setup_log_count",
+      "resid_te_support_mid_payoff",
+      "resid_te_support_mid_payoff_log_count",
+      "resid_te_support_adc_enemy_support",
+      "resid_te_support_adc_enemy_support_log_count"
+    ],
+    "matches_main_feature_protocol": false,
+    "sample_weight_column": "sample_weight",
+    "used_sample_weight": true,
+    "has_manifest": true,
+    "notes": "Excluded from main table because it decomposes prediction into a support mean plus a residual context model."
   }
 ]

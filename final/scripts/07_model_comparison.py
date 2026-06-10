@@ -42,7 +42,13 @@ CHAMPION_COLS = [f"{s}_{r}_champion_id" for s in SIDES for r in ROLE_KEYS]
 CANONICAL_MAIN_FEATURES = CHAMPION_COLS + ["side"]
 MAIN_FEATURE_PROTOCOL_ID = "draft_10_champions_side"
 PRIMARY_MODEL_KEYS = ["baselines", "gbt", "mlp_onehot", "mlp_embed", "mlp_per_role"]
-SECONDARY_MODEL_KEYS = ["gbt_enriched", "gbt_interactions", "mlp_per_role_tuned", "ceiling"]
+SECONDARY_MODEL_KEYS = [
+    "gbt_enriched",
+    "gbt_interactions",
+    "residual_interactions",
+    "mlp_per_role_tuned",
+    "ceiling",
+]
 MAIN_LEARNED_MODELS = {
     "HistGBT",
     "MLP OneHot",
@@ -594,6 +600,135 @@ def eval_gbt_interactions(
                     else f"{row['notes']} OOF-smoothed pair target encodings fitted on train only."
                 )
     return rows
+
+
+def predict_residual_support_effect(
+    df: pd.DataFrame,
+    support_baseline: Dict[str, Any],
+) -> np.ndarray:
+    keys = df["ally_utility_champion_id"].fillna(-1).astype(int).astype(str)
+    return (
+        keys.map(support_baseline["support_means"])
+        .fillna(float(support_baseline["global_mean"]))
+        .to_numpy(dtype=np.float32)
+    )
+
+
+def build_residual_eval_matrix(df_test: pd.DataFrame, preprocess: Dict[str, Any]) -> np.ndarray:
+    cat_cols = preprocess["categorical_columns"]
+    encoder = preprocess["encoder"]
+    x_cat = df_test[cat_cols].copy()
+    for col in cat_cols:
+        x_cat[col] = x_cat[col].fillna("__MISSING__").astype(str)
+    x_cat_arr = encoder.transform(x_cat)
+
+    numeric_cols = preprocess["numeric_columns"]
+    numeric = pd.DataFrame(index=df_test.index)
+    for _, info in preprocess["interaction_mappings"].items():
+        key = make_interaction_key(df_test, info["columns"])
+        mean_col = info["mean_column"]
+        count_col = info["count_column"]
+        means = info["means"]
+        counts = info["counts"]
+        prior = float(info["prior"])
+        numeric[mean_col] = key.map(means).fillna(prior).astype(np.float32)
+        numeric[count_col] = np.log1p(key.map(counts).fillna(0).to_numpy(dtype=np.float32))
+
+    return np.hstack([x_cat_arr, numeric[numeric_cols].to_numpy(dtype=np.float32)])
+
+
+def make_residual_context_rows(
+    df_test: pd.DataFrame,
+    support_pred: np.ndarray,
+    residual_pred: np.ndarray,
+    n_train: int,
+) -> List[Dict[str, Any]]:
+    def diagnostic_row(
+        model: str,
+        trained_target: str,
+        evaluation_scale: str,
+        y_row_true: np.ndarray,
+        y_row_pred: np.ndarray,
+        notes: str,
+    ) -> Dict[str, Any]:
+        return {
+            "model": model,
+            "trained_target": trained_target,
+            "evaluation_scale": evaluation_scale,
+            "eval_split": "test",
+            "n_train": int(n_train),
+            "n_eval": int(len(y_row_true)),
+            "notes": notes,
+            **regression_metrics(y_row_true, y_row_pred),
+        }
+
+    y_true = df_test[TARGET_COL].to_numpy(dtype=np.float64)
+    support_pred = np.asarray(support_pred, dtype=np.float64)
+    residual_pred = np.asarray(residual_pred, dtype=np.float64)
+    final_pred = np.clip(support_pred + residual_pred, 0.0, 1.0)
+    residual_true = y_true - support_pred
+
+    support_row = diagnostic_row(
+        "Smoothed Support Mean",
+        "raw",
+        "raw",
+        y_true,
+        support_pred,
+        "Sample-weighted smoothed ally-support mean fitted on train only.",
+    )
+    residual_row = diagnostic_row(
+        "Residual Context GBT",
+        "residual",
+        "residual",
+        residual_true,
+        residual_pred,
+        (
+            "Residual target y - support_effect; direct ally support excluded "
+            "from residual categorical features."
+        ),
+    )
+    final_row = diagnostic_row(
+        "Smoothed Support Mean + Residual Context GBT",
+        "raw",
+        "raw",
+        y_true,
+        final_pred,
+        (
+            "Additive diagnostic: smoothed support effect plus residual context "
+            "GBT. Direct ally support is excluded from residual categorical "
+            "features and used only through explicit smoothed interactions."
+        ),
+    )
+    final_row["support_effect_r2"] = support_row["r2"]
+    final_row["support_effect_spearman_corr"] = support_row["spearman_corr"]
+    final_row["r2_lift_over_support_effect"] = final_row["r2"] - support_row["r2"]
+    final_row["spearman_lift_over_support_effect"] = (
+        final_row["spearman_corr"] - support_row["spearman_corr"]
+    )
+    final_row["residual_r2"] = residual_row["r2"]
+    final_row["residual_spearman_corr"] = residual_row["spearman_corr"]
+    for row in (support_row, residual_row, final_row):
+        row["diagnostic_family"] = "support_residual"
+    return [support_row, residual_row, final_row]
+
+
+def eval_residual_interactions(
+    df_test: pd.DataFrame,
+    n_train: int,
+) -> List[Dict[str, Any]]:
+    model_dir = REPO_ROOT / "final" / "models" / "residual_interactions"
+    preprocess_path = model_dir / "preprocess.joblib"
+    model_path = model_dir / "residual_gbt_model.joblib"
+    if not preprocess_path.exists() or not model_path.exists():
+        print("[Residual Context] residual artifacts not found, skipping")
+        return []
+
+    preprocess = joblib.load(preprocess_path)
+    support_pred = predict_residual_support_effect(df_test, preprocess["support_baseline"])
+    x_test = build_residual_eval_matrix(df_test, preprocess)
+    model = joblib.load(model_path)
+    residual_pred = model.predict(x_test)
+    return make_residual_context_rows(df_test, support_pred, residual_pred, n_train)
 
 
 def iter_batches(n: int, batch_size: int) -> Iterable[slice]:
@@ -1347,6 +1482,27 @@ def audit_feature_protocol(model_keys: List[str], outdir: Path) -> List[Dict[str
             notes="Excluded from main table because it adds target-encoded interaction features.",
         )
 
+    if "residual_interactions" in model_keys:
+        cfg = load_json_if_exists(
+            REPO_ROOT / "final" / "models" / "residual_interactions" / "model_config.json"
+        )
+        add_row(
+            "residual_interactions",
+            "Smoothed Support Mean + Residual Context GBT",
+            list(cfg.get("categorical_columns", [])) + list(cfg.get("numeric_columns", [])),
+            "secondary_residual_diagnostic",
+            cfg.get("used_sample_weight") if cfg else None,
+            manifest_feature_protocol_id=str(
+                cfg.get("feature_protocol_id", "secondary_residual_diagnostic")
+            )
+            if cfg
+            else "missing_manifest",
+            notes=(
+                "Excluded from main table because it decomposes prediction into a "
+                "support mean plus a residual context model."
+            ),
+        )
+
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "feature_protocol_audit.json").write_text(
         json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8"
@@ -1459,6 +1615,10 @@ def main() -> None:
         print("\n--- HistGBT + Pair Target Encodings ---")
         secondary_rows.extend(eval_gbt_interactions(df_test, len(df_train), transformer))
 
+    if "residual_interactions" in model_keys:
+        print("\n--- Smoothed Support Mean + Residual Context GBT ---")
+        secondary_rows.extend(eval_residual_interactions(df_test, len(df_train)))
+
     if "mlp_onehot" in model_keys:
         print("\n--- MLP OneHot ---")
         rows.extend(eval_mlp(df_test, "onehot", len(df_train), transformer, args.batch_size))
@@ -1491,6 +1651,33 @@ def main() -> None:
     secondary_df = pd.DataFrame(secondary_rows)
     secondary_raw_df = sorted_table(secondary_rows, "raw")
     secondary_quantile_df = sorted_table(secondary_rows, "quantile")
+    secondary_residual_df = sorted_table(secondary_rows, "residual")
+    residual_diagnostics_df = pd.DataFrame(
+        [row for row in secondary_rows if row.get("diagnostic_family") == "support_residual"]
+    )
+    if not residual_diagnostics_df.empty:
+        residual_cols = [
+            "model",
+            "trained_target",
+            "evaluation_scale",
+            "r2",
+            "spearman_corr",
+            "mae",
+            "pred_std",
+            "target_std",
+            "compression_ratio",
+            "support_effect_r2",
+            "support_effect_spearman_corr",
+            "r2_lift_over_support_effect",
+            "spearman_lift_over_support_effect",
+            "residual_r2",
+            "residual_spearman_corr",
+            "n_eval",
+            "notes",
+        ]
+        residual_diagnostics_df = residual_diagnostics_df[
+            [col for col in residual_cols if col in residual_diagnostics_df.columns]
+        ]
 
     all_df.to_csv(outdir / "comparison_all_rows.csv", index=False)
     final_main_df.to_csv(outdir / "final_main_table_raw.csv", index=False)
@@ -1499,6 +1686,8 @@ def main() -> None:
     secondary_df.to_csv(outdir / "comparison_secondary_all_rows.csv", index=False)
     secondary_raw_df.to_csv(outdir / "comparison_secondary_table_raw.csv", index=False)
     secondary_quantile_df.to_csv(outdir / "comparison_secondary_table_quantile.csv", index=False)
+    secondary_residual_df.to_csv(outdir / "comparison_secondary_table_residual.csv", index=False)
+    residual_diagnostics_df.to_csv(outdir / "residual_context_diagnostics.csv", index=False)
     (outdir / "comparison_results.json").write_text(
         json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8"
     )
@@ -1515,6 +1704,13 @@ def main() -> None:
                     {
                         "model": "HistGBT + Pair TE",
                         "reason": "Adds target-encoded pair interaction features.",
+                    },
+                    {
+                        "model": "Smoothed Support Mean + Residual Context GBT",
+                        "reason": (
+                            "Diagnostic additive decomposition into support mean "
+                            "and residual context signal."
+                        ),
                     },
                     {
                         "model": "MLP Per-Role + Interactions HP Best",
@@ -1535,6 +1731,14 @@ def main() -> None:
     secondary_quantile_md = format_markdown_table(
         secondary_quantile_df, "Secondary B - Quantile Scale (Test)"
     )
+    secondary_residual_md = format_markdown_table(
+        secondary_residual_df,
+        "Secondary C - Residual-Scale Diagnostics (Test)",
+    )
+    residual_diagnostics_md = format_markdown_table(
+        residual_diagnostics_df,
+        "Support Residual Diagnostic Rows",
+    )
     md = (
         "# Final Model Comparison (Test Set)\n\n"
         "Main tables use the fair feature protocol for learned models: "
@@ -1549,6 +1753,10 @@ def main() -> None:
         + secondary_raw_md
         + "\n"
         + secondary_quantile_md
+        + "\n"
+        + secondary_residual_md
+        + "\n"
+        + residual_diagnostics_md
     )
     (outdir / "comparison_tables.md").write_text(md, encoding="utf-8")
     (outdir / "final_main_table_raw.md").write_text(

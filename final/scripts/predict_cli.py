@@ -30,6 +30,7 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODELS_ROOT = REPO_ROOT / "final" / "models"
 DEFAULT_TRAIN_PATH = REPO_ROOT / "final" / "data" / "training" / "train.parquet"
+DEFAULT_CALIBRATION_PATH = REPO_ROOT / "final" / "data" / "training" / "val.parquet"
 DEFAULT_METRICS_TABLE = REPO_ROOT / "final" / "analysis" / "model_comparison" / "final_main_table_raw.csv"
 DEFAULT_CHAMPION_CLASSES = REPO_ROOT / "final" / "data" / "champion_classes.json"
 DEFAULT_CHAMPION_ARCHETYPES = REPO_ROOT / "final" / "data" / "champion_archetypes.json"
@@ -77,12 +78,21 @@ ROLES: Tuple[Tuple[str, str], ...] = (
     ("utility", "Support"),
 )
 SIDES: Tuple[str, str] = ("ally", "enemy")
-PROFILE_BANDS: Tuple[Tuple[float, str], ...] = (
+FALLBACK_SCORE_PROFILE_BANDS: Tuple[Tuple[float, str], ...] = (
     (0.25, "Perfil de laning - el support tiende a quedarse en botlane"),
     (0.40, "Perfil mixto - roaming ocasional pero anclado a bot"),
     (0.55, "Perfil de roaming moderado - rotaciones frecuentes esperadas"),
     (math.inf, "Perfil de roaming intenso - el support abandona bot activamente"),
 )
+PERCENTILE_PROFILE_BANDS: Tuple[Tuple[float, str], ...] = (
+    (20.0, "Perfil muy bajo - tendencia muy anclada a botlane frente a otros drafts"),
+    (40.0, "Perfil medio-bajo - roaming esperado por debajo de la media"),
+    (60.0, "Perfil medio - movilidad esperada cercana al draft tipico"),
+    (80.0, "Perfil medio-alto - mas movilidad que la mayoria de drafts"),
+    (90.0, "Perfil alto - tendencia fuerte a rotar desde el draft"),
+    (math.inf, "Perfil muy alto - top 10% de movilidad esperada prepartida"),
+)
+PERCENTILE_PROFILE_BOUNDARIES = np.asarray([20.0, 40.0, 60.0, 80.0, 90.0], dtype=float)
 
 
 @dataclass(frozen=True)
@@ -122,8 +132,9 @@ class DraftPredictor(Protocol):
     no_shap: bool
 
     def predict_score(self, row: pd.DataFrame) -> float: ...
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray: ...
     def unknown_features(self, row: pd.DataFrame) -> List[str]: ...
-    def target_percentile(self, score: float) -> Optional[float]: ...
+    def prediction_percentile(self, score: float) -> Optional[float]: ...
     def confidence(self, score: float, unknown_count: int) -> Tuple[str, float]: ...
     def explain_local(self, row: pd.DataFrame, score: float, top_n: int) -> Tuple[List[Dict[str, Any]], str]: ...
     def display_metrics(self) -> Dict[str, str]: ...
@@ -144,11 +155,20 @@ def prompt_value(label: str, default: Optional[str] = None) -> str:
     return value or (default or "")
 
 
-def score_profile(score: float) -> str:
-    for upper, label in PROFILE_BANDS:
+def percentile_profile(percentile: float) -> str:
+    for upper, label in PERCENTILE_PROFILE_BANDS:
+        if percentile < upper:
+            return label
+    return PERCENTILE_PROFILE_BANDS[-1][1]
+
+
+def score_profile(score: float, percentile: Optional[float] = None) -> str:
+    if percentile is not None:
+        return percentile_profile(percentile)
+    for upper, label in FALLBACK_SCORE_PROFILE_BANDS:
         if score < upper:
             return label
-    return PROFILE_BANDS[-1][1]
+    return FALLBACK_SCORE_PROFILE_BANDS[-1][1]
 
 
 def matchup_profile(delta: float) -> Tuple[str, str]:
@@ -335,16 +355,18 @@ class BasePredictor:
         report_metrics: Mapping[str, Mapping[str, str]],
         background_size: int,
         no_shap: bool,
+        calibration_path: Optional[Path] = None,
     ) -> None:
         self.key = key
         self.model_label = model_label
         self.train_path = train_path
+        self.calibration_path = calibration_path or DEFAULT_CALIBRATION_PATH
         self.champion_info = champion_info
         self.report_metrics = dict(report_metrics.get(model_label, {}))
         self.background_size = background_size
         self.no_shap = no_shap
         self.feature_columns = list(CANONICAL_FEATURE_COLUMNS)
-        self._target_values: Optional[np.ndarray] = None
+        self._calibration_predictions: Optional[np.ndarray] = None
 
     def display_metrics(self) -> Dict[str, str]:
         return {
@@ -355,24 +377,46 @@ class BasePredictor:
             "n_seeds": str(self.report_metrics.get("n_seeds", "")),
         }
 
-    def target_percentile(self, score: float) -> Optional[float]:
-        if self._target_values is None:
-            if not self.train_path.exists():
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray:
+        return np.asarray(
+            [self.predict_score(rows.iloc[[i]]) for i in range(len(rows))],
+            dtype=np.float64,
+        )
+
+    def calibration_predictions(self) -> Optional[np.ndarray]:
+        if self._calibration_predictions is None:
+            if not self.calibration_path.exists():
                 return None
             try:
-                vals = pd.read_parquet(self.train_path, columns=["support_roam_score"])
-                self._target_values = vals["support_roam_score"].dropna().to_numpy(dtype=float)
+                df = pd.read_parquet(self.calibration_path, columns=self.feature_columns)
+                preds = self.predict_scores(df)
+                preds = np.asarray(preds, dtype=np.float64)
+                self._calibration_predictions = preds[np.isfinite(preds)]
             except Exception:
                 return None
-        if self._target_values.size == 0:
+        if self._calibration_predictions.size == 0:
             return None
-        return float((self._target_values <= score).mean() * 100.0)
+        return self._calibration_predictions
+
+    def prediction_percentile(self, score: float) -> Optional[float]:
+        preds = self.calibration_predictions()
+        if preds is None or float(np.std(preds)) <= 1e-12:
+            return None
+        return float((preds <= score).mean() * 100.0)
+
+    def target_percentile(self, score: float) -> Optional[float]:
+        return self.prediction_percentile(score)
 
     def confidence(self, score: float, unknown_count: int) -> Tuple[str, float]:
         coverage = 1.0 - (unknown_count / max(len(self.feature_columns), 1))
-        boundaries = np.asarray([0.25, 0.40, 0.55], dtype=float)
-        distance = float(np.min(np.abs(boundaries - score)))
-        stability = min(distance / 0.08, 1.0)
+        percentile = self.prediction_percentile(score)
+        if percentile is not None:
+            distance = float(np.min(np.abs(PERCENTILE_PROFILE_BOUNDARIES - percentile)))
+            stability = min(distance / 10.0, 1.0)
+        else:
+            boundaries = np.asarray([0.25, 0.40, 0.55], dtype=float)
+            distance = float(np.min(np.abs(boundaries - score)))
+            stability = min(distance / 0.08, 1.0)
         spearman = parse_metric_mean(self.report_metrics.get("spearman_corr", "")) or 0.38
         model_quality = min(max(spearman / 0.45, 0.0), 1.0)
         value = 0.45 * coverage + 0.35 * stability + 0.20 * model_quality
@@ -422,6 +466,13 @@ class GbtEnsemblePredictor(BasePredictor):
             for model, encoder in zip(self.models, self.encoders)
         ]
         return float(np.clip(np.mean(preds), 0.0, 1.0))
+
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray:
+        preds = [
+            model.predict(self.encode(rows, encoder))
+            for model, encoder in zip(self.models, self.encoders)
+        ]
+        return np.clip(np.mean(np.vstack(preds), axis=0), 0.0, 1.0).astype(np.float64)
 
     def unknown_features(self, row: pd.DataFrame) -> List[str]:
         unknown: List[str] = []
@@ -633,6 +684,24 @@ class MLPEnsemblePredictor(BasePredictor):
                 preds.append(float(pred[0]))
         return float(np.clip(np.mean(preds), 0.0, 1.0))
 
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray:
+        torch = self._torch
+        assert torch is not None
+        all_model_preds: List[np.ndarray] = []
+        batch_size = 4096
+        with torch.no_grad():
+            for model, vocab in zip(self.models, self.vocabs):
+                champ_all = self.encode_champion_ids(rows, vocab)
+                side_all = self.encode_side(rows)
+                chunks: List[np.ndarray] = []
+                for start in range(0, len(rows), batch_size):
+                    end = start + batch_size
+                    champ = torch.from_numpy(champ_all[start:end]).to(self.device)
+                    side = torch.from_numpy(side_all[start:end]).to(self.device)
+                    chunks.append(model(champ, side).cpu().numpy())
+                all_model_preds.append(np.concatenate(chunks))
+        return np.clip(np.mean(np.vstack(all_model_preds), axis=0), 0.0, 1.0).astype(np.float64)
+
     def unknown_features(self, row: pd.DataFrame) -> List[str]:
         vocab = self.vocabs[0]
         unknown = []
@@ -657,6 +726,9 @@ class GlobalMeanPredictor(BasePredictor):
     def predict_score(self, row: pd.DataFrame) -> float:
         return float(np.clip(self.mean, 0.0, 1.0))
 
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray:
+        return np.full(len(rows), np.clip(self.mean, 0.0, 1.0), dtype=np.float64)
+
 
 class ChampionMeanPredictor(BasePredictor):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -675,6 +747,11 @@ class ChampionMeanPredictor(BasePredictor):
     def predict_score(self, row: pd.DataFrame) -> float:
         cid = int(row.iloc[0]["ally_utility_champion_id"])
         return float(np.clip(self.means.get(cid, self.global_mean), 0.0, 1.0))
+
+    def predict_scores(self, rows: pd.DataFrame) -> np.ndarray:
+        ids = pd.to_numeric(rows["ally_utility_champion_id"], errors="coerce").astype("Int64")
+        preds = ids.map(self.means).fillna(self.global_mean).to_numpy(dtype=np.float64)
+        return np.clip(preds, 0.0, 1.0)
 
     def unknown_features(self, row: pd.DataFrame) -> List[str]:
         cid = int(row.iloc[0]["ally_utility_champion_id"])
@@ -731,16 +808,17 @@ def build_predictor(
     report_metrics: Mapping[str, Mapping[str, str]],
     background_size: int,
     no_shap: bool,
+    calibration_path: Optional[Path] = None,
 ) -> DraftPredictor:
     common = (train_path, champion_info, report_metrics, background_size, no_shap)
     if key == "histgbt":
-        return GbtEnsemblePredictor(models_root / MODEL_DIRS[key], *common)
+        return GbtEnsemblePredictor(models_root / MODEL_DIRS[key], *common, calibration_path=calibration_path)
     if key in {"mlp_onehot", "mlp_embed", "mlp_per_role"}:
-        return MLPEnsemblePredictor(key, models_root / MODEL_DIRS[key], *common)
+        return MLPEnsemblePredictor(key, models_root / MODEL_DIRS[key], *common, calibration_path=calibration_path)
     if key == "champion_mean":
-        return ChampionMeanPredictor(*common)
+        return ChampionMeanPredictor(*common, calibration_path=calibration_path)
     if key == "global_mean":
-        return GlobalMeanPredictor(*common)
+        return GlobalMeanPredictor(*common, calibration_path=calibration_path)
     raise ValueError(f"Unknown model key: {key}")
 
 
@@ -752,10 +830,20 @@ def build_predictors(
     report_metrics: Mapping[str, Mapping[str, str]],
     background_size: int,
     no_shap: bool,
+    calibration_path: Optional[Path] = None,
 ) -> Dict[str, DraftPredictor]:
     keys = MODEL_KEYS if selected == "all" else (selected,)
     return {
-        key: build_predictor(key, models_root, train_path, champion_info, report_metrics, background_size, no_shap)
+        key: build_predictor(
+            key,
+            models_root,
+            train_path,
+            champion_info,
+            report_metrics,
+            background_size,
+            no_shap,
+            calibration_path=calibration_path,
+        )
         for key in keys
     }
 
@@ -835,14 +923,15 @@ def swap_team_perspective(row: pd.DataFrame) -> pd.DataFrame:
 def predict_full(predictor: DraftPredictor, row: pd.DataFrame, assumptions: List[str], top_n: int) -> PredictionResult:
     score = predictor.predict_score(row)
     unknown = predictor.unknown_features(row)
+    percentile = predictor.prediction_percentile(score)
     conf_label, conf_score = predictor.confidence(score, len(unknown))
     top_features, method = predictor.explain_local(row, score, top_n=top_n)
     return PredictionResult(
         score=score,
-        profile=score_profile(score),
+        profile=score_profile(score, percentile),
         confidence_label=conf_label,
         confidence_score=conf_score,
-        percentile=predictor.target_percentile(score),
+        percentile=percentile,
         unknown_features=unknown,
         top_features=top_features,
         explanation_method=method,
@@ -909,7 +998,7 @@ def print_prediction(
         print(f"Arquetipo de referencia: {support.support_archetype}")
     print(f"Score estimado: {result.score:.4f}")
     if result.percentile is not None:
-        print(f"Percentil vs distribucion de train: {result.percentile:.1f}")
+        print(f"Percentil vs distribucion calibrada de predicciones: {result.percentile:.1f}")
     print(f"Lectura: {result.profile}")
     print(f"Confianza: {result.confidence_label} ({result.confidence_score:.2f}; no es una probabilidad calibrada)")
     metrics = predictor.display_metrics()
@@ -961,6 +1050,7 @@ def prediction_to_dict(
         "profile": result.profile,
         "confidence_label": result.confidence_label,
         "confidence_score": result.confidence_score,
+        "prediction_percentile": result.percentile,
         "percentile_train": result.percentile,
         "top_features": result.top_features,
         "explanation_method": result.explanation_method,
@@ -988,6 +1078,7 @@ def matchup_to_dict(
         "ally_profile": matchup.ally.profile,
         "ally_confidence_label": matchup.ally.confidence_label,
         "ally_confidence_score": matchup.ally.confidence_score,
+        "ally_prediction_percentile": matchup.ally.percentile,
         "ally_percentile_train": matchup.ally.percentile,
         "enemy_support_id": enemy_support_id,
         "enemy_support_name": enemy_support.name,
@@ -995,6 +1086,7 @@ def matchup_to_dict(
         "enemy_profile": matchup.enemy.profile,
         "enemy_confidence_label": matchup.enemy.confidence_label,
         "enemy_confidence_score": matchup.enemy.confidence_score,
+        "enemy_prediction_percentile": matchup.enemy.percentile,
         "enemy_percentile_train": matchup.enemy.percentile,
         "matchup_delta": matchup.delta,
         "matchup_label": matchup.label,
@@ -1120,6 +1212,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", choices=list(MODEL_KEYS) + ["all"], default="histgbt")
     parser.add_argument("--models-root", type=Path, default=DEFAULT_MODELS_ROOT)
     parser.add_argument("--train-path", type=Path, default=DEFAULT_TRAIN_PATH)
+    parser.add_argument(
+        "--calibration-path",
+        type=Path,
+        default=DEFAULT_CALIBRATION_PATH,
+        help="Split used to calibrate prediction percentiles and textual bands.",
+    )
     parser.add_argument("--metrics-table", type=Path, default=DEFAULT_METRICS_TABLE)
     parser.add_argument("--champion-classes", type=Path, default=DEFAULT_CHAMPION_CLASSES)
     parser.add_argument("--champion-archetypes", type=Path, default=DEFAULT_CHAMPION_ARCHETYPES)
@@ -1183,6 +1281,7 @@ def main() -> None:
         report_metrics,
         args.background_size,
         args.no_shap,
+        calibration_path=args.calibration_path,
     )
     primary_key = "histgbt" if args.model == "all" else args.model
 

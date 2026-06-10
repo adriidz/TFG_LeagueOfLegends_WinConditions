@@ -90,6 +90,18 @@ class PredictCliFinalModelsTest(unittest.TestCase):
         self.assertEqual(set(payload["model_predictions"]), set(predict_cli.MODEL_KEYS))
         self.assertNotIn("similar_champions", payload)
 
+    def test_profile_uses_calibrated_prediction_percentile(self) -> None:
+        predictor = self.predictors["histgbt"]
+        result = predict_cli.predict_full(
+            predictor,
+            self.row,
+            self.assumptions,
+            top_n=3,
+        )
+
+        self.assertIsNotNone(result.percentile)
+        self.assertEqual(result.profile, predict_cli.percentile_profile(result.percentile))
+
     def test_batch_extra_columns_are_ignored(self) -> None:
         base = {
             "side": "blue",

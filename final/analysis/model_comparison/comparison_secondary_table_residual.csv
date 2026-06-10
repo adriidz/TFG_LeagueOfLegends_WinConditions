@@ -1,0 +1,2 @@
+model,trained_target,evaluation_scale,r2,spearman_corr,pearson_corr,rmse,mae,compression_ratio,pred_std,target_std,n_eval,notes
+Residual Context GBT,residual,residual,0.03858246862549963,0.18917375734333733,0.19804216095526977,0.17479470212931508,0.14084750845995903,0.20673171185763045,0.03685355162025503,0.17826752987773303,57468,Residual target y - support_effect; direct ally support excluded from residual categorical features.
